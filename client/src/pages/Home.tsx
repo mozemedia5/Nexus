@@ -1,85 +1,18 @@
-/* LongTail Parisian Atelier Editorial — home is the lookbook cover: image-led, warm, and deliberately spacious. */
-
-import { ArrowDown, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/lib/store";
+import { getCollections, getProducts, shopifyConfigured, type Collection, type Product } from "@/lib/store";
 
 export default function Home() {
-  const featured = products.slice(0, 3);
-
-  return (
-    <>
-      <section className="home-hero">
-        <img src="/manus-storage/longtail-hero_7f0b30f1.jpg" alt="Chocolate dachshund relaxing on a cream chaise lounge" className="hero-image" />
-        <div className="hero-wash" />
-        <div className="hero-content page-pad">
-          <span className="eyebrow eyebrow-light">The house of LongTail <span aria-hidden="true">/</span> est. 2018</span>
-          <h1>Timeless luxury<br /><em>for the long way home.</em></h1>
-          <p>Where heritage craftsmanship meets contemporary elegance, creating exceptional pieces for the most discerning companions.</p>
-          <div className="hero-actions">
-            <Link href="/products" className="button button-brass">Shop the collection <ArrowUpRight size={16} /></Link>
-            <Link href="/about" className="button button-quiet-light">Discover our heritage <ArrowUpRight size={16} /></Link>
-          </div>
-        </div>
-        <div className="hero-scroll"><ArrowDown size={14} /> Scroll to explore</div>
-        <div className="hero-index">01 <span>/</span> 03</div>
-      </section>
-
-      <section className="intro-section section-pad">
-        <div className="intro-kicker"><span className="brass-dot" /> The LongTail lifestyle</div>
-        <div className="intro-copy">
-          <h2>A brand as unique and enduring as the dachshunds we love.</h2>
-          <p>LongTail brings a considered point of view to the everyday rituals you share. Each piece is shaped by a love of fine material, quiet detail, and the very particular character of a long-backed companion.</p>
-        </div>
-      </section>
-
-      <section className="lifestyle-section">
-        <div className="lifestyle-image-panel">
-          <img src="/manus-storage/longtail-lifestyle_29b57534.jpg" alt="Dachshund walking through a quiet Parisian street" />
-          <div className="image-caption"><span>01</span><span>Parisian elegance</span></div>
-        </div>
-        <div className="lifestyle-text-panel">
-          <span className="eyebrow">A point of view</span>
-          <h2>For the rituals<br /><em>worth dressing up.</em></h2>
-          <p>From the first walk of the morning to a slow afternoon at home, LongTail makes space for more ceremony in the everyday.</p>
-          <Link href="/about" className="text-link">Read our story <ArrowUpRight size={15} /></Link>
-          <div className="lifestyle-notes"><span>Material first</span><span>Designed in Europe</span><span>Made to last</span></div>
-        </div>
-      </section>
-
-      <section className="collection-section section-pad">
-        <div className="section-heading-row">
-          <div><span className="eyebrow">The edit</span><h2>Curated collections</h2></div>
-          <Link href="/products" className="text-link desktop-only">View all pieces <ArrowUpRight size={15} /></Link>
-        </div>
-        <p className="section-lede">Each piece is thoughtfully designed to embody the perfect balance of functionality and refined aesthetics.</p>
-        <div className="feature-carousel-controls">
-          <button type="button" aria-label="Previous collection"><ChevronLeft size={18} /></button>
-          <span>01 <i /> 03</span>
-          <button type="button" aria-label="Next collection"><ChevronRight size={18} /></button>
-        </div>
-        <div className="product-grid home-product-grid">
-          {featured.map((product) => <ProductCard key={product.id} product={product} />)}
-        </div>
-        <Link href="/products" className="text-link mobile-only collection-mobile-link">View all pieces <ArrowUpRight size={15} /></Link>
-      </section>
-
-      <section className="heritage-teaser">
-        <div className="heritage-teaser-image"><img src="/manus-storage/longtail-heritage_7e80e162.jpg" alt="Hands stitching a cognac leather harness in an atelier" /></div>
-        <div className="heritage-teaser-copy">
-          <span className="eyebrow">01 / Our heritage</span>
-          <h2>The beauty is<br /><em>in the making.</em></h2>
-          <p>Traditional craftsmanship, contemporary design, and a deep respect for the bond between dachshunds and their humans.</p>
-          <Link href="/about" className="button button-outline">Discover the LongTail story <ArrowUpRight size={15} /></Link>
-        </div>
-      </section>
-
-      <section className="society-banner section-pad">
-        <div className="society-banner-mark">LT</div>
-        <div><span className="eyebrow">An invitation</span><h2>Join the LongTail Society.</h2><p>Be the first to discover new collections, exclusive previews, and styling inspiration.</p></div>
-        <button type="button" className="button button-dark" onClick={() => window.dispatchEvent(new CustomEvent("open-society"))}>Join the Society <ArrowUpRight size={15} /></button>
-      </section>
-    </>
-  );
+  const [products, setProducts] = useState<Product[]>([]); const [collections, setCollections] = useState<Collection[]>([]); const [error, setError] = useState("");
+  useEffect(() => { if (!shopifyConfigured) return; Promise.all([getProducts({ first: 8, sortKey: "BEST_SELLING" }), getCollections(8)]).then(([items, groups]) => { setProducts(items); setCollections(groups); }).catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load the Liverton catalogue.")); }, []);
+  return <>
+    <section className="hero-section"><div className="hero-copy"><span className="eyebrow"><Sparkles size={13} /> Liverton Store</span><h1>Smart finds for <em>everyday living.</em></h1><p>Useful beauty essentials, kitchen upgrades, and thoughtful gadgets selected for life in motion.</p><div className="hero-actions"><Link href="/products" className="button button-brass">Shop the edit <ArrowUpRight size={16} /></Link><Link href="/products?collection=beauty" className="button button-quiet">Shop Beauty</Link></div></div><div className="hero-art"><div className="hero-art-shape shape-one" /><div className="hero-art-shape shape-two" /><div className="hero-art-card"><span>01</span><strong>Useful<br /><em>by design.</em></strong><small>Beauty · Kitchen · Gadgets</small></div></div></section>
+    <section className="value-strip"><div><strong>Curated for everyday</strong><span>Products chosen for usefulness</span></div><div><strong>Shopify checkout</strong><span>Secure, familiar checkout</span></div><div><strong>Made for Uganda</strong><span>Clear local support information</span></div></section>
+    <section className="section-pad"><div className="section-heading"><div><span className="eyebrow">Explore the edit</span><h2>Find your <em>new useful.</em></h2></div><Link href="/products" className="text-link">View all products <ArrowUpRight size={15} /></Link></div><div className="category-grid">{collections.slice(0, 4).map((collection) => <Link key={collection.id} href={`/products?collection=${collection.handle}`} className="category-card">{collection.image && <img src={collection.image.url} alt={collection.image.altText ?? collection.title} loading="lazy" />}<span>{collection.title}</span><ArrowUpRight size={17} /></Link>)}{!shopifyConfigured && <div className="empty-state"><h3>Connect Shopify to load your collections</h3><p>The storefront is ready for live products once the Storefront API variables are added.</p></div>}</div></section>
+    <section className="section-pad product-section"><div className="section-heading"><div><span className="eyebrow">Shopify-powered</span><h2>Liverton <em>picks.</em></h2></div><Link href="/products" className="text-link">Shop everything <ArrowUpRight size={15} /></Link></div>{error ? <div className="empty-state"><h3>Catalogue unavailable</h3><p>{error}</p></div> : products.length ? <div className="product-grid home-product-grid">{products.slice(0, 4).map((product) => <ProductCard key={product.id} product={product} />)}</div> : <div className="empty-state"><h3>{shopifyConfigured ? "Your products will appear here" : "Shopify connection required"}</h3><p>{shopifyConfigured ? "Add products in Shopify and they will appear here automatically." : "Add the Shopify Storefront API variables in Vercel to activate the live catalogue."}</p></div>}</section>
+    <section className="split-callout"><div><span className="eyebrow">Beauty & personal care</span><h2>Small rituals.<br /><em>Better days.</em></h2><Link href="/products?collection=beauty" className="button button-dark">Shop Beauty <ArrowUpRight size={15} /></Link></div><div className="callout-panel"><span>Liverton note</span><p>We look for the tools and essentials that make a daily routine feel simpler, calmer, and more considered.</p></div></section>
+    <section className="faq-section section-pad"><div><span className="eyebrow">Good to know</span><h2>Shop with <em>confidence.</em></h2></div><div className="faq-list"><details open><summary>How does checkout work?</summary><p>Your bag is handled by Shopify and checkout opens on Shopify’s secure hosted checkout.</p></details><details><summary>Where can I find delivery information?</summary><p>Delivery, payment, and returns information should reflect the active policies configured for your Liverton Store.</p></details><details><summary>Can I get help choosing a product?</summary><p>Use the customer-support contact in the footer for current assistance options.</p></details></div></section>
+  </>;
 }

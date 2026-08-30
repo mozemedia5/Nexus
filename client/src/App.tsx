@@ -13,6 +13,7 @@ import Home from "@/pages/Home";
 import Collections from "@/pages/Collections";
 import Heritage from "@/pages/Heritage";
 import NotFound from "@/pages/NotFound";
+import ProductDetail from "@/pages/ProductDetail";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -30,6 +31,7 @@ function Router() {
     <Switch>
       <Route path="/" component={HomeRoute} />
       <Route path="/products" component={CollectionsRoute} />
+      <Route path="/products/:handle" component={() => <SiteLayout><ProductDetail /></SiteLayout>} />
       <Route path="/products.html" component={CollectionsRoute} />
       <Route path="/about" component={HeritageRoute} />
       <Route path="/about.html" component={HeritageRoute} />
