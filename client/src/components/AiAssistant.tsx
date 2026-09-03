@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2 } from "lucide-react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2 } from "lucide-react";
 
 interface Message {
   id: string;
@@ -8,11 +8,25 @@ interface Message {
   timestamp: Date;
 }
 
-const QUICK_SUGGESTIONS = [
-  "What beauty products do you recommend?",
-  "Tell me about delivery times in Kampala",
-  "What kitchen gadgets are available?",
+const DEFAULT_SUGGESTIONS = [
+  "Recommend top beauty products",
+  "How fast is Kampala delivery?",
+  "Show smart kitchen gadgets",
   "What is your return policy?"
+];
+
+const SHOPPING_SUGGESTIONS = [
+  "Best deals under 50,000 UGX",
+  "What are trending items today?",
+  "Recommend home and lifestyle items",
+  "How do I place an order?"
+];
+
+const DELIVERY_SUGGESTIONS = [
+  "Are shipping rates free in Kampala?",
+  "Do you deliver nationwide in Uganda?",
+  "How long does standard shipping take?",
+  "Can I pay on delivery?"
 ];
 
 export default function AiAssistant() {
@@ -22,13 +36,25 @@ export default function AiAssistant() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm Hanna, your Shopping Assistant at Liverton Store (By Hanna AI). How can I help you find smart solutions for everyday living today?",
+      content: "Hello! I'm Cari, your Shopping Assistant at Liverton Store (By Hanna). How can I help you find smart solutions for everyday living today?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const activeSuggestions = useMemo(() => {
+    if (messages.length <= 1) return DEFAULT_SUGGESTIONS;
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content.toLowerCase() || "";
+    if (lastUserMsg.includes("delivery") || lastUserMsg.includes("kampala") || lastUserMsg.includes("ship") || lastUserMsg.includes("pay")) {
+      return DELIVERY_SUGGESTIONS;
+    }
+    if (lastUserMsg.includes("beauty") || lastUserMsg.includes("kitchen") || lastUserMsg.includes("gadget") || lastUserMsg.includes("product") || lastUserMsg.includes("recommend")) {
+      return SHOPPING_SUGGESTIONS;
+    }
+    return DEFAULT_SUGGESTIONS;
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -69,7 +95,7 @@ export default function AiAssistant() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Failed to reach AI Assistant server.");
+        throw new Error(errData.error || "Failed to reach Cari AI Assistant server.");
       }
 
       const data = await res.json();
@@ -85,7 +111,7 @@ export default function AiAssistant() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: err.message || "I encountered an error connecting to Hanna AI. Please make sure the API key is configured or try again later.",
+        content: err.message || "I encountered an error connecting to Cari AI. Please make sure the API key is configured or try again later.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -100,13 +126,13 @@ export default function AiAssistant() {
         <button
           onClick={() => setIsOpen(true)}
           className="ai-assistant-trigger-btn"
-          aria-label="Open AI Shopping Assistant"
+          aria-label="Ask Cari AI Shopping Assistant"
         >
           <div className="ai-trigger-icon-wrap">
             <Sparkles className="ai-sparkle-icon" size={20} />
           </div>
           <span className="ai-trigger-text">
-            Ask Hanna <span className="ai-badge">By Hanna AI</span>
+            Ask Cari
           </span>
         </button>
       )}
@@ -121,9 +147,9 @@ export default function AiAssistant() {
               </div>
               <div>
                 <h3 className="ai-name">
-                  Hanna <span className="ai-subtitle">Shopping Assistant</span>
+                  Cari <span className="ai-subtitle">Shopping Assistant</span>
                 </h3>
-                <span className="ai-byline">By Hanna AI</span>
+                <span className="ai-byline">By Hanna</span>
               </div>
             </div>
             <div className="ai-header-controls">
@@ -181,26 +207,29 @@ export default function AiAssistant() {
                     </div>
                     <div className="ai-message-bubble assistant-bubble ai-loading-bubble">
                       <Loader2 className="animate-spin" size={16} />
-                      <span>Hanna is thinking...</span>
+                      <span>Cari is thinking...</span>
                     </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Suggestions */}
-              {messages.length <= 2 && (
+              {/* Suggestions with Super-Class Staggered Glide */}
+              {!loading && (
                 <div className="ai-suggestions-container">
-                  <p className="ai-suggestions-label">Suggested questions:</p>
+                  <div className="ai-suggestions-header">
+                    <Sparkles className="ai-suggestions-sparkle" size={13} />
+                    <p className="ai-suggestions-label">Suggested prompts</p>
+                  </div>
                   <div className="ai-suggestions-list">
-                    {QUICK_SUGGESTIONS.map((sug, idx) => (
+                    {activeSuggestions.slice(0, 4).map((sug, idx) => (
                       <button
-                        key={idx}
+                        key={`${sug}-${idx}`}
                         type="button"
                         onClick={() => handleSend(sug)}
-                        className="ai-suggestion-chip"
+                        className={`ai-suggestion-chip premium-card premium-glide delay-${idx + 1}`}
                       >
-                        {sug}
+                        <span className="ai-suggestion-text">{sug}</span>
                       </button>
                     ))}
                   </div>
@@ -219,7 +248,7 @@ export default function AiAssistant() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask Hanna anything about products, delivery..."
+                  placeholder="Ask Cari anything about products, delivery..."
                   className="ai-assistant-input"
                   disabled={loading}
                 />
