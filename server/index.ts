@@ -3,6 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import { isCloudinaryConfigured, createCloudinaryUploadSignature, CLOUDINARY_RESOURCE_TYPES } from "./cloudinary.js";
 import { parseFirebaseServiceAccount } from "./firebaseAdmin.js";
+import { generateLumiReply, isHannaConfigured, type ShoppingCatalogContext, type ShoppingMessage } from "./hanna.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -26,8 +27,50 @@ async function startServer() {
       firebaseAdminConfigured: Boolean(parseFirebaseServiceAccount()),
       cloudinaryConfigured: isCloudinaryConfigured(),
       cloudinaryUploadPresetConfigured: Boolean(process.env.CLOUDINARY_UPLOAD_PRESET),
+      shoppingAssistantConfigured: isHannaConfigured(),
+      shoppingAssistantModelConfigured: Boolean(process.env.GEMINI_MODEL?.trim()),
     });
   });
+  app.post("/api/shopping-assistant", async (req, res) => {
+    const rawMessages = req.body?.messages;
+    if (!Array.isArray(rawMessages)) {
+      res.status(400).json({ error: "messages must be an array" });
+      return;
+    }
+
+    const messages = rawMessages
+      .filter((message: unknown): message is { role: string; content: string } => {
+        if (!message || typeof message !== "object") return false;
+        const candidate = message as { role?: unknown; content?: unknown };
+        return (
+          (candidate.role === "user" || candidate.role === "assistant") &&
+          typeof candidate.content === "string"
+        );
+      })
+      .slice(-20)
+      .map((message): ShoppingMessage => ({
+        role: message.role as ShoppingMessage["role"],
+        content: message.content.slice(0, 4000),
+      }));
+
+    const catalog = (req.body?.catalog && typeof req.body.catalog === "object"
+      ? req.body.catalog
+      : {}) as ShoppingCatalogContext;
+
+    try {
+      const reply = await generateLumiReply(messages, {
+        currentPath: typeof catalog.currentPath === "string" ? catalog.currentPath.slice(0, 300) : "/",
+        products: Array.isArray(catalog.products) ? catalog.products.slice(0, 120) : [],
+        collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 40) : [],
+      });
+      res.json({ reply });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Shopping assistant unavailable";
+      const status = message.includes("not configured") || message.includes("needs a shopper") ? 412 : 502;
+      res.status(status).json({ error: message });
+    }
+  });
+
   app.post("/api/cloudinary/signature", (req, res) => {
     const folder = typeof req.body?.folder === "string" ? req.body.folder : "nexus/media";
     const resourceType = req.body?.resourceType ?? "image";

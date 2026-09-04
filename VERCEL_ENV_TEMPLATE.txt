@@ -6,6 +6,10 @@ VITE_FIREBASE_CONFIG_JSON=
 # Firebase Console -> Project settings -> Service accounts -> Generate new private key.
 # Server-only complete service-account JSON.
 FIREBASE_SERVICE_ACCOUNT_JSON=
+# Gemini server-only shopping assistant variables. Do not prefix either variable with VITE_.
+GEMINI_API_KEY=
+GEMINI_MODEL=
+
 # Cloudinary server-only signing variables.
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
@@ -15,4 +19,4 @@ CLOUDINARY_UPLOAD_PRESET=
 
 # VITE_FIREBASE_CONFIG_JSON is embedded at build time; redeploy after changing it.
 # Never prefix Firebase Admin or Cloudinary secrets with VITE_.
-# The safe diagnostics endpoint is /api/health/config; it returns booleans only.
+# The safe diagnostics endpoint is /api/health/config; it returns booleans only, including assistant configuration status.

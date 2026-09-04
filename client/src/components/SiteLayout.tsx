@@ -1,5 +1,4 @@
 /* LongTail Parisian Atelier Editorial — one consistent shell keeps every page connected to the same house. */
-
 import { type ReactNode } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import CartDrawer from "@/components/CartDrawer";
