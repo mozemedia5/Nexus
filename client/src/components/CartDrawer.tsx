@@ -1,4 +1,82 @@
 import { Minus, Plus, X } from "lucide-react";
 import { formatPrice } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
-export default function CartDrawer() { const { lines, subtotal, isOpen, closeCart, updateQuantity, removeItem, checkout, busy, error } = useCart(); return <><div className={`cart-scrim ${isOpen ? "is-open" : ""}`} onClick={closeCart} aria-hidden="true" /><aside className={`cart-drawer ${isOpen ? "is-open" : ""}`} aria-label="Shopping bag" aria-hidden={!isOpen}><div className="cart-drawer-head"><div><span className="eyebrow">Liverton Store</span><h2>Your bag</h2></div><button type="button" className="icon-button" onClick={closeCart} aria-label="Close bag"><X size={21} /></button></div><div className="cart-body">{lines.length === 0 ? <div className="cart-empty"><span className="empty-mark">L</span><h3>Your bag is empty</h3><p>Start with a useful find for everyday living.</p><button type="button" className="button button-dark" onClick={closeCart}>Continue browsing ↗</button></div> : <div className="cart-lines">{lines.map((line) => <div className="cart-line" key={line.id}><img src={line.product.image?.url ?? "/logo.png"} alt={line.product.image?.altText ?? line.product.name} /><div className="cart-line-content"><div className="cart-line-title"><div><p className="eyebrow">{line.product.variantTitle}</p><h3>{line.product.name}</h3></div><button type="button" className="remove-button" onClick={() => removeItem(line.id)}>Remove</button></div><div className="cart-line-foot"><div className="quantity-control"><button type="button" onClick={() => updateQuantity(line.id, line.quantity - 1)} aria-label="Decrease quantity"><Minus size={14} /></button><span>{line.quantity}</span><button type="button" onClick={() => updateQuantity(line.id, line.quantity + 1)} aria-label="Increase quantity"><Plus size={14} /></button></div><strong>{formatPrice({ amount: (Number(line.product.price.amount) * line.quantity).toString(), currencyCode: line.product.price.currencyCode })}</strong></div></div></div>)}</div>}{error && <p className="cart-error">{error}</p>}</div>{lines.length > 0 && <div className="cart-summary"><div className="summary-row"><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></div><p>Taxes and delivery are calculated by Shopify at checkout.</p><button type="button" className="button button-brass button-wide" onClick={checkout} disabled={busy}>{busy ? "Updating…" : "Checkout with Shopify ↗"}</button></div>}</aside></>; }
+
+export default function CartDrawer() {
+  const { lines, subtotal, isOpen, closeCart, updateQuantity, removeItem, checkout, busy, error } = useCart();
+
+  return (
+    <>
+      <div className={`cart-scrim ${isOpen ? "is-open" : ""}`} onClick={closeCart} aria-hidden="true" />
+      <aside className={`cart-drawer ${isOpen ? "is-open" : ""}`} aria-label="Shopping bag" aria-hidden={!isOpen}>
+        <div className="cart-drawer-head">
+          <div>
+            <span className="eyebrow">Nexus A Liverton Store</span>
+            <h2>Your Bag</h2>
+          </div>
+          <button type="button" className="icon-button" onClick={closeCart} aria-label="Close bag">
+            <X size={21} />
+          </button>
+        </div>
+        <div className="cart-body">
+          {lines.length === 0 ? (
+            <div className="cart-empty">
+              <span className="empty-mark">N</span>
+              <h3>Your bag is empty</h3>
+              <p>Explore Smart Home and Beauty &amp; Wellness finds from Nexus.</p>
+              <button type="button" className="button button-dark" onClick={closeCart}>
+                Continue browsing ↗
+              </button>
+            </div>
+          ) : (
+            <div className="cart-lines">
+              {lines.map((line) => (
+                <div className="cart-line" key={line.id}>
+                  <img src={line.product.image?.url ?? "/logo.png"} alt={line.product.image?.altText ?? line.product.name} />
+                  <div className="cart-line-content">
+                    <div className="cart-line-title">
+                      <div>
+                        <p className="eyebrow">{line.product.variantTitle}</p>
+                        <h3>{line.product.name}</h3>
+                      </div>
+                      <button type="button" className="remove-button" onClick={() => removeItem(line.id)}>
+                        Remove
+                      </button>
+                    </div>
+                    <div className="cart-line-foot">
+                      <div className="quantity-control">
+                        <button type="button" onClick={() => updateQuantity(line.id, line.quantity - 1)} aria-label="Decrease quantity">
+                          <Minus size={14} />
+                        </button>
+                        <span>{line.quantity}</span>
+                        <button type="button" onClick={() => updateQuantity(line.id, line.quantity + 1)} aria-label="Increase quantity">
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      <strong>
+                        {formatPrice({ amount: (Number(line.product.price.amount) * line.quantity).toString(), currencyCode: line.product.price.currencyCode })}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {error && <p className="cart-error">{error}</p>}
+        </div>
+        {lines.length > 0 && (
+          <div className="cart-summary">
+            <div className="summary-row">
+              <span>Subtotal</span>
+              <strong>{formatPrice(subtotal)}</strong>
+            </div>
+            <p>Taxes and delivery are calculated by Shopify at checkout.</p>
+            <button type="button" className="button button-brass button-wide" onClick={checkout} disabled={busy}>
+              {busy ? "Updating…" : "Checkout with Shopify ↗"}
+            </button>
+          </div>
+        )}
+      </aside>
+    </>
+  );
+}

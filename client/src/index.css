@@ -1,7 +1,6 @@
 /*
-  LongTail Parisian Atelier Editorial — global visual language.
-  Warm parchment, espresso ink, Atelier Brass, image-led asymmetry, and quiet motion.
-  When in doubt: does this choice reinforce or dilute the atelier philosophy?
+  Nexus A Liverton Store — global visual language.
+  Smart Home, Beauty & Wellness curated for modern living.
 */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -104,9 +103,11 @@ img { display: block; max-width: 100%; }
 }
 .eyebrow-light { color: #f7f1df; }
 .brand-lockup { display: inline-flex; align-items: center; gap: 0.7rem; }
-.brand-mark-wrap { width: 34px; height: 34px; display: grid; place-items: center; overflow: hidden; border: 1px solid rgba(182,138,58,0.65); transform: rotate(-7deg); }
-.brand-mark { width: 32px; height: 32px; object-fit: contain; mix-blend-mode: multiply; transform: rotate(7deg); }
-.brand-name { font-family: "DM Serif Display", serif; font-size: 1.58rem; letter-spacing: -0.05em; }
+.brand-mark-wrap { width: 34px; height: 34px; display: grid; place-items: center; overflow: hidden; border: 1px solid rgba(182,138,58,0.65); background: var(--brass-gold); color: #fff; font-weight: 800; font-size: 1.1rem; border-radius: 6px; }
+.brand-mark { width: 32px; height: 32px; object-fit: contain; mix-blend-mode: multiply; }
+.brand-text-stack { display: flex; flex-direction: column; line-height: 1.1; }
+.brand-name { font-family: "DM Serif Display", serif; font-size: 1.58rem; letter-spacing: -0.04em; }
+.brand-sub { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--brass-gold); margin-top: 1px; }
 
 .announcement-bar {
   min-height: 29px;
@@ -879,4 +880,211 @@ img { display: block; max-width: 100%; }
 
 .ai-assistant-send-btn:not(:disabled):hover {
   background: #9c722d;
+}
+
+/* Order Tracking Styles */
+.track-order-section {
+  max-width: 960px;
+  margin: 0 auto;
+}
+.track-order-card {
+  background: var(--paper-light, #fdfbf7);
+  border: 1px solid rgba(48,43,37,0.12);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+}
+.track-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.form-group label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--brass-gold);
+  margin-bottom: 0.4rem;
+}
+.form-group input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(48,43,37,0.2);
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.form-group input:focus {
+  outline: none;
+  border-color: var(--brass-gold);
+  box-shadow: 0 0 0 3px rgba(182,138,58,0.15);
+}
+.track-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+.track-notice {
+  margin-top: 1.5rem;
+  padding: 0.85rem 1.2rem;
+  background: rgba(182,138,58,0.08);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--ink);
+}
+.order-result-card {
+  background: #fff;
+  border: 1px solid rgba(48,43,37,0.15);
+  border-radius: 12px;
+  padding: 2.2rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+}
+.order-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(48,43,37,0.1);
+}
+.order-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.status-badge {
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.status-badge.financial-paid { background: #e6f4ea; color: #137333; }
+.status-badge.fulfillment-fulfilled { background: #e6f4ea; color: #137333; }
+.status-badge.fulfillment-in_transit { background: #e8f0fe; color: #1a73e8; }
+.status-badge.fulfillment-in_progress { background: #fef7e0; color: #b06000; }
+
+.fulfillment-tracker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2rem 0;
+  padding: 1.2rem;
+  background: var(--paper-light, #fdfbf7);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.tracker-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  white-space: nowrap;
+}
+.tracker-step.is-complete { color: #137333; }
+.tracker-step.is-active { color: #1a73e8; }
+.step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eee;
+}
+.tracker-step.is-complete .step-icon { background: #e6f4ea; color: #137333; }
+.tracker-step.is-active .step-icon { background: #e8f0fe; color: #1a73e8; }
+.tracker-line {
+  flex: 1;
+  height: 2px;
+  background: #ddd;
+  margin: 0 0.8rem;
+  min-width: 20px;
+}
+.tracker-line.is-complete { background: #137333; }
+
+.fulfillment-details-box {
+  background: rgba(182,138,58,0.06);
+  padding: 1.2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+.fulfillment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+.order-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+.order-address-box, .order-items-box {
+  background: var(--paper-light, #fdfbf7);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(48,43,37,0.08);
+}
+.order-item-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(48,43,37,0.08);
+}
+.order-item-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.order-item-img-placeholder {
+  width: 48px;
+  height: 48px;
+  background: var(--brass-gold);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  border-radius: 4px;
+}
+.order-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.order-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 2px solid rgba(48,43,37,0.15);
+}
+.shopify-status-action {
+  text-align: center;
+  margin-top: 1.5rem;
 }

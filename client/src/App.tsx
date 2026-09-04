@@ -1,4 +1,4 @@
-/* LongTail Parisian Atelier Editorial — routes stay simple, connected, and easy to escape from. */
+/* Nexus A Liverton Store — routes. */
 
 import { useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
@@ -12,6 +12,7 @@ import SocietyModal from "@/components/SocietyModal";
 import Home from "@/pages/Home";
 import Collections from "@/pages/Collections";
 import Heritage from "@/pages/Heritage";
+import OrderTracking from "@/pages/OrderTracking";
 import NotFound from "@/pages/NotFound";
 import ProductDetail from "@/pages/ProductDetail";
 
@@ -24,6 +25,7 @@ function ScrollToTop() {
 function HomeRoute() { return <SiteLayout><Home /></SiteLayout>; }
 function CollectionsRoute() { return <SiteLayout><Collections /></SiteLayout>; }
 function HeritageRoute() { return <SiteLayout><Heritage /></SiteLayout>; }
+function OrderTrackingRoute() { return <SiteLayout><OrderTracking /></SiteLayout>; }
 function NotFoundRoute() { return <SiteLayout><NotFound /></SiteLayout>; }
 
 function Router() {
@@ -35,6 +37,8 @@ function Router() {
       <Route path="/products.html" component={CollectionsRoute} />
       <Route path="/about" component={HeritageRoute} />
       <Route path="/about.html" component={HeritageRoute} />
+      <Route path="/track-order" component={OrderTrackingRoute} />
+      <Route path="/order-tracking" component={OrderTrackingRoute} />
       <Route path="/404" component={NotFoundRoute} />
       <Route component={NotFoundRoute} />
     </Switch>

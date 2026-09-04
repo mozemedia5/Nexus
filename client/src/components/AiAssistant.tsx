@@ -18,23 +18,23 @@ interface Message {
 }
 
 const DEFAULT_SUGGESTIONS = [
-  "Recommend top beauty products",
-  "How fast is Kampala delivery?",
-  "Show smart kitchen gadgets",
-  "What is your return policy?"
+  "Recommend top Smart Home devices",
+  "Show Beauty & Wellness essentials",
+  "How do I track my order?",
+  "Tell me about Nexus A Liverton Store"
 ];
 
 const SHOPPING_SUGGESTIONS = [
-  "Best deals under 50,000 UGX",
-  "What are trending items today?",
-  "Recommend home and lifestyle items",
-  "How do I place an order?"
+  "Smart lighting & automation items",
+  "Trending beauty & skincare tech",
+  "How do I place an order?",
+  "Track an existing purchase"
 ];
 
 const STORE_SUGGESTIONS = [
-  "How do I place an order?",
-  "Where can I browse the catalogue?",
-  "What collection should I start with?",
+  "Where can I track my order?",
+  "Browse Smart Home collection",
+  "Browse Beauty & Wellness collection",
   "Can you help me compare products?",
 ];
 
@@ -73,7 +73,7 @@ export default function AiAssistant() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm Cari, your Shopping Assistant at Nexus Store. I’m here to help you discover smart finds. How can I help today?",
+      content: "Hello! I'm Cari, your Shopping Assistant at Nexus A Liverton Store. I'm here to help you discover our curated Smart Home devices and Beauty & Wellness essentials. How can I help today?",
       timestamp: new Date(),
     },
   ]);
@@ -93,7 +93,7 @@ export default function AiAssistant() {
   const activeSuggestions = useMemo(() => {
     if (messages.length <= 1) return DEFAULT_SUGGESTIONS;
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content.toLowerCase() || "";
-    if (lastUserMsg.includes("order") || lastUserMsg.includes("catalogue") || lastUserMsg.includes("collection")) {
+    if (lastUserMsg.includes("order") || lastUserMsg.includes("track") || lastUserMsg.includes("collection")) {
       return STORE_SUGGESTIONS;
     }
     if (lastUserMsg.includes("product") || lastUserMsg.includes("recommend") || lastUserMsg.includes("compare") || lastUserMsg.includes("available")) {
@@ -120,7 +120,7 @@ export default function AiAssistant() {
         setCollections(liveCollections);
       })
       .catch(() => {
-        // The assistant can still answer general store questions without a live catalogue snapshot.
+        // General support available without live snapshot
       })
       .finally(() => {
         setCatalogLoaded(true);
@@ -183,7 +183,7 @@ export default function AiAssistant() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: err.message || "I encountered an error connecting to Cari AI. Please make sure the API key is configured or try again later.",
+        content: err.message || "I encountered an error connecting to Cari AI. Please check server configuration.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -221,7 +221,7 @@ export default function AiAssistant() {
                 <h3 className="ai-name">
                   Cari <span className="ai-subtitle">Shopping Assistant</span>
                 </h3>
-                <span className="ai-byline">By Hanna AI</span>
+                <span className="ai-byline">Nexus A Liverton Store</span>
               </div>
             </div>
             <div className="ai-header-controls">
@@ -249,7 +249,7 @@ export default function AiAssistant() {
               {/* Messages Body */}
               <div className="ai-assistant-messages">
                 {catalogLoading && (
-                  <div className="ai-catalog-status">Loading the live Nexus catalogue…</div>
+                  <div className="ai-catalog-status">Loading live Nexus catalogue…</div>
                 )}
                 {messages.map((msg) => (
                   <div
@@ -295,7 +295,7 @@ export default function AiAssistant() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Suggestions with Super-Class Staggered Glide */}
+              {/* Suggestions */}
               {!loading && (
                 <div className="ai-suggestions-container">
                   <div className="ai-suggestions-header">
@@ -329,7 +329,7 @@ export default function AiAssistant() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask Cari about products or collections..."
+                  placeholder="Ask Cari about Smart Home or Beauty products..."
                   className="ai-assistant-input"
                   disabled={loading}
                 />
