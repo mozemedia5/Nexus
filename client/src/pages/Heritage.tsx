@@ -1,67 +1,150 @@
-/* LongTail Parisian Atelier Editorial — heritage is an unfolding atelier story, not a corporate about page. */
-
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Cpu, Heart, ShieldCheck, Sparkles } from "lucide-react";
+import { Link } from "wouter";
 
 const milestones = [
-  { year: "2018", title: "The beginning", copy: "LongTail was born from a simple observation: dachshunds possess an innate elegance that deserves to be celebrated with equally sophisticated accessories. Our founder began creating custom pieces in her studio, combining traditional leatherworking techniques with modern design sensibilities." },
-  { year: "2019", title: "First collection", copy: "The debut collection launched with just three pieces: the signature harness, a luxury bed, and artisanal treats. Each piece was meticulously crafted by hand, establishing our reputation for quality and attention to detail." },
-  { year: "2020", title: "Artisan partnerships", copy: "We established partnerships with master craftspeople across Europe, each bringing generations of expertise in leatherworking, textiles, and metalwork. These collaborations let us grow while maintaining exacting standards." },
-  { year: "2022", title: "Sustainability focus", copy: "Committed to environmental responsibility, we launched our sustainable sourcing initiative, partnering with eco-conscious suppliers and implementing waste reduction practices throughout production." },
-  { year: "2024", title: "Global recognition", copy: "LongTail received international acclaim, featured in luxury lifestyle publications and embraced by discerning pet owners worldwide. Our pieces became synonymous with sophisticated pet ownership." },
-  { year: "2025", title: "The future", copy: "Today, we continue to push the boundaries of pet luxury, introducing innovative materials, bespoke services, and exclusive collaborations. Our commitment remains unchanged: exceptional pieces that honor the unique bond between dachshunds and their humans." },
+  {
+    year: "2021",
+    title: "The Genesis",
+    copy: "Nexus was established under Liverton Store with a bold vision: to simplify modern living by curating the finest smart home technologies and elevated beauty & wellness essentials under one house.",
+  },
+  {
+    year: "2022",
+    title: "Smart Home Pioneers",
+    copy: "We introduced our flagship collection of intelligent home controllers, automated ambient lighting, and climate solutions—bringing effortless smart home automation to modern residences.",
+  },
+  {
+    year: "2023",
+    title: "Beauty & Wellness Expansion",
+    copy: "Recognizing that technology should also nurture the self, Nexus expanded into intelligent skincare tools, therapeutic wellness gadgets, and daily self-care rituals.",
+  },
+  {
+    year: "2024",
+    title: "Real-Time Shopify Storefront",
+    copy: "To deliver transparent and reliable shopping, Nexus integrated Shopify Storefront API capabilities, enabling real-time product sync, direct checkout, and instant order tracking.",
+  },
+  {
+    year: "2025",
+    title: "Connected Future",
+    copy: "Today, Nexus A Liverton Store stands as a trusted leader in smart home technology and beauty & wellness curation, continuously setting new benchmarks for quality and convenience.",
+  },
 ];
 
 const values = [
-  ["01", "Craftsmanship", "Every piece is meticulously crafted by skilled artisans, combining traditional techniques with modern innovation."],
-  ["02", "Compassion", "Our designs prioritize the comfort and wellbeing of dachshunds, enhancing their natural grace."],
-  ["03", "Sustainability", "We source materials ethically and implement responsible practices throughout our production process."],
-  ["04", "Timelessness", "Our designs transcend trends, focusing on classic elegance and enduring style."],
-  ["05", "Excellence", "We hold ourselves to the highest standards, from first sketch to final delivery."],
-  ["06", "Community", "We celebrate the unique bond between dachshunds and their humans through shared rituals."],
+  ["01", "Smart Innovation", "Every product in our Smart Home collection is selected for intuitive usability, energy efficiency, and seamless connectivity."],
+  ["02", "Holistic Wellbeing", "Our Beauty & Wellness line blends clinical-grade self-care tech with daily rituals designed to rejuvenate body and mind."],
+  ["03", "Exacting Quality", "We partner with trusted global manufacturers to ensure every smart device and beauty essential passes rigorous quality controls."],
+  ["04", "Modern Aesthetics", "Functional design should look timeless. Our curation emphasizes clean silhouettes that enhance modern home interiors."],
+  ["05", "Transparent Service", "Powered by Shopify, we provide end-to-end transparency with instant live order tracking from store to your doorstep."],
+  ["06", "Customer Care", "We stand behind our curation with dedicated support and expert advice for all smart home setups and wellness inquiries."],
 ];
 
 export default function Heritage() {
   return (
     <>
       <section className="page-intro heritage-intro page-pad">
-        <span className="eyebrow">The LongTail house <span aria-hidden="true">/</span> since 2018</span>
-        <h1>Our <em>heritage.</em></h1>
-        <p>A legacy of excellence, where traditional craftsmanship meets contemporary design, creating timeless pieces for the most discerning companions.</p>
+        <span className="eyebrow">Nexus A Liverton Store / Our Heritage</span>
+        <h1>Where innovation meets <em>everyday wellbeing.</em></h1>
+        <p>The story of Nexus A Liverton Store—curating cutting-edge Smart Home automation and elevated Beauty &amp; Wellness essentials for modern living.</p>
       </section>
 
       <section className="story-section section-pad">
         <div className="story-copy">
-          <span className="eyebrow">The LongTail story</span>
-          <h2>Born from a belief in<br /><em>the details that matter.</em></h2>
-          <p>Founded on the belief that our beloved dachshunds deserve the same level of luxury and craftsmanship that we seek for ourselves, LongTail began as a passion project that quickly evolved into a movement.</p>
-          <p>Our founder, inspired by the elegant silhouette and regal bearing of her own dachshund, recognized a gap in the market for truly sophisticated pet accessories. What started as custom pieces for friends and family grew into a brand that redefines pet luxury.</p>
-          <p>Today, LongTail stands as a testament to the belief that the bond between humans and their companions deserves to be celebrated with the finest materials, impeccable design, and unwavering attention to detail.</p>
+          <span className="eyebrow">The Nexus Story</span>
+          <h2>Built for the future of<br /><em>home and self-care.</em></h2>
+          <p>Nexus A Liverton Store was born from a clear realization: the modern home is not just a place to live, but an intelligent ecosystem designed for comfort, peace of mind, and personal wellness.</p>
+          <p>We set out to remove complexity from smart home automation and elevate daily self-care. By selecting only high-performance smart controllers, climate devices, and ambient lighting alongside science-backed beauty tools and wellness gadgets, Nexus offers a complete lifestyle upgrade.</p>
+          <p>As a proud Liverton Store brand, Nexus combines technological innovation with trusted customer service, secure Shopify checkout, and transparent order tracking.</p>
         </div>
-        <div className="story-image-wrap"><img src="/manus-storage/longtail-heritage_7e80e162.jpg" alt="A craftsperson carefully stitching leather in the LongTail atelier" /><span className="image-caption"><span>LongTail / atelier no. 01</span><span>Material, hand, time</span></span></div>
+        <div className="story-image-wrap">
+          <div className="heritage-card-box">
+            <span className="eyebrow"><Sparkles size={14} /> Nexus Identity</span>
+            <h3>Nexus A Liverton Store</h3>
+            <p>Smart Home · Beauty &amp; Wellness</p>
+            <div className="heritage-icon-row">
+              <div><Cpu size={20} /><span>Smart Automation</span></div>
+              <div><Heart size={20} /><span>Beauty Tech</span></div>
+              <div><ShieldCheck size={20} /><span>Quality Assured</span></div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="journey-section section-pad">
-        <div className="section-heading-row"><div><span className="eyebrow">A considered path</span><h2>Our <em>journey.</em></h2></div><span className="section-number">06 chapters</span></div>
-        <p className="section-lede">Milestones that shaped our brand and defined our commitment to excellence.</p>
+        <div className="section-heading-row">
+          <div><span className="eyebrow">Our Milestones</span><h2>The <em>Nexus Journey.</em></h2></div>
+          <span className="section-number">05 milestones</span>
+        </div>
+        <p className="section-lede">Key chapters in our evolution as a premier destination for smart home technology and beauty &amp; wellness.</p>
         <div className="timeline">
-          {milestones.map((milestone) => <article key={milestone.year} className="timeline-item"><div className="timeline-year">{milestone.year}</div><div className="timeline-marker"><span /></div><div className="timeline-copy"><h3>{milestone.title}</h3><p>{milestone.copy}</p></div></article>)}
+          {milestones.map((milestone) => (
+            <article key={milestone.year} className="timeline-item">
+              <div className="timeline-year">{milestone.year}</div>
+              <div className="timeline-marker"><span /></div>
+              <div className="timeline-copy">
+                <h3>{milestone.title}</h3>
+                <p>{milestone.copy}</p>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
       <section className="values-section section-pad">
-        <div className="section-heading-row"><div><span className="eyebrow">What guides us</span><h2>Our <em>values.</em></h2></div><span className="section-number">06 principles</span></div>
-        <p className="section-lede">The principles that guide every decision, from material selection to final craftsmanship.</p>
-        <div className="values-grid">{values.map(([number, title, copy]) => <article className="value-card" key={title}><span className="value-number">{number}</span><h3>{title}</h3><p>{copy}</p></article>)}</div>
+        <div className="section-heading-row">
+          <div><span className="eyebrow">What Guides Us</span><h2>Our <em>Core Values.</em></h2></div>
+          <span className="section-number">06 principles</span>
+        </div>
+        <p className="section-lede">The principles that guide every smart home selection and beauty &amp; wellness launch at Nexus A Liverton Store.</p>
+        <div className="values-grid">
+          {values.map(([number, title, copy]) => (
+            <article className="value-card" key={title}>
+              <span className="value-number">{number}</span>
+              <h3>{title}</h3>
+              <p>{copy}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="numbers-section">
-        <div className="numbers-head"><span className="eyebrow eyebrow-light">By the numbers</span><p>Our commitment to excellence is reflected in every metric we track.</p></div>
-        <div className="numbers-grid"><div><strong>07</strong><span>Years of excellence</span></div><div><strong>4.8k</strong><span>Pieces crafted</span></div><div><strong>24</strong><span>Master artisans</span></div><div><strong>18</strong><span>Countries served</span></div></div>
+        <div className="numbers-head">
+          <span className="eyebrow eyebrow-light">Nexus at a glance</span>
+          <p>Dedicated to excellence across smart home automation and wellness curation.</p>
+        </div>
+        <div className="numbers-grid">
+          <div><strong>100%</strong><span>Smart Home Focus</span></div>
+          <div><strong>24/7</strong><span>Order Tracking</span></div>
+          <div><strong>Shopify</strong><span>Secure Checkout</span></div>
+          <div><strong>Premium</strong><span>Beauty &amp; Wellness</span></div>
+        </div>
       </section>
 
       <section className="society-detail section-pad" id="society-detail">
-        <div className="society-detail-copy"><span className="eyebrow">An invitation</span><h2>Join the<br /><em>LongTail Society.</em></h2><p>Become part of an exclusive community of dachshund enthusiasts who appreciate the finer things in life.</p><button type="button" className="button button-dark" onClick={() => window.dispatchEvent(new CustomEvent("open-society"))}>Join the Society <ArrowUpRight size={15} /></button></div>
-        <div className="benefits-list"><span className="eyebrow">Society benefits</span>{[["01", "Early access", "Preview and purchase new collections before they're available to the public."], ["02", "Exclusive events", "Invitations to private trunk shows, styling sessions, and dachshund meetups."], ["03", "Personal styling", "Complimentary consultations with our design team for bespoke recommendations."], ["04", "Member discounts", "Exclusive pricing on select collections and special member-only promotions."]].map(([number, title, copy]) => <div className="benefit" key={title}><span>{number}</span><div><h3>{title}</h3><p>{copy}</p></div></div>)}</div>
+        <div className="society-detail-copy">
+          <span className="eyebrow">An Invitation</span>
+          <h2>Join the<br /><em>Nexus Club.</em></h2>
+          <p>Become part of our community for early access to smart home tech releases and beauty &amp; wellness innovations.</p>
+          <button type="button" className="button button-dark" onClick={() => window.dispatchEvent(new CustomEvent("open-society"))}>
+            Join Nexus Club <ArrowUpRight size={15} />
+          </button>
+        </div>
+        <div className="benefits-list">
+          <span className="eyebrow">Member Benefits</span>
+          {[
+            ["01", "Early Tech Access", "Preview and purchase new smart home controllers before public releases."],
+            ["02", "Exclusive Promotions", "Enjoy special member pricing on selected beauty & wellness gadgets."],
+            ["03", "Order Support", "Dedicated priority help for setting up devices and tracking deliveries."],
+            ["04", "Innovation Updates", "Stay informed on the latest trends in smart automation and skincare tech."]
+          ].map(([number, title, copy]) => (
+            <div className="benefit" key={title}>
+              <span>{number}</span>
+              <div>
+                <h3>{title}</h3>
+                <p>{copy}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
     </>
   );
