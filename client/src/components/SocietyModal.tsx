@@ -9,7 +9,22 @@ export default function SocietyModal() {
   useEffect(() => {
     const openModal = () => setOpen(true);
     window.addEventListener("open-society", openModal);
-    return () => window.removeEventListener("open-society", openModal);
+
+    // Auto-trigger after 60 seconds (1 minute) if not previously shown in this session
+    const hasBeenShown = sessionStorage.getItem("nexus_society_modal_shown");
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    if (!hasBeenShown) {
+      timer = setTimeout(() => {
+        setOpen(true);
+        sessionStorage.setItem("nexus_society_modal_shown", "true");
+      }, 60000); // 60,000 ms = 1 minute
+    }
+
+    return () => {
+      window.removeEventListener("open-society", openModal);
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const handleSubmit = (event: FormEvent) => {

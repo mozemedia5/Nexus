@@ -59,8 +59,8 @@ export default function Home() {
           <span>Elevated self-care tools and daily wellness essentials</span>
         </div>
         <div>
-          <strong><ShieldCheck size={16} /> Shopify Storefront</strong>
-          <span>Seamless, secure checkout powered by Shopify</span>
+          <strong><ShieldCheck size={16} /> Secure Direct Checkout</strong>
+          <span>Encrypted payment and instant order confirmation</span>
         </div>
       </section>
 
@@ -120,12 +120,8 @@ export default function Home() {
           </div>
         ) : (
           <div className="empty-state">
-            <h3>{shopifyConfigured ? "Your live products will appear here" : "Shopify connection required"}</h3>
-            <p>
-              {shopifyConfigured
-                ? "Add Smart Home or Beauty products in your Shopify Store and they will appear here automatically."
-                : "Add your VITE_SHOPIFY_STORE_DOMAIN and VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN variables to view live products."}
-            </p>
+            <h3>Featured Collection</h3>
+            <p>Browse our full range of smart home innovations and beauty products in the catalogue.</p>
           </div>
         )}
       </section>

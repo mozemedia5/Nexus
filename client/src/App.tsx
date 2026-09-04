@@ -15,6 +15,8 @@ import Heritage from "@/pages/Heritage";
 import OrderTracking from "@/pages/OrderTracking";
 import NotFound from "@/pages/NotFound";
 import ProductDetail from "@/pages/ProductDetail";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -39,6 +41,8 @@ function Router() {
       <Route path="/about.html" component={HeritageRoute} />
       <Route path="/track-order" component={OrderTrackingRoute} />
       <Route path="/order-tracking" component={OrderTrackingRoute} />
+      <Route path="/terms" component={() => <SiteLayout><Terms /></SiteLayout>} />
+      <Route path="/privacy" component={() => <SiteLayout><Privacy /></SiteLayout>} />
       <Route path="/404" component={NotFoundRoute} />
       <Route component={NotFoundRoute} />
     </Switch>

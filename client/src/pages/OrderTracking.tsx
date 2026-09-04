@@ -44,7 +44,7 @@ export default function OrderTracking() {
       <section className="page-intro section-pad">
         <span className="eyebrow">Nexus A Liverton Store / Customer Service</span>
         <h1>Order <em>Tracking.</em></h1>
-        <p>Check the live status of your Smart Home and Beauty &amp; Wellness purchase directly from our Shopify Storefront API.</p>
+        <p>Check the live status of your Smart Home and Beauty &amp; Wellness purchase in real time.</p>
       </section>
 
       <section className="section-pad track-order-section">
@@ -83,14 +83,12 @@ export default function OrderTracking() {
             </div>
           </form>
 
-          {!shopifyConfigured && (
-            <div className="track-notice">
-              <ShieldCheck size={16} />
-              <span>
-                <strong>Shopify Storefront API Connected:</strong> Enter your order number above to view real-time fulfillment status.
-              </span>
-            </div>
-          )}
+          <div className="track-notice">
+            <ShieldCheck size={16} />
+            <span>
+              <strong>Real-Time Tracking Active:</strong> Enter your order number above to view live fulfillment status.
+            </span>
+          </div>
         </div>
 
         {order && (
@@ -165,7 +163,7 @@ export default function OrderTracking() {
                     {order.shippingAddress.city}, {order.shippingAddress.country}
                   </address>
                 ) : (
-                  <p>Standard Courier Shipping (Kampala / Uganda)</p>
+                  <p>Standard Global Courier Shipping</p>
                 )}
               </div>
 

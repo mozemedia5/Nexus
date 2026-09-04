@@ -27,7 +27,7 @@ export default function SiteHeader() {
       <header className="site-header">
         <div className="header-inner">
           <Link href="/" className="brand-lockup" aria-label="Nexus A Liverton Store home">
-            <span className="brand-mark-wrap">N</span>
+            <img src="/logo.png" alt="Nexus Logo" className="brand-logo-img h-9 w-auto object-contain" />
             <div className="brand-text-stack">
               <span className="brand-name">Nexus</span>
               <span className="brand-sub">A Liverton Store</span>

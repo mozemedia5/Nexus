@@ -43,7 +43,7 @@ export default function Collections() {
       <section className="page-intro section-pad">
         <span className="eyebrow">Nexus A Liverton Store / Catalogue</span>
         <h1>Smart Home, <em>Beauty &amp; Wellness.</em></h1>
-        <p>{selected?.description || "Explore live products powered by Shopify, featuring intelligent home devices, beauty essentials, and wellness innovations."}</p>
+        <p>{selected?.description || "Explore our collection featuring intelligent home devices, beauty essentials, and wellness innovations."}</p>
       </section>
 
       <section className="catalogue section-pad">
@@ -59,10 +59,10 @@ export default function Collections() {
           </div>
         ) : !shopifyConfigured ? (
           <div className="empty-state">
-            <h3>Shopify Storefront API connection required</h3>
-            <p>Add your VITE_SHOPIFY_STORE_DOMAIN and VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN variables to populate live items.</p>
+            <h3>Catalogue Updating</h3>
+            <p>Our store catalogue is currently updating. Please check back shortly or explore our story.</p>
             <Link href="/" className="button button-dark">
-              Back home <ArrowUpRight size={15} />
+              Back Home <ArrowUpRight size={15} />
             </Link>
           </div>
         ) : loading ? (
@@ -78,7 +78,7 @@ export default function Collections() {
         ) : (
           <div className="empty-state">
             <h3>No products in this collection yet</h3>
-            <p>Products published in your Shopify store will appear here automatically.</p>
+            <p>New items will be arriving soon. Explore our other curated collections above.</p>
           </div>
         )}
       </section>
