@@ -231,8 +231,8 @@ export async function getOrderDetails(orderInput: string, emailOrPhone?: string)
       firstName: "Customer",
       lastName: "Nexus",
       address1: "Plot 12 Innovation Avenue",
-      city: "Kampala",
-      country: "Uganda",
+      city: "Global Destination",
+      country: "International",
     },
     lineItems: [
       {

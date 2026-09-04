@@ -19,8 +19,8 @@ const milestones = [
   },
   {
     year: "2024",
-    title: "Real-Time Shopify Storefront",
-    copy: "To deliver transparent and reliable shopping, Nexus integrated Shopify Storefront API capabilities, enabling real-time product sync, direct checkout, and instant order tracking.",
+    title: "Digital Ecosystem Integration",
+    copy: "To deliver transparent and reliable shopping, Nexus streamlined its digital ecosystem, enabling real-time product availability, direct instant checkout, and live order tracking.",
   },
   {
     year: "2025",
@@ -34,7 +34,7 @@ const values = [
   ["02", "Holistic Wellbeing", "Our Beauty & Wellness line blends clinical-grade self-care tech with daily rituals designed to rejuvenate body and mind."],
   ["03", "Exacting Quality", "We partner with trusted global manufacturers to ensure every smart device and beauty essential passes rigorous quality controls."],
   ["04", "Modern Aesthetics", "Functional design should look timeless. Our curation emphasizes clean silhouettes that enhance modern home interiors."],
-  ["05", "Transparent Service", "Powered by Shopify, we provide end-to-end transparency with instant live order tracking from store to your doorstep."],
+  ["05", "Transparent Service", "We provide end-to-end transparency with instant live order tracking from store to your doorstep."],
   ["06", "Customer Care", "We stand behind our curation with dedicated support and expert advice for all smart home setups and wellness inquiries."],
 ];
 
@@ -53,7 +53,7 @@ export default function Heritage() {
           <h2>Built for the future of<br /><em>home and self-care.</em></h2>
           <p>Nexus A Liverton Store was born from a clear realization: the modern home is not just a place to live, but an intelligent ecosystem designed for comfort, peace of mind, and personal wellness.</p>
           <p>We set out to remove complexity from smart home automation and elevate daily self-care. By selecting only high-performance smart controllers, climate devices, and ambient lighting alongside science-backed beauty tools and wellness gadgets, Nexus offers a complete lifestyle upgrade.</p>
-          <p>As a proud Liverton Store brand, Nexus combines technological innovation with trusted customer service, secure Shopify checkout, and transparent order tracking.</p>
+          <p>As a proud Liverton Store brand, Nexus combines technological innovation with trusted customer service, secure checkout, and transparent order tracking.</p>
         </div>
         <div className="story-image-wrap">
           <div className="heritage-card-box">
@@ -114,7 +114,7 @@ export default function Heritage() {
         <div className="numbers-grid">
           <div><strong>100%</strong><span>Smart Home Focus</span></div>
           <div><strong>24/7</strong><span>Order Tracking</span></div>
-          <div><strong>Shopify</strong><span>Secure Checkout</span></div>
+          <div><strong>100%</strong><span>Secure Checkout</span></div>
           <div><strong>Premium</strong><span>Beauty &amp; Wellness</span></div>
         </div>
       </section>

@@ -71,8 +71,8 @@ export default function CartDrawer() {
               <strong>{formatPrice(subtotal)}</strong>
             </div>
             <p>Taxes and delivery are calculated by Shopify at checkout.</p>
-            <button type="button" className="button button-brass button-wide" onClick={checkout} disabled={busy}>
-              {busy ? "Updating…" : "Checkout with Shopify ↗"}
+            <button type="button" className="button button-brass button-wide py-3 font-medium text-sm" onClick={checkout} disabled={busy}>
+              {busy ? "Updating…" : "Proceed to Checkout ↗"}
             </button>
           </div>
         )}
