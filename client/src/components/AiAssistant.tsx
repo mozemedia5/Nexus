@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2 } from "lucide-react";
+import { useLocation } from "wouter";
+import { Streamdown } from "streamdown";
+import {
+  getCollections,
+  getProducts,
+  shopifyConfigured,
+  type Collection,
+  type Product,
+} from "@/lib/store";
 
 interface Message {
   id: string;
@@ -22,39 +31,102 @@ const SHOPPING_SUGGESTIONS = [
   "How do I place an order?"
 ];
 
-const DELIVERY_SUGGESTIONS = [
-  "Are shipping rates free in Kampala?",
-  "Do you deliver nationwide in Uganda?",
-  "How long does standard shipping take?",
-  "Can I pay on delivery?"
+const STORE_SUGGESTIONS = [
+  "How do I place an order?",
+  "Where can I browse the catalogue?",
+  "What collection should I start with?",
+  "Can you help me compare products?",
 ];
 
+function assistantCatalog(products: Product[], collections: Collection[], currentPath: string) {
+  return {
+    currentPath,
+    products: products.map((product) => ({
+      handle: product.handle,
+      name: product.name,
+      description: product.description,
+      categoryLabel: product.categoryLabel,
+      tags: product.tags,
+      image: product.image,
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      availableForSale: product.availableForSale,
+      variants: product.variants.map((variant) => ({
+        title: variant.title,
+        availableForSale: variant.availableForSale,
+        price: variant.price,
+      })),
+    })),
+    collections: collections.map((collection) => ({
+      handle: collection.handle,
+      title: collection.title,
+      description: collection.description,
+    })),
+  };
+}
+
 export default function AiAssistant() {
+  const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm Cari, your Shopping Assistant at Liverton Store (By Hanna). How can I help you find smart solutions for everyday living today?",
+      content: "Hello! I'm Cari, your Shopping Assistant at Nexus Store. I’m here to help you discover smart finds. How can I help today?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const catalog = useMemo(
+    () => assistantCatalog(products, collections, location),
+    [products, collections, location],
+  );
 
   const activeSuggestions = useMemo(() => {
     if (messages.length <= 1) return DEFAULT_SUGGESTIONS;
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content.toLowerCase() || "";
-    if (lastUserMsg.includes("delivery") || lastUserMsg.includes("kampala") || lastUserMsg.includes("ship") || lastUserMsg.includes("pay")) {
-      return DELIVERY_SUGGESTIONS;
+    if (lastUserMsg.includes("order") || lastUserMsg.includes("catalogue") || lastUserMsg.includes("collection")) {
+      return STORE_SUGGESTIONS;
     }
-    if (lastUserMsg.includes("beauty") || lastUserMsg.includes("kitchen") || lastUserMsg.includes("gadget") || lastUserMsg.includes("product") || lastUserMsg.includes("recommend")) {
+    if (lastUserMsg.includes("product") || lastUserMsg.includes("recommend") || lastUserMsg.includes("compare") || lastUserMsg.includes("available")) {
       return SHOPPING_SUGGESTIONS;
     }
     return DEFAULT_SUGGESTIONS;
   }, [messages]);
+
+  useEffect(() => {
+    if (!isOpen || catalogLoaded || catalogLoading) return;
+
+    if (!shopifyConfigured) {
+      setCatalogLoaded(true);
+      return;
+    }
+
+    setCatalogLoading(true);
+    Promise.all([
+      getProducts({ first: 120, sortKey: "CREATED_AT" }),
+      getCollections(40),
+    ])
+      .then(([liveProducts, liveCollections]) => {
+        setProducts(liveProducts);
+        setCollections(liveCollections);
+      })
+      .catch(() => {
+        // The assistant can still answer general store questions without a live catalogue snapshot.
+      })
+      .finally(() => {
+        setCatalogLoaded(true);
+        setCatalogLoading(false);
+      });
+  }, [isOpen, catalogLoaded, catalogLoading]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -90,7 +162,7 @@ export default function AiAssistant() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history, catalog }),
       });
 
       if (!res.ok) {
@@ -149,7 +221,7 @@ export default function AiAssistant() {
                 <h3 className="ai-name">
                   Cari <span className="ai-subtitle">Shopping Assistant</span>
                 </h3>
-                <span className="ai-byline">By Hanna</span>
+                <span className="ai-byline">By Hanna AI</span>
               </div>
             </div>
             <div className="ai-header-controls">
@@ -176,6 +248,9 @@ export default function AiAssistant() {
             <>
               {/* Messages Body */}
               <div className="ai-assistant-messages">
+                {catalogLoading && (
+                  <div className="ai-catalog-status">Loading the live Nexus catalogue…</div>
+                )}
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
@@ -187,7 +262,13 @@ export default function AiAssistant() {
                       </div>
                     )}
                     <div className={`ai-message-bubble ${msg.role === "user" ? "user-bubble" : "assistant-bubble"}`}>
-                      <p className="ai-message-content">{msg.content}</p>
+                      {msg.role === "assistant" ? (
+                        <div className="ai-message-content ai-markdown">
+                          <Streamdown>{msg.content}</Streamdown>
+                        </div>
+                      ) : (
+                        <p className="ai-message-content">{msg.content}</p>
+                      )}
                       <span className="ai-message-time">
                         {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
@@ -248,7 +329,7 @@ export default function AiAssistant() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask Cari anything about products, delivery..."
+                  placeholder="Ask Cari about products or collections..."
                   className="ai-assistant-input"
                   disabled={loading}
                 />

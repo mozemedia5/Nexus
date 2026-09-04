@@ -1,4 +1,4 @@
-import { generateLumiReply, type ShoppingCatalogContext, type ShoppingMessage } from "../server/hanna.js";
+import { generateCariReply, type ShoppingCatalogContext, type ShoppingMessage } from "../server/hanna.js";
 
 type VercelRequest = {
   method?: string;
@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const catalog = rawCatalog as ShoppingCatalogContext;
 
   try {
-    const reply = await generateLumiReply(messages, {
+    const reply = await generateCariReply(messages, {
       currentPath: typeof catalog.currentPath === "string" ? catalog.currentPath.slice(0, 300) : "/",
       products: Array.isArray(catalog.products) ? catalog.products.slice(0, 120) : [],
       collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 40) : [],

@@ -64,7 +64,7 @@ const MAX_CONTEXT_CHARS = 180_000;
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_CHARS = 4_000;
 
-const LUMI_SYSTEM_INSTRUCTION = `You are Lumi, the warm, thoughtful, and practical shopping assistant for Nexus Store. You are presented to customers as “Lumi — Shopping Assistant” with the signature “By Hanna AI.”
+const CARI_SYSTEM_INSTRUCTION = `You are Cari, the warm, thoughtful, and practical shopping assistant for Nexus Store. You are presented to customers as “Cari — Shopping Assistant” with the signature “By Hanna AI.”
 
 YOUR MISSION
 Help shoppers discover the right Nexus Store products and take the next useful step. Understand their use case, preferences, budget, category, and any trade-offs that matter. You are a storefront guide, not a generic chatbot.
@@ -133,7 +133,7 @@ function formatProduct(product: ShoppingProduct) {
   ].join("\n");
 }
 
-export function buildLumiCatalogContext(catalog: ShoppingCatalogContext = {}) {
+export function buildCariCatalogContext(catalog: ShoppingCatalogContext = {}) {
   const products = (catalog.products ?? []).slice(0, 120);
   const collections = (catalog.collections ?? []).slice(0, 40);
   const collectionIndex = collections.length
@@ -171,18 +171,18 @@ function toGeminiContents(messages: ShoppingMessage[]): GeminiContent[] {
     }));
 }
 
-export async function generateLumiReply(
+export async function generateCariReply(
   messages: ShoppingMessage[],
   catalog: ShoppingCatalogContext = {},
 ) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
-    throw new Error("Lumi is not configured. Add GEMINI_API_KEY to the Vercel project environment.");
+    throw new Error("Cari is not configured. Add GEMINI_API_KEY to the Vercel project environment.");
   }
 
   const contents = toGeminiContents(messages);
   if (!contents.length) {
-    throw new Error("Lumi needs a shopper message before it can respond.");
+    throw new Error("Cari needs a shopper message before it can respond.");
   }
 
   const configuredModel = process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL;
@@ -196,7 +196,7 @@ export async function generateLumiReply(
     },
     body: JSON.stringify({
       systemInstruction: {
-        parts: [{ text: `${LUMI_SYSTEM_INSTRUCTION}\n\n${buildLumiCatalogContext(catalog)}` }],
+        parts: [{ text: `${CARI_SYSTEM_INSTRUCTION}\n\n${buildCariCatalogContext(catalog)}` }],
       },
       contents,
       generationConfig: {
@@ -209,8 +209,8 @@ export async function generateLumiReply(
 
   const payload = (await response.json().catch(() => ({}))) as GeminiResponse;
   if (!response.ok) {
-    console.error("[Lumi] Gemini request failed", response.status, payload.error?.message ?? "unknown error");
-    throw new Error("Lumi could not connect to Gemini right now. Please try again shortly.");
+    console.error("[Cari] Gemini request failed", response.status, payload.error?.message ?? "unknown error");
+    throw new Error("Cari could not connect to Gemini right now. Please try again shortly.");
   }
 
   const text = payload.candidates?.[0]?.content?.parts
@@ -218,8 +218,8 @@ export async function generateLumiReply(
     .join(" ")
     .trim();
   if (!text) {
-    console.warn("[Lumi] Gemini returned no text", payload.promptFeedback?.blockReason, payload.candidates?.[0]?.finishReason);
-    throw new Error("Lumi could not produce a response for that message. Please try asking another way.");
+    console.warn("[Cari] Gemini returned no text", payload.promptFeedback?.blockReason, payload.candidates?.[0]?.finishReason);
+    throw new Error("Cari could not produce a response for that message. Please try asking another way.");
   }
 
   return text;
