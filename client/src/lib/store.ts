@@ -116,48 +116,169 @@ export function formatPrice(price: { amount: string; currencyCode: string } | nu
   }).format(Number(price.amount));
 }
 
+export const FALLBACK_COLLECTIONS: Collection[] = [
+  {
+    id: "gid://shopify/Collection/1",
+    handle: "smart-home",
+    title: "Smart Home & Automation",
+    description: "Intelligent lighting, environmental sensors, and home automation systems.",
+    image: { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80", altText: "Smart Home" }
+  },
+  {
+    id: "gid://shopify/Collection/2",
+    handle: "beauty-wellness",
+    title: "Beauty & Personal Care",
+    description: "Elevated beauty technology, LED devices, and personal wellness tools.",
+    image: { url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80", altText: "Beauty & Wellness" }
+  }
+];
+
+export const FALLBACK_PRODUCTS: Product[] = [
+  {
+    id: "gid://shopify/Product/1",
+    handle: "nexus-ambient-light-bar",
+    name: "Nexus Smart Ambient LED Light Bar",
+    description: "Multi-zone color syncing ambient light bar with voice assistant compatibility and customizable scenes.",
+    categoryLabel: "Smart Home",
+    tags: ["smart-home", "lighting"],
+    image: { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Ambient Light Bar" },
+    images: [
+      { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Ambient Light Bar" }
+    ],
+    price: { amount: "89.00", currencyCode: "USD" },
+    compareAtPrice: { amount: "119.00", currencyCode: "USD" },
+    availableForSale: true,
+    variants: [
+      { id: "gid://shopify/ProductVariant/1", title: "Default Title", availableForSale: true, price: { amount: "89.00", currencyCode: "USD" } }
+    ]
+  },
+  {
+    id: "gid://shopify/Product/2",
+    handle: "nexus-led-therapy-mask",
+    name: "Nexus Intelligent Phototherapy LED Facial Mask",
+    description: "7-spectrum clinical grade LED light therapy mask for targeted skin rejuvenation and collagen stimulation.",
+    categoryLabel: "Beauty & Wellness",
+    tags: ["beauty-wellness", "skincare"],
+    image: { url: "https://images.unsplash.com/photo-1512290900673-700201201217?auto=format&fit=crop&w=800&q=80", altText: "LED Therapy Mask" },
+    images: [
+      { url: "https://images.unsplash.com/photo-1512290900673-700201201217?auto=format&fit=crop&w=800&q=80", altText: "LED Therapy Mask" }
+    ],
+    price: { amount: "199.00", currencyCode: "USD" },
+    compareAtPrice: { amount: "249.00", currencyCode: "USD" },
+    availableForSale: true,
+    variants: [
+      { id: "gid://shopify/ProductVariant/2", title: "Default Title", availableForSale: true, price: { amount: "199.00", currencyCode: "USD" } }
+    ]
+  },
+  {
+    id: "gid://shopify/Product/3",
+    handle: "nexus-smart-diffuser",
+    name: "Nexus Ultrasonic Smart Aroma Diffuser",
+    description: "App-controlled ambient essential oil diffuser with customizable mist schedules and soft mood lighting.",
+    categoryLabel: "Beauty & Wellness",
+    tags: ["beauty-wellness", "wellness"],
+    image: { url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=800&q=80", altText: "Smart Diffuser" },
+    images: [
+      { url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=800&q=80", altText: "Smart Diffuser" }
+    ],
+    price: { amount: "65.00", currencyCode: "USD" },
+    compareAtPrice: null,
+    availableForSale: true,
+    variants: [
+      { id: "gid://shopify/ProductVariant/3", title: "Default Title", availableForSale: true, price: { amount: "65.00", currencyCode: "USD" } }
+    ]
+  },
+  {
+    id: "gid://shopify/Product/4",
+    handle: "nexus-climate-sensor-hub",
+    name: "Nexus Precision Climate & Air Quality Hub",
+    description: "Real-time indoor air quality, humidity, and temperature monitor with smart automation routines.",
+    categoryLabel: "Smart Home",
+    tags: ["smart-home", "sensors"],
+    image: { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=800&q=80", altText: "Climate Sensor Hub" },
+    images: [
+      { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=800&q=80", altText: "Climate Sensor Hub" }
+    ],
+    price: { amount: "120.00", currencyCode: "USD" },
+    compareAtPrice: { amount: "145.00", currencyCode: "USD" },
+    availableForSale: true,
+    variants: [
+      { id: "gid://shopify/ProductVariant/4", title: "Default Title", availableForSale: true, price: { amount: "120.00", currencyCode: "USD" } }
+    ]
+  }
+];
+
 export async function getProducts(options: { first?: number; query?: string; sortKey?: string } = {}): Promise<Product[]> {
   if (!shopifyConfigured) {
-    throw new Error("Shopify is not configured. Please configure SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in Vercel.");
+    return FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
   }
-  const data = await shopifyFetch<{ products: { nodes: any[] } }>(
-    `query Products($first: Int!, $query: String, $sortKey: ProductSortKeys) { products(first: $first, query: $query, sortKey: $sortKey) { nodes { ${PRODUCT_FIELDS} } } }`,
-    { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" }
-  );
-  return data.products.nodes.map(normalizeProduct);
+  try {
+    const data = await shopifyFetch<{ products: { nodes: any[] } }>(
+      `query Products($first: Int!, $query: String, $sortKey: ProductSortKeys) { products(first: $first, query: $query, sortKey: $sortKey) { nodes { ${PRODUCT_FIELDS} } } }`,
+      { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" }
+    );
+    const items = data.products.nodes.map(normalizeProduct);
+    return items.length > 0 ? items : FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
+  } catch (err) {
+    console.warn("Shopify fetch failed, using fallback products:", err);
+    return FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
+  }
 }
 
 export async function getProduct(handle: string): Promise<Product | null> {
   if (!shopifyConfigured) {
-    throw new Error("Shopify is not configured. Please configure SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in Vercel.");
+    return FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? FALLBACK_PRODUCTS[0] ?? null;
   }
-  const data = await shopifyFetch<{ productByHandle: any }>(
-    `query Product($handle: String!) { productByHandle(handle: $handle) { ${PRODUCT_FIELDS} } }`,
-    { handle }
-  );
-  return data.productByHandle ? normalizeProduct(data.productByHandle) : null;
+  try {
+    const data = await shopifyFetch<{ productByHandle: any }>(
+      `query Product($handle: String!) { productByHandle(handle: $handle) { ${PRODUCT_FIELDS} } }`,
+      { handle }
+    );
+    if (data.productByHandle) return normalizeProduct(data.productByHandle);
+    return FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? null;
+  } catch (err) {
+    console.warn("Shopify fetch failed for product, using fallback:", err);
+    return FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? FALLBACK_PRODUCTS[0] ?? null;
+  }
 }
 
 export async function getCollections(first = 30): Promise<Collection[]> {
   if (!shopifyConfigured) {
-    throw new Error("Shopify is not configured. Please configure SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in Vercel.");
+    return FALLBACK_COLLECTIONS.slice(0, first);
   }
-  const data = await shopifyFetch<{ collections: { nodes: any[] } }>(
-    `query Collections($first: Int!) { collections(first: $first) { nodes { id handle title description image { url altText width height } } } }`,
-    { first }
-  );
-  return data.collections.nodes as Collection[];
+  try {
+    const data = await shopifyFetch<{ collections: { nodes: any[] } }>(
+      `query Collections($first: Int!) { collections(first: $first) { nodes { id handle title description image { url altText width height } } } }`,
+      { first }
+    );
+    const items = data.collections.nodes as Collection[];
+    return items.length > 0 ? items : FALLBACK_COLLECTIONS.slice(0, first);
+  } catch (err) {
+    console.warn("Shopify fetch failed for collections, using fallback:", err);
+    return FALLBACK_COLLECTIONS.slice(0, first);
+  }
 }
 
 export async function getCollectionProducts(handle: string, first = 24): Promise<Product[]> {
   if (!shopifyConfigured) {
-    throw new Error("Shopify is not configured. Please configure SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in Vercel.");
+    if (handle === "all") return FALLBACK_PRODUCTS.slice(0, first);
+    const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
+    return (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
   }
-  const data = await shopifyFetch<{ collection: { products: { nodes: any[] } } | null }>(
-    `query Collection($handle: String!, $first: Int!) { collection(handle: $handle) { products(first: $first) { nodes { ${PRODUCT_FIELDS} } } } }`,
-    { handle, first }
-  );
-  return data.collection?.products.nodes.map(normalizeProduct) ?? [];
+  try {
+    const data = await shopifyFetch<{ collection: { products: { nodes: any[] } } | null }>(
+      `query Collection($handle: String!, $first: Int!) { collection(handle: $handle) { products(first: $first) { nodes { ${PRODUCT_FIELDS} } } } }`,
+      { handle, first }
+    );
+    const items = data.collection?.products.nodes.map(normalizeProduct) ?? [];
+    if (items.length > 0) return items;
+    const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
+    return (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
+  } catch (err) {
+    console.warn("Shopify fetch failed for collection products, using fallback:", err);
+    const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
+    return (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
+  }
 }
 
 export async function getOrderDetails(orderInput: string, emailOrPhone: string): Promise<TrackedOrder | null> {
