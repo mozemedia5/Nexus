@@ -296,21 +296,18 @@ export default function AiAssistant() {
               </div>
 
               {/* Suggestions */}
-              {!loading && (
+              {!loading && activeSuggestions.length > 0 && (
                 <div className="ai-suggestions-container">
-                  <div className="ai-suggestions-header">
-                    <Sparkles className="ai-suggestions-sparkle" size={13} />
-                    <p className="ai-suggestions-label">Suggested prompts</p>
-                  </div>
-                  <div className="ai-suggestions-list">
+                  <div className="ai-suggestions-track">
                     {activeSuggestions.slice(0, 4).map((sug, idx) => (
                       <button
                         key={`${sug}-${idx}`}
                         type="button"
                         onClick={() => handleSend(sug)}
-                        className={`ai-suggestion-chip premium-card premium-glide delay-${idx + 1}`}
+                        className="ai-suggestion-pill"
                       >
-                        <span className="ai-suggestion-text">{sug}</span>
+                        <Sparkles size={11} className="ai-pill-icon" />
+                        <span>{sug}</span>
                       </button>
                     ))}
                   </div>
