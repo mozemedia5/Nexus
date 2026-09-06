@@ -777,65 +777,45 @@ img { display: block; max-width: 100%; }
 }
 
 .ai-suggestions-container {
-  padding: 0.75rem 0.85rem 0.85rem;
+  padding: 0.45rem 0.65rem;
   border-top: 1px solid rgba(48, 43, 37, 0.08);
-  background: linear-gradient(180deg, rgba(233, 229, 218, 0.25) 0%, rgba(245, 242, 232, 0.8) 100%);
-  position: relative;
-  overflow: hidden;
+  background: rgba(245, 242, 232, 0.95);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
-.ai-suggestions-header {
+.ai-suggestions-track {
   display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.ai-suggestion-pill {
+  display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-bottom: 0.5rem;
-  color: var(--brass);
-}
-
-.ai-suggestions-sparkle {
-  color: var(--brass);
-}
-
-.ai-suggestions-label {
-  margin: 0;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-
-.ai-suggestions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.ai-suggestion-chip {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(48, 43, 37, 0.12);
-  padding: 0.5rem 0.75rem;
-  border-radius: 10px;
-  font-size: 0.74rem;
-  color: var(--ink);
-  text-align: left;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-}
-
-.ai-suggestion-text {
+  padding: 0.3rem 0.65rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(48, 43, 37, 0.14);
+  border-radius: 9999px;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  color: var(--ink);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 160ms ease;
 }
 
-.ai-suggestion-chip:hover {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(66, 133, 244, 0.4);
-  color: var(--ink);
+.ai-suggestion-pill:hover {
+  background: #ffffff;
+  border-color: var(--brass);
+  color: var(--brass-gold, var(--brass));
+  transform: translateY(-1px);
+}
+
+.ai-pill-icon {
+  color: var(--brass);
 }
 
 .ai-assistant-input-form {

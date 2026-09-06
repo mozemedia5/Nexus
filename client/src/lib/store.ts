@@ -106,27 +106,56 @@ function normalizeProduct(raw: any): Product {
 
 export function formatPrice(price: { amount: string; currencyCode: string } | null | undefined) {
   if (!price) return "Price unavailable";
-  return new Intl.NumberFormat("en-UG", { style: "currency", currency: price.currencyCode || "UGX", maximumFractionDigits: 0 }).format(Number(price.amount));
+  const currency = price.currencyCode || "USD";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: currency === "USD" ? 2 : 0,
+  }).format(Number(price.amount));
 }
 
 export async function getProducts(options: { first?: number; query?: string; sortKey?: string } = {}) {
-  const data = await shopifyFetch<{ products: { nodes: any[] } }>(`query Products($first: Int!, $query: String, $sortKey: ProductSortKeys) { products(first: $first, query: $query, sortKey: $sortKey) { nodes { ${PRODUCT_FIELDS} } } }`, { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" });
-  return data.products.nodes.map(normalizeProduct);
+  if (!shopifyConfigured) return [];
+  try {
+    const data = await shopifyFetch<{ products: { nodes: any[] } }>(`query Products($first: Int!, $query: String, $sortKey: ProductSortKeys) { products(first: $first, query: $query, sortKey: $sortKey) { nodes { ${PRODUCT_FIELDS} } } }`, { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" });
+    return data.products.nodes.map(normalizeProduct);
+  } catch (err) {
+    console.warn("Shopify getProducts fetch failed:", err);
+    return [];
+  }
 }
 
 export async function getProduct(handle: string) {
-  const data = await shopifyFetch<{ productByHandle: any }>(`query Product($handle: String!) { productByHandle(handle: $handle) { ${PRODUCT_FIELDS} } }`, { handle });
-  return data.productByHandle ? normalizeProduct(data.productByHandle) : null;
+  if (!shopifyConfigured) return null;
+  try {
+    const data = await shopifyFetch<{ productByHandle: any }>(`query Product($handle: String!) { productByHandle(handle: $handle) { ${PRODUCT_FIELDS} } }`, { handle });
+    return data.productByHandle ? normalizeProduct(data.productByHandle) : null;
+  } catch (err) {
+    console.warn("Shopify getProduct fetch failed:", err);
+    return null;
+  }
 }
 
 export async function getCollections(first = 30) {
-  const data = await shopifyFetch<{ collections: { nodes: any[] } }>(`query Collections($first: Int!) { collections(first: $first) { nodes { id handle title description image { url altText width height } } } }`, { first });
-  return data.collections.nodes as Collection[];
+  if (!shopifyConfigured) return [];
+  try {
+    const data = await shopifyFetch<{ collections: { nodes: any[] } }>(`query Collections($first: Int!) { collections(first: $first) { nodes { id handle title description image { url altText width height } } } }`, { first });
+    return data.collections.nodes as Collection[];
+  } catch (err) {
+    console.warn("Shopify getCollections fetch failed:", err);
+    return [];
+  }
 }
 
 export async function getCollectionProducts(handle: string, first = 24) {
-  const data = await shopifyFetch<{ collection: { products: { nodes: any[] } } | null }>(`query Collection($handle: String!, $first: Int!) { collection(handle: $handle) { products(first: $first) { nodes { ${PRODUCT_FIELDS} } } } }`, { handle, first });
-  return data.collection?.products.nodes.map(normalizeProduct) ?? [];
+  if (!shopifyConfigured) return [];
+  try {
+    const data = await shopifyFetch<{ collection: { products: { nodes: any[] } } | null }>(`query Collection($handle: String!, $first: Int!) { collection(handle: $handle) { products(first: $first) { nodes { ${PRODUCT_FIELDS} } } } }`, { handle, first });
+    return data.collection?.products.nodes.map(normalizeProduct) ?? [];
+  } catch (err) {
+    console.warn("Shopify getCollectionProducts fetch failed:", err);
+    return [];
+  }
 }
 
 export async function getOrderDetails(orderInput: string, emailOrPhone?: string): Promise<TrackedOrder | null> {
@@ -226,25 +255,25 @@ export async function getOrderDetails(orderInput: string, emailOrPhone?: string)
     financialStatus: "PAID",
     fulfillmentStatus: "IN_TRANSIT",
     statusUrl: `https://${domain || "nexus-store.myshopify.com"}/orders/${cleanNum}`,
-    totalPrice: { amount: "185000", currencyCode: "UGX" },
+    totalPrice: { amount: "185.00", currencyCode: "USD" },
     shippingAddress: {
-      firstName: "Customer",
-      lastName: "Nexus",
-      address1: "Plot 12 Innovation Avenue",
-      city: "Global Destination",
-      country: "International",
+      firstName: "Valued",
+      lastName: "Shopper",
+      address1: "100 Global Commerce Way",
+      city: "Worldwide Destination",
+      country: "Global Shipping",
     },
     lineItems: [
       {
         title: "Nexus Smart Ambient Light Bar",
         quantity: 1,
-        price: { amount: "125000", currencyCode: "UGX" },
+        price: { amount: "125.00", currencyCode: "USD" },
         variantTitle: "Dual-Pack / Wi-Fi",
       },
       {
         title: "Nexus Ultrasonic Facial Hydrator",
         quantity: 1,
-        price: { amount: "60000", currencyCode: "UGX" },
+        price: { amount: "60.00", currencyCode: "USD" },
         variantTitle: "Rose Quartz Edition",
       },
     ],
