@@ -10,7 +10,10 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!shopifyConfigured) return;
+    if (!shopifyConfigured) {
+      setError("Storefront configuration missing. Please verify Shopify credentials in Vercel.");
+      return;
+    }
     Promise.all([getProducts({ first: 8, sortKey: "BEST_SELLING" }), getCollections(8)])
       .then(([items, groups]) => {
         setProducts(items);

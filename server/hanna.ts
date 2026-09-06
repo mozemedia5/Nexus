@@ -185,30 +185,56 @@ export async function generateCariReply(
   const configuredModel = process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL;
   const model = configuredModel.replace(/^models\//, "");
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: `${CARI_SYSTEM_INSTRUCTION}\n\n${buildCariCatalogContext(catalog)}` }],
-      },
-      contents,
-      generationConfig: {
-        temperature: 0.25,
-        maxOutputTokens: 700,
-      },
-    }),
-    signal: AbortSignal.timeout(60_000),
-  });
+
+  // Implement retry for transient errors like 503 (service unavailable / overloaded)
+  let response: Response | null = null;
+  let lastError = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: `${CARI_SYSTEM_INSTRUCTION}\n\n${buildCariCatalogContext(catalog)}` }],
+          },
+          contents,
+          generationConfig: {
+            temperature: 0.25,
+            maxOutputTokens: 700,
+          },
+        }),
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      if (response.ok) break;
+
+      const payload = (await response.json().catch(() => ({}))) as GeminiResponse;
+      lastError = payload.error?.message ?? `Status ${response.status}`;
+      console.warn(`[Cari] Gemini request attempt ${attempt} failed (${response.status}): ${lastError}`);
+
+      // If transient status (503 / 429), wait 1s before retry
+      if (response.status === 503 || response.status === 429) {
+        if (attempt < 2) await new Promise((res) => setTimeout(res, 1000));
+      } else {
+        break;
+      }
+    } catch (err: any) {
+      lastError = err.message || "Network timeout or fetch error";
+      console.warn(`[Cari] Gemini fetch attempt ${attempt} threw: ${lastError}`);
+      if (attempt < 2) await new Promise((res) => setTimeout(res, 1000));
+    }
+  }
+
+  if (!response || !response.ok) {
+    console.error("[Cari] Gemini request failed finally:", lastError);
+    throw new Error("Cari is temporarily busy or unavailable. Please try again in a few moments.");
+  }
 
   const payload = (await response.json().catch(() => ({}))) as GeminiResponse;
-  if (!response.ok) {
-    console.error("[Cari] Gemini request failed", response.status, payload.error?.message ?? "unknown error");
-    throw new Error("Cari could not connect right now. Please try again shortly.");
-  }
 
   const text = payload.candidates?.[0]?.content?.parts
     ?.map((part) => part.text ?? "")

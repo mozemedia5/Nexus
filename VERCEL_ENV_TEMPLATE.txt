@@ -1,22 +1,25 @@
-# Nexus Firebase + Cloudinary environment contract
-# Add values in both Preview and Production. Never commit real values or .env files.
-# Firebase Console -> Project settings -> Your apps -> Web app configuration.
-# Store as one-line JSON; required keys: apiKey, authDomain, projectId, appId.
-VITE_FIREBASE_CONFIG_JSON=
-# Firebase Console -> Project settings -> Service accounts -> Generate new private key.
-# Server-only complete service-account JSON.
-FIREBASE_SERVICE_ACCOUNT_JSON=
-# Gemini server-only shopping assistant variables. Do not prefix either variable with VITE_.
-GEMINI_API_KEY=
-GEMINI_MODEL=
+# Nexus Production Environment Variables Template for Vercel
+# Store these in Vercel Project Settings -> Environment Variables (Production and Preview).
 
-# Cloudinary server-only signing variables.
+# Shopify Configuration
+# Note: SHOPIFY_STORE_DOMAIN, SHOPIFY_STOREFRONT_ACCESS_TOKEN, and SHOPIFY_API_VERSION
+# are injected into client bundle via Vite define without requiring a VITE_ prefix.
+SHOPIFY_STORE_DOMAIN=
+SHOPIFY_STOREFRONT_ACCESS_TOKEN=
+SHOPIFY_API_VERSION=2026-07
+
+# Shopify Admin API Token (Server-only for protected order lookup)
+SHOPIFY_ADMIN_ACCESS_TOKEN=
+
+# Firebase Client Configuration (The ONLY VITE_-prefixed variable)
+# Store as one-line JSON string containing apiKey, authDomain, projectId, appId
+VITE_FIREBASE_CONFIG_JSON=
+
+# Server-Only Credentials (NEVER prefix with VITE_)
+FIREBASE_SERVICE_ACCOUNT_JSON=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
-# Optional but recommended when using an upload preset.
 CLOUDINARY_UPLOAD_PRESET=
-
-# VITE_FIREBASE_CONFIG_JSON is embedded at build time; redeploy after changing it.
-# Never prefix Firebase Admin or Cloudinary secrets with VITE_.
-# The safe diagnostics endpoint is /api/health/config; it returns booleans only, including assistant configuration status.
