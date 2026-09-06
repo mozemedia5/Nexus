@@ -207,6 +207,17 @@ const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(
 
 export default defineConfig({
   plugins,
+  define: {
+    "import.meta.env.SHOPIFY_STORE_DOMAIN": JSON.stringify(
+      process.env.SHOPIFY_STORE_DOMAIN || process.env.VITE_SHOPIFY_STORE_DOMAIN || ""
+    ),
+    "import.meta.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN": JSON.stringify(
+      process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN || ""
+    ),
+    "import.meta.env.SHOPIFY_API_VERSION": JSON.stringify(
+      process.env.SHOPIFY_API_VERSION || process.env.VITE_SHOPIFY_API_VERSION || "2026-07"
+    ),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

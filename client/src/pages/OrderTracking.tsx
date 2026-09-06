@@ -9,34 +9,32 @@ export default function OrderTracking() {
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<TrackedOrder | null>(null);
 
-  const handleSearch = async (e?: FormEvent, targetOrder?: string) => {
+  const handleSearch = async (e?: FormEvent) => {
     if (e) e.preventDefault();
-    const queryOrder = targetOrder || orderNumber;
-    if (!queryOrder.trim()) {
+    if (!orderNumber.trim()) {
       toast.error("Please enter your Order ID or Confirmation Number.");
+      return;
+    }
+    if (!emailOrPhone.trim()) {
+      toast.error("Please enter your email address or phone number for verification.");
       return;
     }
 
     setLoading(true);
+    setOrder(null);
     try {
-      const result = await getOrderDetails(queryOrder, emailOrPhone);
+      const result = await getOrderDetails(orderNumber, emailOrPhone);
       if (result) {
         setOrder(result);
         toast.success("Order details loaded", { description: `Order ${result.name}` });
       } else {
-        toast.error("Order not found", { description: "Please check your Order ID and try again." });
+        toast.error("Order not found", { description: "Please check your Order ID and contact details and try again." });
       }
     } catch (err: any) {
       toast.error("Unable to lookup order", { description: err.message || "An error occurred." });
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSampleClick = () => {
-    setOrderNumber("1001");
-    setEmailOrPhone("customer@example.com");
-    handleSearch(undefined, "1001");
   };
 
   return (
@@ -63,22 +61,20 @@ export default function OrderTracking() {
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="email-phone">Email Address or Phone (Optional)</label>
+                <label htmlFor="email-phone">Email Address or Phone *</label>
                 <input
                   id="email-phone"
                   type="text"
                   placeholder="e.g. customer@example.com"
                   value={emailOrPhone}
                   onChange={(e) => setEmailOrPhone(e.target.value)}
+                  required
                 />
               </div>
             </div>
             <div className="track-form-actions">
               <button type="submit" className="button button-brass" disabled={loading}>
                 {loading ? "Searching..." : <><Search size={16} /> Track Order</>}
-              </button>
-              <button type="button" className="button button-quiet" onClick={handleSampleClick}>
-                Try Demo Order #1001
               </button>
             </div>
           </form>

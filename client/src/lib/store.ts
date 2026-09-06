@@ -56,9 +56,11 @@ export type TrackedOrder = {
   }[];
 };
 
-const domain = (import.meta.env.VITE_SHOPIFY_STORE_DOMAIN ?? "").replace(/^https?:\/\//, "").replace(/\/$/, "");
-const token = import.meta.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? "";
-const apiVersion = import.meta.env.VITE_SHOPIFY_API_VERSION ?? "2025-10";
+const domain = ((import.meta.env.SHOPIFY_STORE_DOMAIN || import.meta.env.VITE_SHOPIFY_STORE_DOMAIN) ?? "")
+  .replace(/^https?:\/\//, "")
+  .replace(/\/$/, "");
+const token = (import.meta.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || import.meta.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN) ?? "";
+const apiVersion = (import.meta.env.SHOPIFY_API_VERSION || import.meta.env.VITE_SHOPIFY_API_VERSION) ?? "2026-07";
 
 export const shopifyConfigured = Boolean(domain && token);
 export const shopifyEndpoint = domain ? `https://${domain}/api/${apiVersion}/graphql.json` : "";
@@ -114,177 +116,73 @@ export function formatPrice(price: { amount: string; currencyCode: string } | nu
   }).format(Number(price.amount));
 }
 
-export async function getProducts(options: { first?: number; query?: string; sortKey?: string } = {}) {
-  if (!shopifyConfigured) return [];
-  try {
-    const data = await shopifyFetch<{ products: { nodes: any[] } }>(`query Products($first: Int!, $query: String, $sortKey: ProductSortKeys) { products(first: $first, query: $query, sortKey: $sortKey) { nodes { ${PRODUCT_FIELDS} } } }`, { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" });
-    return data.products.nodes.map(normalizeProduct);
-  } catch (err) {
-    console.warn("Shopify getProducts fetch failed:", err);
-    return [];
+export async function getProducts(options: { first?: number; query?: string; sortKey?: string } = {}): Promise<Product[]> {
+  if (!shopifyConfigured) {
+    throw new Error("Shopify is not configured. Please configure SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in Vercel.");
   }
+  const data = await shopifyFetch<{ products: { nodes: any[] } }>(
+    `query Products($first: Int!, $query: String, $sortKey: ProductSortKeys) { products(first: $first, query: $query, sortKey: $sortKey) { nodes { ${PRODUCT_FIELDS} } } }`,
+    { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" }
+  );
+  return data.products.nodes.map(normalizeProduct);
 }
 
-export async function getProduct(handle: string) {
-  if (!shopifyConfigured) return null;
-  try {
-    const data = await shopifyFetch<{ productByHandle: any }>(`query Product($handle: String!) { productByHandle(handle: $handle) { ${PRODUCT_FIELDS} } }`, { handle });
-    return data.productByHandle ? normalizeProduct(data.productByHandle) : null;
-  } catch (err) {
-    console.warn("Shopify getProduct fetch failed:", err);
-    return null;
+export async function getProduct(handle: string): Promise<Product | null> {
+  if (!shopifyConfigured) {
+    throw new Error("Shopify is not configured. Please configure SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in Vercel.");
   }
+  const data = await shopifyFetch<{ productByHandle: any }>(
+    `query Product($handle: String!) { productByHandle(handle: $handle) { ${PRODUCT_FIELDS} } }`,
+    { handle }
+  );
+  return data.productByHandle ? normalizeProduct(data.productByHandle) : null;
 }
 
-export async function getCollections(first = 30) {
-  if (!shopifyConfigured) return [];
-  try {
-    const data = await shopifyFetch<{ collections: { nodes: any[] } }>(`query Collections($first: Int!) { collections(first: $first) { nodes { id handle title description image { url altText width height } } } }`, { first });
-    return data.collections.nodes as Collection[];
-  } catch (err) {
-    console.warn("Shopify getCollections fetch failed:", err);
-    return [];
+export async function getCollections(first = 30): Promise<Collection[]> {
+  if (!shopifyConfigured) {
+    throw new Error("Shopify is not configured. Please configure SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in Vercel.");
   }
+  const data = await shopifyFetch<{ collections: { nodes: any[] } }>(
+    `query Collections($first: Int!) { collections(first: $first) { nodes { id handle title description image { url altText width height } } } }`,
+    { first }
+  );
+  return data.collections.nodes as Collection[];
 }
 
-export async function getCollectionProducts(handle: string, first = 24) {
-  if (!shopifyConfigured) return [];
-  try {
-    const data = await shopifyFetch<{ collection: { products: { nodes: any[] } } | null }>(`query Collection($handle: String!, $first: Int!) { collection(handle: $handle) { products(first: $first) { nodes { ${PRODUCT_FIELDS} } } } }`, { handle, first });
-    return data.collection?.products.nodes.map(normalizeProduct) ?? [];
-  } catch (err) {
-    console.warn("Shopify getCollectionProducts fetch failed:", err);
-    return [];
+export async function getCollectionProducts(handle: string, first = 24): Promise<Product[]> {
+  if (!shopifyConfigured) {
+    throw new Error("Shopify is not configured. Please configure SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in Vercel.");
   }
+  const data = await shopifyFetch<{ collection: { products: { nodes: any[] } } | null }>(
+    `query Collection($handle: String!, $first: Int!) { collection(handle: $handle) { products(first: $first) { nodes { ${PRODUCT_FIELDS} } } } }`,
+    { handle, first }
+  );
+  return data.collection?.products.nodes.map(normalizeProduct) ?? [];
 }
 
-export async function getOrderDetails(orderInput: string, emailOrPhone?: string): Promise<TrackedOrder | null> {
-  const trimmed = orderInput.trim();
-  if (!trimmed) return null;
+export async function getOrderDetails(orderInput: string, emailOrPhone: string): Promise<TrackedOrder | null> {
+  const trimmedOrder = orderInput.trim();
+  const trimmedContact = emailOrPhone.trim();
 
-  // Formulate Shopify GID if numeric ID supplied
-  const gid = trimmed.startsWith("gid://")
-    ? trimmed
-    : `gid://shopify/Order/${trimmed.replace(/[^0-9]/g, "") || trimmed}`;
-
-  if (shopifyConfigured) {
-    try {
-      const data = await shopifyFetch<{ node: any }>(
-        `query GetOrderDetails($id: ID!) {
-          node(id: $id) {
-            ... on Order {
-              id
-              name
-              orderNumber
-              processedAt
-              financialStatus
-              fulfillmentStatus
-              statusUrl
-              totalPrice { amount currencyCode }
-              shippingAddress {
-                firstName
-                lastName
-                address1
-                city
-                country
-              }
-              lineItems(first: 20) {
-                nodes {
-                  title
-                  quantity
-                  originalTotalPrice { amount currencyCode }
-                  variant {
-                    title
-                    image { url }
-                  }
-                }
-              }
-              successfulFulfillments(first: 5) {
-                trackingInfo(first: 5) {
-                  number
-                  url
-                  company
-                }
-              }
-            }
-          }
-        }`,
-        { id: gid }
-      );
-
-      if (data.node?.name) {
-        const o = data.node;
-        return {
-          id: o.id,
-          name: o.name,
-          orderNumber: o.orderNumber ?? o.name,
-          processedAt: o.processedAt,
-          financialStatus: o.financialStatus || "PAID",
-          fulfillmentStatus: o.fulfillmentStatus || "IN_PROGRESS",
-          statusUrl: o.statusUrl,
-          totalPrice: o.totalPrice,
-          shippingAddress: o.shippingAddress,
-          lineItems: (o.lineItems?.nodes ?? []).map((li: any) => ({
-            title: li.title,
-            quantity: li.quantity,
-            price: li.originalTotalPrice,
-            image: li.variant?.image?.url ?? null,
-            variantTitle: li.variant?.title ?? "",
-          })),
-          fulfillments: (o.successfulFulfillments ?? []).flatMap((f: any) =>
-            (f.trackingInfo ?? []).map((ti: any) => ({
-              trackingNumber: ti.number,
-              trackingUrl: ti.url,
-              company: ti.company,
-            }))
-          ),
-        };
-      }
-    } catch (err) {
-      // Fallback or demo lookup if raw GID query isn't permitted without customer scope
-    }
+  if (!trimmedOrder) {
+    throw new Error("Please enter your Order ID or Confirmation Number.");
+  }
+  if (!trimmedContact) {
+    throw new Error("Please enter your email address or phone number for verification.");
   }
 
-  // Provide interactive demo order tracking response for test/sample order codes (e.g. NEXUS-1001, 1001, #1001)
-  const cleanNum = trimmed.toUpperCase().replace("#", "");
-  return {
-    id: `gid://shopify/Order/${cleanNum}`,
-    name: `#${cleanNum}`,
-    orderNumber: cleanNum,
-    processedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    financialStatus: "PAID",
-    fulfillmentStatus: "IN_TRANSIT",
-    statusUrl: `https://${domain || "nexus-store.myshopify.com"}/orders/${cleanNum}`,
-    totalPrice: { amount: "185.00", currencyCode: "USD" },
-    shippingAddress: {
-      firstName: "Valued",
-      lastName: "Shopper",
-      address1: "100 Global Commerce Way",
-      city: "Worldwide Destination",
-      country: "Global Shipping",
-    },
-    lineItems: [
-      {
-        title: "Nexus Smart Ambient Light Bar",
-        quantity: 1,
-        price: { amount: "125.00", currencyCode: "USD" },
-        variantTitle: "Dual-Pack / Wi-Fi",
-      },
-      {
-        title: "Nexus Ultrasonic Facial Hydrator",
-        quantity: 1,
-        price: { amount: "60.00", currencyCode: "USD" },
-        variantTitle: "Rose Quartz Edition",
-      },
-    ],
-    fulfillments: [
-      {
-        trackingNumber: `NX-${cleanNum}-EXP`,
-        trackingUrl: `https://nexus.liverton.store/track?no=NX-${cleanNum}-EXP`,
-        company: "Nexus Express Courier",
-      },
-    ],
-  };
+  const response = await fetch("/api/order-tracking", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderNumber: trimmedOrder, emailOrPhone: trimmedContact }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to retrieve order details.");
+  }
+
+  return payload.order as TrackedOrder;
 }
 
 export async function createCart(variantId: string, quantity = 1) {

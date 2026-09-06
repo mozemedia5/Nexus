@@ -20,10 +20,12 @@ export default function Collections() {
 
   useEffect(() => {
     if (!shopifyConfigured) {
+      setError("Storefront configuration missing. Please verify Shopify credentials in Vercel.");
       setLoading(false);
       return;
     }
     setLoading(true);
+    setError("");
     Promise.all([
       getCollections(),
       active === "all" ? getProducts({ first: 48, sortKey: "CREATED_AT" }) : getCollectionProducts(active, 48),

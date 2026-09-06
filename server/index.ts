@@ -4,6 +4,7 @@ import { createServer } from "http";
 import { isCloudinaryConfigured, createCloudinaryUploadSignature, CLOUDINARY_RESOURCE_TYPES } from "./cloudinary.js";
 import { parseFirebaseServiceAccount } from "./firebaseAdmin.js";
 import { generateCariReply, isHannaConfigured, type ShoppingCatalogContext, type ShoppingMessage } from "./hanna.js";
+import { fetchShopifyOrderTracking } from "../api/order-tracking.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -29,7 +30,26 @@ async function startServer() {
       cloudinaryUploadPresetConfigured: Boolean(process.env.CLOUDINARY_UPLOAD_PRESET),
       shoppingAssistantConfigured: isHannaConfigured(),
       shoppingAssistantModelConfigured: Boolean(process.env.GEMINI_MODEL?.trim()),
+      shopifyAdminConfigured: Boolean(process.env.SHOPIFY_ADMIN_ACCESS_TOKEN),
     });
+  });
+
+  app.post("/api/order-tracking", async (req, res) => {
+    const orderNumber = typeof req.body?.orderNumber === "string" ? req.body.orderNumber : "";
+    const emailOrPhone = typeof req.body?.emailOrPhone === "string" ? req.body.emailOrPhone : "";
+
+    try {
+      const order = await fetchShopifyOrderTracking(orderNumber, emailOrPhone);
+      if (!order) {
+        res.status(404).json({ error: "Order not found. Please check your order details." });
+        return;
+      }
+      res.json({ order });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to lookup order";
+      const status = message.includes("Verification failed") ? 403 : message.includes("required") ? 400 : 500;
+      res.status(status).json({ error: message });
+    }
   });
   app.post("/api/chat", async (req, res) => {
     const rawMessages = req.body?.messages;
