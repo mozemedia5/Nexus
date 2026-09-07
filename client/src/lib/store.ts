@@ -74,6 +74,36 @@ const PRODUCT_FIELDS = `
   variants(first: 20) { nodes { id title availableForSale quantityAvailable price { amount currencyCode } compareAtPrice { amount currencyCode } } }
 `;
 
+// Fast in-memory cache
+const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+
+function getCached<T>(key: string): T | null {
+  const cached = memoryCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data as T;
+  }
+  try {
+    const sessionItem = sessionStorage.getItem(`nexus_cache_${key}`);
+    if (sessionItem) {
+      const parsed = JSON.parse(sessionItem);
+      if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+        memoryCache.set(key, parsed);
+        return parsed.data as T;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function setCached<T>(key: string, data: T): void {
+  const entry = { data, timestamp: Date.now() };
+  memoryCache.set(key, entry);
+  try {
+    sessionStorage.setItem(`nexus_cache_${key}`, JSON.stringify(entry));
+  } catch {}
+}
+
 async function shopifyFetch<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
   if (!shopifyConfigured) throw new Error("Shopify is not configured. Add Storefront API variables in Vercel.");
   const response = await fetch(shopifyEndpoint, {
@@ -209,8 +239,14 @@ export const FALLBACK_PRODUCTS: Product[] = [
 ];
 
 export async function getProducts(options: { first?: number; query?: string; sortKey?: string } = {}): Promise<Product[]> {
+  const cacheKey = `products_${options.first ?? 24}_${options.query || ""}_${options.sortKey || "BEST_SELLING"}`;
+  const cached = getCached<Product[]>(cacheKey);
+  if (cached) return cached;
+
   if (!shopifyConfigured) {
-    return FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
+    const res = FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
+    setCached(cacheKey, res);
+    return res;
   }
   try {
     const data = await shopifyFetch<{ products: { nodes: any[] } }>(
@@ -218,33 +254,57 @@ export async function getProducts(options: { first?: number; query?: string; sor
       { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" }
     );
     const items = data.products.nodes.map(normalizeProduct);
-    return items.length > 0 ? items : FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
+    const res = items.length > 0 ? items : FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
+    setCached(cacheKey, res);
+    return res;
   } catch (err) {
     console.warn("Shopify fetch failed, using fallback products:", err);
-    return FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
+    const res = FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
+    setCached(cacheKey, res);
+    return res;
   }
 }
 
 export async function getProduct(handle: string): Promise<Product | null> {
+  const cacheKey = `product_${handle}`;
+  const cached = getCached<Product | null>(cacheKey);
+  if (cached) return cached;
+
   if (!shopifyConfigured) {
-    return FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? FALLBACK_PRODUCTS[0] ?? null;
+    const res = FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? FALLBACK_PRODUCTS[0] ?? null;
+    if (res) setCached(cacheKey, res);
+    return res;
   }
   try {
     const data = await shopifyFetch<{ productByHandle: any }>(
       `query Product($handle: String!) { productByHandle(handle: $handle) { ${PRODUCT_FIELDS} } }`,
       { handle }
     );
-    if (data.productByHandle) return normalizeProduct(data.productByHandle);
-    return FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? null;
+    if (data.productByHandle) {
+      const res = normalizeProduct(data.productByHandle);
+      setCached(cacheKey, res);
+      return res;
+    }
+    const res = FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? null;
+    if (res) setCached(cacheKey, res);
+    return res;
   } catch (err) {
     console.warn("Shopify fetch failed for product, using fallback:", err);
-    return FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? FALLBACK_PRODUCTS[0] ?? null;
+    const res = FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? FALLBACK_PRODUCTS[0] ?? null;
+    if (res) setCached(cacheKey, res);
+    return res;
   }
 }
 
 export async function getCollections(first = 30): Promise<Collection[]> {
+  const cacheKey = `collections_${first}`;
+  const cached = getCached<Collection[]>(cacheKey);
+  if (cached) return cached;
+
   if (!shopifyConfigured) {
-    return FALLBACK_COLLECTIONS.slice(0, first);
+    const res = FALLBACK_COLLECTIONS.slice(0, first);
+    setCached(cacheKey, res);
+    return res;
   }
   try {
     const data = await shopifyFetch<{ collections: { nodes: any[] } }>(
@@ -252,18 +312,28 @@ export async function getCollections(first = 30): Promise<Collection[]> {
       { first }
     );
     const items = data.collections.nodes as Collection[];
-    return items.length > 0 ? items : FALLBACK_COLLECTIONS.slice(0, first);
+    const res = items.length > 0 ? items : FALLBACK_COLLECTIONS.slice(0, first);
+    setCached(cacheKey, res);
+    return res;
   } catch (err) {
     console.warn("Shopify fetch failed for collections, using fallback:", err);
-    return FALLBACK_COLLECTIONS.slice(0, first);
+    const res = FALLBACK_COLLECTIONS.slice(0, first);
+    setCached(cacheKey, res);
+    return res;
   }
 }
 
 export async function getCollectionProducts(handle: string, first = 24): Promise<Product[]> {
+  const cacheKey = `col_products_${handle}_${first}`;
+  const cached = getCached<Product[]>(cacheKey);
+  if (cached) return cached;
+
   if (!shopifyConfigured) {
     if (handle === "all") return FALLBACK_PRODUCTS.slice(0, first);
     const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
-    return (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
+    const res = (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
+    setCached(cacheKey, res);
+    return res;
   }
   try {
     const data = await shopifyFetch<{ collection: { products: { nodes: any[] } } | null }>(
@@ -271,13 +341,20 @@ export async function getCollectionProducts(handle: string, first = 24): Promise
       { handle, first }
     );
     const items = data.collection?.products.nodes.map(normalizeProduct) ?? [];
-    if (items.length > 0) return items;
+    if (items.length > 0) {
+      setCached(cacheKey, items);
+      return items;
+    }
     const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
-    return (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
+    const res = (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
+    setCached(cacheKey, res);
+    return res;
   } catch (err) {
     console.warn("Shopify fetch failed for collection products, using fallback:", err);
     const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
-    return (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
+    const res = (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
+    setCached(cacheKey, res);
+    return res;
   }
 }
 

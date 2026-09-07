@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2 } from "lucide-react";
-import { useLocation } from "wouter";
+import { X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2, ShoppingBag, ArrowUpRight } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { Streamdown } from "streamdown";
+import { useCart } from "@/contexts/CartContext";
 import {
   getCollections,
   getProducts,
   shopifyConfigured,
+  FALLBACK_PRODUCTS,
   type Collection,
   type Product,
 } from "@/lib/store";
@@ -67,6 +69,7 @@ function assistantCatalog(products: Product[], collections: Collection[], curren
 
 export default function AiAssistant() {
   const [location] = useLocation();
+  const { addItem } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -77,6 +80,27 @@ export default function AiAssistant() {
       timestamp: new Date(),
     },
   ]);
+
+  const parseRecommendations = (content: string) => {
+    try {
+      const match = content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+      if (match && match[1]) {
+        const parsed = JSON.parse(match[1]);
+        if (Array.isArray(parsed.recommendations)) {
+          const cleanText = content.replace(/```json\s*\{[\s\S]*?\}\s*```/, "").trim();
+          return { cleanText, recommendations: parsed.recommendations };
+        }
+      }
+    } catch {}
+    return { cleanText: content, recommendations: [] };
+  };
+
+  const handleAddToCart = async (rec: { handle: string; name: string }) => {
+    const liveProd = products.find((p) => p.handle === rec.handle) || FALLBACK_PRODUCTS.find((p) => p.handle === rec.handle);
+    if (liveProd) {
+      await addItem(liveProd);
+    }
+  };
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -263,9 +287,43 @@ export default function AiAssistant() {
                     )}
                     <div className={`ai-message-bubble ${msg.role === "user" ? "user-bubble" : "assistant-bubble"}`}>
                       {msg.role === "assistant" ? (
-                        <div className="ai-message-content ai-markdown">
-                          <Streamdown>{msg.content}</Streamdown>
-                        </div>
+                        (() => {
+                          const { cleanText, recommendations } = parseRecommendations(msg.content);
+                          return (
+                            <div className="ai-message-content ai-markdown">
+                              <Streamdown>{cleanText}</Streamdown>
+
+                              {recommendations.length > 0 && (
+                                <div className="mt-3 flex flex-col gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                                    <Sparkles size={11} /> Recommended Items
+                                  </span>
+                                  {recommendations.map((rec: any, idx: number) => {
+                                    const matchedProd = products.find((p) => p.handle === rec.handle) || FALLBACK_PRODUCTS.find((p) => p.handle === rec.handle);
+                                    const imgUrl = rec.image || matchedProd?.image?.url || "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=300&q=80";
+                                    return (
+                                      <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                        <img src={imgUrl} alt={rec.name} className="w-12 h-12 object-cover rounded-md" />
+                                        <div className="flex-1 min-w-0">
+                                          <strong className="block text-xs font-semibold truncate text-slate-900 dark:text-slate-100">{rec.name}</strong>
+                                          <span className="text-xs text-amber-600 font-bold">{rec.price}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <Link href={`/products/${rec.handle}`} className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300" title="View details">
+                                            <ArrowUpRight size={14} />
+                                          </Link>
+                                          <button type="button" onClick={() => handleAddToCart(rec)} className="p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-xs flex items-center gap-1" title="Add to bag">
+                                            <ShoppingBag size={13} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()
                       ) : (
                         <p className="ai-message-content">{msg.content}</p>
                       )}
