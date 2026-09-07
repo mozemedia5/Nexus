@@ -122,18 +122,71 @@ async function shopifyFetch<T>(query: string, variables: Record<string, unknown>
   return payload.data as T;
 }
 
+const CATEGORY_IMAGES_GALLERY: Record<string, ShopifyImage[]> = {
+  "smart-home": [
+    { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1000&q=80", altText: "Smart Home Lighting Control" },
+    { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1000&q=80", altText: "Smart LED Ambient Bar" },
+    { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=1000&q=80", altText: "Smart Climate & Air Quality Hub" },
+    { url: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1000&q=80", altText: "Modern Connected Home Interior" },
+    { url: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=1000&q=80", altText: "Intelligent Home Automation Sensor" },
+  ],
+  "beauty-wellness": [
+    { url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1000&q=80", altText: "Skincare Tech LED Device" },
+    { url: "https://images.unsplash.com/photo-1512290900673-700201201217?auto=format&fit=crop&w=1000&q=80", altText: "Phototherapy Facial Care" },
+    { url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1000&q=80", altText: "Ultrasonic Smart Diffuser" },
+    { url: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1000&q=80", altText: "Serum & Beauty Rituals" },
+    { url: "https://images.unsplash.com/photo-1519735777090-ec97162dc266?auto=format&fit=crop&w=1000&q=80", altText: "Wellness Essential Spa Setup" },
+  ],
+};
+
+function enrichProductImages(featured: ShopifyImage | null, existingImages: ShopifyImage[], categoryTag: string): ShopifyImage[] {
+  const result: ShopifyImage[] = [];
+  const seenUrls = new Set<string>();
+
+  if (featured && featured.url) {
+    result.push(featured);
+    seenUrls.add(featured.url);
+  }
+
+  for (const img of existingImages) {
+    if (img && img.url && !seenUrls.has(img.url)) {
+      result.push(img);
+      seenUrls.add(img.url);
+    }
+  }
+
+  // If fewer than 5 images, append category related high-res web images automatically
+  const fallbackGallery = CATEGORY_IMAGES_GALLERY[categoryTag] || CATEGORY_IMAGES_GALLERY["smart-home"];
+  for (const img of fallbackGallery) {
+    if (result.length >= 5) break;
+    if (!seenUrls.has(img.url)) {
+      result.push(img);
+      seenUrls.add(img.url);
+    }
+  }
+
+  return result;
+}
+
 function normalizeProduct(raw: any): Product {
   const min = raw.priceRange.minVariantPrice;
   const compare = raw.compareAtPriceRange?.minVariantPrice?.amount && raw.compareAtPriceRange.minVariantPrice.amount !== "0.0" ? raw.compareAtPriceRange.minVariantPrice : null;
+  const tagList: string[] = raw.tags ?? [];
+  const categoryTag = tagList.includes("beauty-wellness") || raw.title?.toLowerCase().includes("mask") || raw.title?.toLowerCase().includes("facial") || raw.title?.toLowerCase().includes("diffuser") ? "beauty-wellness" : "smart-home";
+
+  const rawImages: ShopifyImage[] = raw.images?.nodes ?? [];
+  const featured = raw.featuredImage ?? rawImages[0] ?? null;
+  const enrichedImages = enrichProductImages(featured, rawImages, categoryTag);
+
   return {
     id: raw.id,
     handle: raw.handle,
     name: raw.title,
     description: raw.description,
-    categoryLabel: raw.tags?.[0] || "Nexus Store",
-    tags: raw.tags ?? [],
-    image: raw.featuredImage ?? null,
-    images: raw.images?.nodes ?? [],
+    categoryLabel: categoryTag === "beauty-wellness" ? "Beauty & Wellness" : "Smart Home",
+    tags: tagList,
+    image: featured || enrichedImages[0] || null,
+    images: enrichedImages,
     price: min,
     compareAtPrice: compare,
     availableForSale: raw.availableForSale,
@@ -177,9 +230,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     categoryLabel: "Smart Home",
     tags: ["smart-home", "lighting"],
     image: { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Ambient Light Bar" },
-    images: [
-      { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Ambient Light Bar" }
-    ],
+    images: CATEGORY_IMAGES_GALLERY["smart-home"],
     price: { amount: "89.00", currencyCode: "USD" },
     compareAtPrice: { amount: "119.00", currencyCode: "USD" },
     availableForSale: true,
@@ -195,9 +246,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     categoryLabel: "Beauty & Wellness",
     tags: ["beauty-wellness", "skincare"],
     image: { url: "https://images.unsplash.com/photo-1512290900673-700201201217?auto=format&fit=crop&w=800&q=80", altText: "LED Therapy Mask" },
-    images: [
-      { url: "https://images.unsplash.com/photo-1512290900673-700201201217?auto=format&fit=crop&w=800&q=80", altText: "LED Therapy Mask" }
-    ],
+    images: CATEGORY_IMAGES_GALLERY["beauty-wellness"],
     price: { amount: "199.00", currencyCode: "USD" },
     compareAtPrice: { amount: "249.00", currencyCode: "USD" },
     availableForSale: true,
@@ -213,9 +262,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     categoryLabel: "Beauty & Wellness",
     tags: ["beauty-wellness", "wellness"],
     image: { url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=800&q=80", altText: "Smart Diffuser" },
-    images: [
-      { url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=800&q=80", altText: "Smart Diffuser" }
-    ],
+    images: CATEGORY_IMAGES_GALLERY["beauty-wellness"],
     price: { amount: "65.00", currencyCode: "USD" },
     compareAtPrice: null,
     availableForSale: true,
@@ -231,9 +278,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     categoryLabel: "Smart Home",
     tags: ["smart-home", "sensors"],
     image: { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=800&q=80", altText: "Climate Sensor Hub" },
-    images: [
-      { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=800&q=80", altText: "Climate Sensor Hub" }
-    ],
+    images: CATEGORY_IMAGES_GALLERY["smart-home"],
     price: { amount: "120.00", currencyCode: "USD" },
     compareAtPrice: { amount: "145.00", currencyCode: "USD" },
     availableForSale: true,

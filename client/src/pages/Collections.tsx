@@ -95,16 +95,16 @@ export default function Collections() {
         </div>
       )}
 
-      <section className="page-intro section-pad">
-        <span className="eyebrow">Nexus A Liverton Store / Catalogue</span>
-        <h1>Smart Home, <em>Beauty &amp; Wellness.</em></h1>
-        <p>{selected?.description || "Explore our collection featuring intelligent home devices, beauty essentials, and wellness innovations."}</p>
+      <section className="page-intro py-8 px-4 max-w-7xl mx-auto">
+        <span className="eyebrow text-xs uppercase tracking-wider text-amber-600 font-bold">Nexus Catalogue</span>
+        <h1 className="text-3xl font-serif font-semibold mt-1 text-slate-900 dark:text-white">Smart Home, Beauty &amp; Wellness</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">{selected?.description || "Explore our curated Smart Home devices and Beauty & Wellness tech."}</p>
       </section>
 
-      <section className="catalogue section-pad">
-        <div className="catalogue-toolbar">
+      <section className="catalogue py-6 px-4 max-w-7xl mx-auto">
+        <div className="catalogue-toolbar flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-200 dark:border-slate-800">
           <CategoryPills active={active} onChange={setActive} categories={collections.map(({ handle, title }) => ({ handle, title }))} />
-          <span className="catalogue-count">{loading ? "Loading..." : `${products.length} products`}</span>
+          <span className="catalogue-count text-xs font-semibold text-slate-500">{loading ? "Loading..." : `${products.length} products`}</span>
         </div>
 
         {error ? (
