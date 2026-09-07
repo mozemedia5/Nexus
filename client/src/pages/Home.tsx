@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { ArrowUpRight, Sparkles, Cpu, Heart, PackageCheck, ShieldCheck, Zap, Megaphone, Tag } from "lucide-react";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
+import SEO from "@/components/SEO";
 import { getCollections, getProducts, type Collection, type Product } from "@/lib/store";
 import { usePersonalization } from "@/hooks/usePersonalization";
 import { getActiveCampaigns } from "@/pages/Admin";
@@ -26,6 +27,48 @@ export default function Home() {
 
   return (
     <>
+      <SEO
+        title="Nexus A Liverton Store — Smart Home, Beauty & Wellness"
+        description="Explore Nexus A Liverton Store: Curated Smart Home devices, smart lighting, home automation, and Beauty & Wellness essentials shipped worldwide."
+        keywords="Nexus A Liverton Store, Smart Home, Beauty & Wellness, Home Automation, Skincare Tech, Global Shipping"
+        canonicalPath="/"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Nexus A Liverton Store",
+            "url": "https://liverton-nexus.vercel.app/",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://liverton-nexus.vercel.app/products?search={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "name": "Featured Products - Nexus A Liverton Store",
+            "itemListElement": products.slice(0, 10).map((prod, idx) => ({
+              "@type": "ListItem",
+              "position": idx + 1,
+              "item": {
+                "@type": "Product",
+                "name": prod.name,
+                "description": prod.description,
+                "image": prod.image?.url,
+                "url": `https://liverton-nexus.vercel.app/products/${prod.handle}`,
+                "offers": {
+                  "@type": "Offer",
+                  "priceCurrency": prod.price.currencyCode || "USD",
+                  "price": prod.price.amount,
+                  "availability": prod.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+                }
+              }
+            }))
+          }
+        ]}
+      />
+
       {activeCampaigns.length > 0 && (
         <section className="bg-slate-900 text-white py-8 px-4 border-b border-amber-500/30">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">

@@ -1,5 +1,6 @@
 import { ArrowUpRight, Cpu, Heart, ShieldCheck, Sparkles } from "lucide-react";
 import { Link } from "wouter";
+import SEO from "@/components/SEO";
 
 const milestones = [
   {
@@ -41,6 +42,24 @@ const values = [
 export default function Heritage() {
   return (
     <>
+      <SEO
+        title="Our Story & Heritage — Nexus A Liverton Store"
+        description="Discover the story behind Nexus A Liverton Store — curating cutting-edge Smart Home automation and elevated Beauty & Wellness tech for modern living."
+        keywords="Nexus story, Liverton Store heritage, Smart Home automation, Beauty and Wellness, About Nexus"
+        canonicalPath="/about"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "AboutPage",
+          "name": "Our Story & Heritage - Nexus A Liverton Store",
+          "description": "Learn about Nexus A Liverton Store's mission to merge intelligent home automation with daily beauty and wellness rituals.",
+          "url": "https://liverton-nexus.vercel.app/about",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Nexus A Liverton Store",
+            "url": "https://liverton-nexus.vercel.app"
+          }
+        }}
+      />
       <section className="page-intro heritage-intro page-pad">
         <span className="eyebrow">Nexus A Liverton Store / Our Heritage</span>
         <h1>Where innovation meets <em>everyday wellbeing.</em></h1>

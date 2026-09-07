@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { ArrowUpRight, CheckCircle2, Clock, MapPin, Package, Search, ExternalLink, Truck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice, getOrderDetails, shopifyConfigured, type TrackedOrder } from "@/lib/store";
+import SEO from "@/components/SEO";
 
 export default function OrderTracking() {
   const [orderNumber, setOrderNumber] = useState("");
@@ -39,6 +40,12 @@ export default function OrderTracking() {
 
   return (
     <>
+      <SEO
+        title="Track Your Order — Nexus A Liverton Store"
+        description="Track your Nexus A Liverton Store order in real time. Enter your Shopify Order ID and email to view live shipping status and courier tracking."
+        keywords="Nexus order tracking, track order, Shopify order status, Liverton Store tracking"
+        canonicalPath="/track-order"
+      />
       <section className="page-intro section-pad">
         <span className="eyebrow">Nexus A Liverton Store / Customer Service</span>
         <h1>Order <em>Tracking.</em></h1>
