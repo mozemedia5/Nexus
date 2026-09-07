@@ -124,19 +124,23 @@ async function shopifyFetch<T>(query: string, variables: Record<string, unknown>
 
 const CATEGORY_IMAGES_GALLERY: Record<string, ShopifyImage[]> = {
   "smart-home": [
-    { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1000&q=80", altText: "Smart Home Lighting Control" },
-    { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1000&q=80", altText: "Smart LED Ambient Bar" },
-    { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=1000&q=80", altText: "Smart Climate & Air Quality Hub" },
-    { url: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1000&q=80", altText: "Modern Connected Home Interior" },
-    { url: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=1000&q=80", altText: "Intelligent Home Automation Sensor" },
+    { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1000&q=80", altText: "Smart Home Control Hub" },
+    { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1000&q=80", altText: "Smart LED Ambient Light Bar" },
+    { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=1000&q=80", altText: "Smart Climate & Air Quality Monitor" },
+    { url: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1000&q=80", altText: "Modern Automated Smart Home" },
+    { url: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=1000&q=80", altText: "Connected Automation Sensor" },
   ],
-  "beauty-wellness": [
-    { url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1000&q=80", altText: "Skincare Tech LED Device" },
-    { url: "https://images.unsplash.com/photo-1512290900673-700201201217?auto=format&fit=crop&w=1000&q=80", altText: "Phototherapy Facial Care" },
-    { url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1000&q=80", altText: "Ultrasonic Smart Diffuser" },
-    { url: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1000&q=80", altText: "Serum & Beauty Rituals" },
-    { url: "https://images.unsplash.com/photo-1519735777090-ec97162dc266?auto=format&fit=crop&w=1000&q=80", altText: "Wellness Essential Spa Setup" },
+  "workspace-productivity": [
+    { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1000&q=80", altText: "Ergonomic Desk & Ambient Lighting" },
+    { url: "https://images.unsplash.com/photo-1593062096033-9a26b09da705?auto=format&fit=crop&w=1000&q=80", altText: "Minimal Desk Setup with Smart Dock" },
+    { url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=1000&q=80", altText: "Wireless Smart Desk Charging Station" },
+    { url: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=1000&q=80", altText: "Smart Desk Lamp & Productivity Setup" },
   ],
+  "tech-accessories": [
+    { url: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=1000&q=80", altText: "ANC Smart Wireless Headphones" },
+    { url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1000&q=80", altText: "High Precision Audio & Accessories" },
+    { url: "https://images.unsplash.com/photo-1616410011236-7a42121dd981?auto=format&fit=crop&w=1000&q=80", altText: "Magnetic Wireless Desk Stand" },
+  ]
 };
 
 function enrichProductImages(featured: ShopifyImage | null, existingImages: ShopifyImage[], categoryTag: string): ShopifyImage[] {
@@ -172,18 +176,27 @@ function normalizeProduct(raw: any): Product {
   const min = raw.priceRange.minVariantPrice;
   const compare = raw.compareAtPriceRange?.minVariantPrice?.amount && raw.compareAtPriceRange.minVariantPrice.amount !== "0.0" ? raw.compareAtPriceRange.minVariantPrice : null;
   const tagList: string[] = raw.tags ?? [];
-  const categoryTag = tagList.includes("beauty-wellness") || raw.title?.toLowerCase().includes("mask") || raw.title?.toLowerCase().includes("facial") || raw.title?.toLowerCase().includes("diffuser") ? "beauty-wellness" : "smart-home";
+  let categoryTag = "smart-home";
+  if (tagList.includes("workspace-productivity") || raw.title?.toLowerCase().includes("desk") || raw.title?.toLowerCase().includes("lamp") || raw.title?.toLowerCase().includes("dock") || raw.title?.toLowerCase().includes("monitor")) {
+    categoryTag = "workspace-productivity";
+  } else if (tagList.includes("tech-accessories") || raw.title?.toLowerCase().includes("charger") || raw.title?.toLowerCase().includes("headphone") || raw.title?.toLowerCase().includes("stand") || raw.title?.toLowerCase().includes("hub")) {
+    categoryTag = "tech-accessories";
+  }
 
   const rawImages: ShopifyImage[] = raw.images?.nodes ?? [];
   const featured = raw.featuredImage ?? rawImages[0] ?? null;
   const enrichedImages = enrichProductImages(featured, rawImages, categoryTag);
+
+  let label = "Smart Home Automation";
+  if (categoryTag === "workspace-productivity") label = "Workspace Productivity";
+  if (categoryTag === "tech-accessories") label = "Tech Accessories";
 
   return {
     id: raw.id,
     handle: raw.handle,
     name: raw.title,
     description: raw.description,
-    categoryLabel: categoryTag === "beauty-wellness" ? "Beauty & Wellness" : "Smart Home",
+    categoryLabel: label,
     tags: tagList,
     image: featured || enrichedImages[0] || null,
     images: enrichedImages,
@@ -208,82 +221,133 @@ export const FALLBACK_COLLECTIONS: Collection[] = [
   {
     id: "gid://shopify/Collection/1",
     handle: "smart-home",
-    title: "Smart Home & Automation",
-    description: "Intelligent lighting, environmental sensors, and home automation systems.",
-    image: { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80", altText: "Smart Home" }
+    title: "Smart Home Automation",
+    description: "Intelligent ambient lighting, environmental sensors, and connected automation hubs.",
+    image: { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80", altText: "Smart Home Automation" }
   },
   {
     id: "gid://shopify/Collection/2",
-    handle: "beauty-wellness",
-    title: "Beauty & Personal Care",
-    description: "Elevated beauty technology, LED devices, and personal wellness tools.",
-    image: { url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80", altText: "Beauty & Wellness" }
+    handle: "workspace-productivity",
+    title: "Workspace Productivity",
+    description: "Ergonomic desk lamps, smart docking hubs, monitor light bars, and focus tools.",
+    image: { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80", altText: "Workspace Productivity" }
+  },
+  {
+    id: "gid://shopify/Collection/3",
+    handle: "tech-accessories",
+    title: "Tech Accessories",
+    description: "Precision wireless charging pads, noise-canceling audio gear, and minimalist stands.",
+    image: { url: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80", altText: "Tech Accessories" }
   }
 ];
 
 export const FALLBACK_PRODUCTS: Product[] = [
   {
     id: "gid://shopify/Product/1",
-    handle: "nexus-ambient-light-bar",
-    name: "Nexus Smart Ambient LED Light Bar",
-    description: "Multi-zone color syncing ambient light bar with voice assistant compatibility and customizable scenes.",
-    categoryLabel: "Smart Home",
-    tags: ["smart-home", "lighting"],
-    image: { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Ambient Light Bar" },
-    images: CATEGORY_IMAGES_GALLERY["smart-home"],
-    price: { amount: "89.00", currencyCode: "USD" },
-    compareAtPrice: { amount: "119.00", currencyCode: "USD" },
+    handle: "nexus-ergonomic-desk-light",
+    name: "Nexus Ergonomic Smart Light Bar",
+    description: "Screen-glare free monitor light bar with auto-dimming ambient temperature control and wireless rotary controller.",
+    categoryLabel: "Workspace Productivity",
+    tags: ["workspace-productivity", "best-sellers", "desk-lighting"],
+    image: { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80", altText: "Ergonomic Smart Light Bar" },
+    images: [
+      { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80", altText: "Desk Light Bar Setup" },
+      { url: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=800&q=80", altText: "Minimal Desk Lamp Angle" }
+    ],
+    price: { amount: "129.00", currencyCode: "USD" },
+    compareAtPrice: { amount: "159.00", currencyCode: "USD" },
     availableForSale: true,
     variants: [
-      { id: "gid://shopify/ProductVariant/1", title: "Default Title", availableForSale: true, price: { amount: "89.00", currencyCode: "USD" } }
+      { id: "gid://shopify/ProductVariant/1", title: "Matte Black", availableForSale: true, price: { amount: "129.00", currencyCode: "USD" } }
     ]
   },
   {
     id: "gid://shopify/Product/2",
-    handle: "nexus-led-therapy-mask",
-    name: "Nexus Intelligent Phototherapy LED Facial Mask",
-    description: "7-spectrum clinical grade LED light therapy mask for targeted skin rejuvenation and collagen stimulation.",
-    categoryLabel: "Beauty & Wellness",
-    tags: ["beauty-wellness", "skincare"],
-    image: { url: "https://images.unsplash.com/photo-1512290900673-700201201217?auto=format&fit=crop&w=800&q=80", altText: "LED Therapy Mask" },
-    images: CATEGORY_IMAGES_GALLERY["beauty-wellness"],
-    price: { amount: "199.00", currencyCode: "USD" },
-    compareAtPrice: { amount: "249.00", currencyCode: "USD" },
+    handle: "nexus-smart-docking-station",
+    name: "Nexus Thunderbolt 4 Smart Dock",
+    description: "14-in-1 high-speed workstation dock with integrated power delivery and dual 4K display output.",
+    categoryLabel: "Workspace Productivity",
+    tags: ["workspace-productivity", "best-sellers", "docks"],
+    image: { url: "https://images.unsplash.com/photo-1593062096033-9a26b09da705?auto=format&fit=crop&w=800&q=80", altText: "Smart Docking Station" },
+    images: [
+      { url: "https://images.unsplash.com/photo-1593062096033-9a26b09da705?auto=format&fit=crop&w=800&q=80", altText: "Workstation Setup" },
+      { url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80", altText: "Desk Charging Pad" }
+    ],
+    price: { amount: "219.00", currencyCode: "USD" },
+    compareAtPrice: { amount: "259.00", currencyCode: "USD" },
     availableForSale: true,
     variants: [
-      { id: "gid://shopify/ProductVariant/2", title: "Default Title", availableForSale: true, price: { amount: "199.00", currencyCode: "USD" } }
+      { id: "gid://shopify/ProductVariant/2", title: "Space Gray", availableForSale: true, price: { amount: "219.00", currencyCode: "USD" } }
     ]
   },
   {
     id: "gid://shopify/Product/3",
-    handle: "nexus-smart-diffuser",
-    name: "Nexus Ultrasonic Smart Aroma Diffuser",
-    description: "App-controlled ambient essential oil diffuser with customizable mist schedules and soft mood lighting.",
-    categoryLabel: "Beauty & Wellness",
-    tags: ["beauty-wellness", "wellness"],
-    image: { url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=800&q=80", altText: "Smart Diffuser" },
-    images: CATEGORY_IMAGES_GALLERY["beauty-wellness"],
-    price: { amount: "65.00", currencyCode: "USD" },
-    compareAtPrice: null,
+    handle: "nexus-ambient-light-strip",
+    name: "Nexus Smart Gradient Light Strip",
+    description: "Dynamic multi-color sync light bar designed for monitor backlighting and desk atmosphere.",
+    categoryLabel: "Smart Home Automation",
+    tags: ["smart-home", "best-sellers", "ambient-lighting"],
+    image: { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Gradient Light Strip" },
+    images: [
+      { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Ambient Sync Lights" },
+      { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80", altText: "Smart Home Hub" }
+    ],
+    price: { amount: "89.00", currencyCode: "USD" },
+    compareAtPrice: { amount: "109.00", currencyCode: "USD" },
     availableForSale: true,
     variants: [
-      { id: "gid://shopify/ProductVariant/3", title: "Default Title", availableForSale: true, price: { amount: "65.00", currencyCode: "USD" } }
+      { id: "gid://shopify/ProductVariant/3", title: "2-Meter Starter Kit", availableForSale: true, price: { amount: "89.00", currencyCode: "USD" } }
     ]
   },
   {
     id: "gid://shopify/Product/4",
+    handle: "nexus-magnetic-wireless-charger",
+    name: "Nexus 3-in-1 Magnetic Charging Stand",
+    description: "Ultra-compact fast wireless charging stand for phone, earbuds, and smart watch with weighted aluminum base.",
+    categoryLabel: "Tech Accessories",
+    tags: ["tech-accessories", "best-sellers", "chargers"],
+    image: { url: "https://images.unsplash.com/photo-1616410011236-7a42121dd981?auto=format&fit=crop&w=800&q=80", altText: "3-in-1 Charging Stand" },
+    images: [
+      { url: "https://images.unsplash.com/photo-1616410011236-7a42121dd981?auto=format&fit=crop&w=800&q=80", altText: "Desk Charger" },
+      { url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80", altText: "Wireless Charger Top View" }
+    ],
+    price: { amount: "79.00", currencyCode: "USD" },
+    compareAtPrice: null,
+    availableForSale: true,
+    variants: [
+      { id: "gid://shopify/ProductVariant/4", title: "Silver Aluminum", availableForSale: true, price: { amount: "79.00", currencyCode: "USD" } }
+    ]
+  },
+  {
+    id: "gid://shopify/Product/5",
     handle: "nexus-climate-sensor-hub",
-    name: "Nexus Precision Climate & Air Quality Hub",
-    description: "Real-time indoor air quality, humidity, and temperature monitor with smart automation routines.",
-    categoryLabel: "Smart Home",
+    name: "Nexus Climate & Air Quality Monitor",
+    description: "Real-time indoor air quality, temperature, and humidity tracker with smart home scene automation.",
+    categoryLabel: "Smart Home Automation",
     tags: ["smart-home", "sensors"],
     image: { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=800&q=80", altText: "Climate Sensor Hub" },
     images: CATEGORY_IMAGES_GALLERY["smart-home"],
-    price: { amount: "120.00", currencyCode: "USD" },
-    compareAtPrice: { amount: "145.00", currencyCode: "USD" },
+    price: { amount: "119.00", currencyCode: "USD" },
+    compareAtPrice: { amount: "139.00", currencyCode: "USD" },
     availableForSale: true,
     variants: [
-      { id: "gid://shopify/ProductVariant/4", title: "Default Title", availableForSale: true, price: { amount: "120.00", currencyCode: "USD" } }
+      { id: "gid://shopify/ProductVariant/5", title: "White", availableForSale: true, price: { amount: "119.00", currencyCode: "USD" } }
+    ]
+  },
+  {
+    id: "gid://shopify/Product/6",
+    handle: "nexus-anc-wireless-headphones",
+    name: "Nexus Precision Studio Wireless Headphones",
+    description: "Active noise canceling studio headphones with custom acoustic drivers and 40-hour battery life.",
+    categoryLabel: "Tech Accessories",
+    tags: ["tech-accessories", "audio"],
+    image: { url: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80", altText: "Studio Wireless Headphones" },
+    images: CATEGORY_IMAGES_GALLERY["tech-accessories"],
+    price: { amount: "249.00", currencyCode: "USD" },
+    compareAtPrice: { amount: "299.00", currencyCode: "USD" },
+    availableForSale: true,
+    variants: [
+      { id: "gid://shopify/ProductVariant/6", title: "Matte Black", availableForSale: true, price: { amount: "249.00", currencyCode: "USD" } }
     ]
   }
 ];

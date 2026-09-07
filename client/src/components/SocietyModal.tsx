@@ -33,7 +33,7 @@ export default function SocietyModal() {
       toast.error("Please enter a valid email address.");
       return;
     }
-    toast.success("Welcome to Nexus Club", { description: "You are now subscribed to Smart Home & Beauty updates." });
+    toast.success("Welcome to Nexus Club", { description: "You are now subscribed to Smart Home & Workspace updates." });
     setEmail("");
     setOpen(false);
   };
@@ -44,7 +44,7 @@ export default function SocietyModal() {
       <section className="society-dialog" role="dialog" aria-modal="true" aria-labelledby="society-title">
         <button type="button" className="icon-button modal-close" onClick={() => setOpen(false)} aria-label="Close"><X size={20} /></button>
         <span className="eyebrow">The Nexus Club</span>
-        <h2 id="society-title">Smart home innovations &amp; elevated beauty essentials.</h2>
+        <h2 id="society-title">Smart home innovations &amp; workspace gadgets.</h2>
         <p>Join for early access to new product drops, technological insights, and exclusive member updates from Nexus A Liverton Store.</p>
         <form onSubmit={handleSubmit} className="society-form">
           <label htmlFor="society-email">Email address</label>

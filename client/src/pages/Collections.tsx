@@ -41,15 +41,15 @@ export default function Collections() {
   return (
     <>
       <SEO
-        title={`${selected ? selected.title : "All Products"} — Nexus A Liverton Store`}
-        description={selected?.description || "Browse Nexus A Liverton Store catalogue: Smart Home devices, smart lighting, skincare technology, and Beauty & Wellness essentials shipped worldwide."}
-        keywords="Nexus products, Smart Home devices, Beauty tech, Wellness essentials, Home automation"
+        title={`${selected ? selected.title : "All Products"} — Nexus`}
+        description={selected?.description || "Browse Nexus catalogue: Smart Home devices, workspace productivity lighting, docking stations, and tech accessories."}
+        keywords="Nexus products, Smart Home devices, Workspace productivity, Tech accessories, Desk light bars, Thunderbolt docks"
         canonicalPath={`/products${active !== "all" ? `?collection=${active}` : ""}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           "name": selected ? selected.title : "Store Catalogue",
-          "description": selected?.description || "All Smart Home and Beauty & Wellness products from Nexus A Liverton Store.",
+          "description": selected?.description || "All Smart Home and Workspace Productivity products from Nexus.",
           "url": `https://liverton-nexus.vercel.app/products${active !== "all" ? `?collection=${active}` : ""}`,
           "mainEntity": {
             "@type": "ItemList",
@@ -97,8 +97,8 @@ export default function Collections() {
 
       <section className="page-intro py-8 px-4 max-w-7xl mx-auto">
         <span className="eyebrow text-xs uppercase tracking-wider text-amber-600 font-bold">Nexus Catalogue</span>
-        <h1 className="text-3xl font-serif font-semibold mt-1 text-slate-900 dark:text-white">Smart Home, Beauty &amp; Wellness</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">{selected?.description || "Explore our curated Smart Home devices and Beauty & Wellness tech."}</p>
+        <h1 className="text-3xl font-extrabold uppercase tracking-tight mt-1 text-slate-900 dark:text-white">Smart Home &amp; Office Electronics</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">{selected?.description || "Explore our curated Smart Home devices and Workspace Productivity gadgets."}</p>
       </section>
 
       <section className="catalogue py-6 px-4 max-w-7xl mx-auto">

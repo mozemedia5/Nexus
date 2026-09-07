@@ -6,17 +6,17 @@ const milestones = [
   {
     year: "2021",
     title: "The Genesis",
-    copy: "Nexus was established under Liverton Store with a bold vision: to simplify modern living by curating the finest smart home technologies and elevated beauty & wellness essentials under one house.",
+    copy: "Nexus was established under Liverton Store with a bold vision: to simplify modern living by curating high-performance smart home technologies and workspace productivity tools.",
   },
   {
     year: "2022",
     title: "Smart Home Pioneers",
-    copy: "We introduced our flagship collection of intelligent home controllers, automated ambient lighting, and climate solutions—bringing effortless smart home automation to modern residences.",
+    copy: "We introduced our flagship collection of intelligent ambient lighting, climate monitors, and automated sensors—bringing effortless smart automation to modern homes.",
   },
   {
     year: "2023",
-    title: "Beauty & Wellness Expansion",
-    copy: "Recognizing that technology should also nurture the self, Nexus expanded into intelligent skincare tools, therapeutic wellness gadgets, and daily self-care rituals.",
+    title: "Workspace Elevation",
+    copy: "Recognizing the demands of modern remote and office work, Nexus launched ergonomic desk light bars, Thunderbolt docks, and focus tools.",
   },
   {
     year: "2024",
@@ -25,33 +25,33 @@ const milestones = [
   },
   {
     year: "2025",
-    title: "Connected Future",
-    copy: "Today, Nexus A Liverton Store stands as a trusted leader in smart home technology and beauty & wellness curation, continuously setting new benchmarks for quality and convenience.",
+    title: "Rebranded Excellence",
+    copy: "Today, Nexus stands exclusively focused on smart home automation and workspace productivity gadgets, setting new benchmarks for high-tech living.",
   },
 ];
 
 const values = [
-  ["01", "Smart Innovation", "Every product in our Smart Home collection is selected for intuitive usability, energy efficiency, and seamless connectivity."],
-  ["02", "Holistic Wellbeing", "Our Beauty & Wellness line blends clinical-grade self-care tech with daily rituals designed to rejuvenate body and mind."],
-  ["03", "Exacting Quality", "We partner with trusted global manufacturers to ensure every smart device and beauty essential passes rigorous quality controls."],
-  ["04", "Modern Aesthetics", "Functional design should look timeless. Our curation emphasizes clean silhouettes that enhance modern home interiors."],
+  ["01", "Smart Automation", "Every device in our Smart Home collection is selected for intuitive usability, energy efficiency, and seamless connected routines."],
+  ["02", "Workspace Ergonomic", "Our desk lighting, docks, and stands are engineered to eliminate strain, organize clutter, and maximize daily focus."],
+  ["03", "Exacting Quality", "We partner with trusted global manufacturers to ensure every smart gadget passes rigorous performance controls."],
+  ["04", "Modern Aesthetics", "Functional design should look timeless. Our curation emphasizes clean, minimalist silhouettes that enhance modern workspace and interior aesthetics."],
   ["05", "Transparent Service", "We provide end-to-end transparency with instant live order tracking from store to your doorstep."],
-  ["06", "Customer Care", "We stand behind our curation with dedicated support and expert advice for all smart home setups and wellness inquiries."],
+  ["06", "Expert Support", "We stand behind our curation with dedicated support for device setup and workstation optimization."],
 ];
 
 export default function Heritage() {
   return (
     <>
       <SEO
-        title="Our Story & Heritage — Nexus A Liverton Store"
-        description="Discover the story behind Nexus A Liverton Store — curating cutting-edge Smart Home automation and elevated Beauty & Wellness tech for modern living."
-        keywords="Nexus story, Liverton Store heritage, Smart Home automation, Beauty and Wellness, About Nexus"
+        title="Our Story & Heritage — Nexus"
+        description="Discover the story behind Nexus — curating cutting-edge Smart Home automation devices and high-performance Workspace Productivity gadgets."
+        keywords="Nexus story, Smart Home automation, Workspace productivity, Desk gadgets, About Nexus"
         canonicalPath="/about"
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "AboutPage",
-          "name": "Our Story & Heritage - Nexus A Liverton Store",
-          "description": "Learn about Nexus A Liverton Store's mission to merge intelligent home automation with daily beauty and wellness rituals.",
+          "name": "Our Story & Heritage - Nexus",
+          "description": "Learn about Nexus's mission to curate intelligent home automation devices and ergonomic workspace gadgets.",
           "url": "https://liverton-nexus.vercel.app/about",
           "publisher": {
             "@type": "Organization",
@@ -61,27 +61,26 @@ export default function Heritage() {
         }}
       />
       <section className="page-intro heritage-intro page-pad">
-        <span className="eyebrow">Nexus A Liverton Store / Our Heritage</span>
-        <h1>Where innovation meets <em>everyday wellbeing.</em></h1>
-        <p>The story of Nexus A Liverton Store—curating cutting-edge Smart Home automation and elevated Beauty &amp; Wellness essentials for modern living.</p>
+        <span className="eyebrow">Nexus / Our Heritage</span>
+        <h1>Engineered for <em>Modern Living &amp; Work.</em></h1>
+        <p>The story of Nexus—curating cutting-edge Smart Home automation and workspace productivity gadgets designed for focus, comfort, and intelligent control.</p>
       </section>
 
       <section className="story-section section-pad">
         <div className="story-copy">
           <span className="eyebrow">The Nexus Story</span>
-          <h2>Built for the future of<br /><em>home and self-care.</em></h2>
-          <p>Nexus A Liverton Store was born from a clear realization: the modern home is not just a place to live, but an intelligent ecosystem designed for comfort, peace of mind, and personal wellness.</p>
-          <p>We set out to remove complexity from smart home automation and elevate daily self-care. By selecting only high-performance smart controllers, climate devices, and ambient lighting alongside science-backed beauty tools and wellness gadgets, Nexus offers a complete lifestyle upgrade.</p>
+          <h2>Built for the future of<br /><em>home and office.</em></h2>
+          <p>Nexus was born from a clear realization: modern work and home environments demand high-tech, intuitive gadgets that reduce friction, improve productivity, and enhance everyday comfort.</p>
+          <p>We set out to eliminate complexity. By selecting only high-performance ambient light bars, ergonomic desk lamps, Thunderbolt docking stations, and connected home sensors, Nexus delivers a premium lifestyle upgrade.</p>
           <p>As a proud Liverton Store brand, Nexus combines technological innovation with trusted customer service, secure checkout, and transparent order tracking.</p>
         </div>
         <div className="story-image-wrap">
           <div className="heritage-card-box">
             <span className="eyebrow"><Sparkles size={14} /> Nexus Identity</span>
-            <h3>Nexus A Liverton Store</h3>
-            <p>Smart Home · Beauty &amp; Wellness</p>
+            <h3>Nexus</h3>
+            <p>Smart Home · Workspace Productivity</p>
             <div className="heritage-icon-row">
               <div><Cpu size={20} /><span>Smart Automation</span></div>
-              <div><Heart size={20} /><span>Beauty Tech</span></div>
               <div><ShieldCheck size={20} /><span>Quality Assured</span></div>
             </div>
           </div>

@@ -11,7 +11,6 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [error, setError] = useState("");
-  const { primaryAffinity, sortProductsByPreference } = usePersonalization();
 
   useEffect(() => {
     Promise.all([getProducts({ first: 12, sortKey: "BEST_SELLING" }), getCollections(8)])
@@ -19,226 +18,219 @@ export default function Home() {
         setProducts(items);
         setCollections(groups);
       })
-      .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load the Nexus catalogue."));
+      .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load catalogue."));
   }, []);
 
-  const personalizedProducts = useMemo(() => sortProductsByPreference(products), [products, sortProductsByPreference]);
+  const featuredOfficeProducts = useMemo(() => {
+    return products.slice(0, 4);
+  }, [products]);
+
   const activeCampaigns = useMemo(() => getActiveCampaigns(), []);
 
   return (
     <>
       <SEO
-        title="Nexus A Liverton Store — Smart Home, Beauty & Wellness"
-        description="Explore Nexus A Liverton Store: Curated Smart Home devices, smart lighting, home automation, and Beauty & Wellness essentials shipped worldwide."
-        keywords="Nexus A Liverton Store, Smart Home, Beauty & Wellness, Home Automation, Skincare Tech, Global Shipping"
+        title="Nexus — Smart Home & Workspace Gadgets"
+        description="Redefine your desk and living environment with Nexus: Premium smart home automation, ergonomic desk lighting, docking stations, and productivity gadgets."
+        keywords="Nexus, Smart Home Gadgets, Workspace Productivity, Smart Office Upgrades, Tech Accessories"
         canonicalPath="/"
-        jsonLd={[
-          {
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "name": "Nexus A Liverton Store",
-            "url": "https://liverton-nexus.vercel.app/",
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": "https://liverton-nexus.vercel.app/products?search={search_term_string}",
-              "query-input": "required name=search_term_string"
-            }
-          },
-          {
-            "@context": "https://schema.org",
-            "@type": "ItemList",
-            "name": "Featured Products - Nexus A Liverton Store",
-            "itemListElement": products.slice(0, 10).map((prod, idx) => ({
-              "@type": "ListItem",
-              "position": idx + 1,
-              "item": {
-                "@type": "Product",
-                "name": prod.name,
-                "description": prod.description,
-                "image": prod.image?.url,
-                "url": `https://liverton-nexus.vercel.app/products/${prod.handle}`,
-                "offers": {
-                  "@type": "Offer",
-                  "priceCurrency": prod.price.currencyCode || "USD",
-                  "price": prod.price.amount,
-                  "availability": prod.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
-                }
-              }
-            }))
-          }
-        ]}
       />
 
-      {activeCampaigns.length > 0 && (
-        <section className="bg-slate-900 text-white py-8 px-4 border-b border-amber-500/30">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl shrink-0">
-                <Megaphone size={24} />
-              </div>
-              <div>
-                <span className="inline-block px-2 py-0.5 bg-amber-500 text-black text-[10px] font-extrabold rounded tracking-wider mb-1">
-                  {activeCampaigns[0].discountBadge}
-                </span>
-                <h3 className="text-xl font-bold">{activeCampaigns[0].title}</h3>
-                <p className="text-xs text-slate-300 mt-1 max-w-xl">{activeCampaigns[0].subtitle}</p>
-              </div>
+      {/* Hero Section */}
+      <section className="relative w-full bg-slate-950 text-white min-h-[580px] md:min-h-[640px] flex items-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1800&q=80"
+            alt="Ergonomic Desk & Smart Lighting Setup"
+            className="w-full h-full object-cover object-center opacity-40 mix-blend-luminosity"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="lg:col-span-8 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur border border-white/20 rounded-full text-xs font-semibold tracking-wider text-slate-200 uppercase">
+              <Sparkles size={13} className="text-amber-400" /> Elevated Productivity &amp; Automation
             </div>
-            <Link
-              href={`/products?collection=${activeCampaigns[0].categoryTag}`}
-              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2 shrink-0 transition-colors"
-            >
-              Shop Campaign Offer <ArrowUpRight size={15} />
-            </Link>
-          </div>
-        </section>
-      )}
-
-      <section className="hero-section">
-        <div className="hero-copy">
-          <span className="eyebrow"><Sparkles size={13} /> Nexus A Liverton Store</span>
-          <h1>Smart Home, <em>Beauty &amp; Wellness.</em></h1>
-          <p>Curated smart home automation, intelligent gadgets, and elevated beauty &amp; wellness essentials selected for modern, connected living.</p>
-          <div className="hero-actions">
-            <Link href="/products?collection=smart-home" className="button button-brass">
-              Shop Smart Home <ArrowUpRight size={16} />
-            </Link>
-            <Link href="/products?collection=beauty-wellness" className="button button-quiet">
-              Beauty &amp; Wellness
-            </Link>
-            <Link href="/track-order" className="button button-quiet">
-              <PackageCheck size={16} /> Track Order
-            </Link>
-          </div>
-        </div>
-        <div className="hero-art">
-          <div className="hero-art-shape shape-one" />
-          <div className="hero-art-shape shape-two" />
-          <div className="hero-art-card">
-            <span>01</span>
-            <strong>Innovation<br /><em>&amp; Wellbeing.</em></strong>
-            <small>Smart Home · Beauty · Wellness</small>
-          </div>
-        </div>
-      </section>
-
-      <section className="value-strip">
-        <div>
-          <strong><Cpu size={16} /> Smart Home Automation</strong>
-          <span>Intelligent tech designed for comfort and peace of mind</span>
-        </div>
-        <div>
-          <strong><Heart size={16} /> Beauty &amp; Wellness</strong>
-          <span>Elevated self-care tools and daily wellness essentials</span>
-        </div>
-        <div>
-          <strong><ShieldCheck size={16} /> Secure Direct Checkout</strong>
-          <span>Encrypted payment and instant order confirmation</span>
-        </div>
-      </section>
-
-      <section className="section-pad">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">Explore Collections</span>
-            <h2>Curated for <em>modern living.</em></h2>
-          </div>
-          <Link href="/products" className="text-link">
-            View all products <ArrowUpRight size={15} />
-          </Link>
-        </div>
-        <div className="category-grid">
-          {collections.slice(0, 4).map((collection) => (
-            <Link key={collection.id} href={`/products?collection=${collection.handle}`} className="category-card">
-              {collection.image && <img src={collection.image.url} alt={collection.image.altText ?? collection.title} loading="lazy" />}
-              <span>{collection.title}</span>
-              <ArrowUpRight size={17} />
-            </Link>
-          ))}
-          {!collections.length && (
-            <>
-              <Link href="/products?collection=smart-home" className="category-card">
-                <span>Smart Home &amp; Automation</span>
-                <ArrowUpRight size={17} />
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white uppercase leading-[1.08]">
+              Precision Gadgets for <br />
+              <span className="text-amber-400">Smart Office &amp; Home</span>
+            </h1>
+            <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed font-normal">
+              Engineered for seamless productivity, ergonomic comfort, and intelligent home control. Upgrade your workstation with next-generation ambient lighting, smart docks, and connected sensors.
+            </p>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <Link
+                href="/products?collection=workspace-productivity"
+                className="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-lg flex items-center gap-2 transition-transform hover:-translate-y-0.5 shadow-md"
+              >
+                Shop Now <ArrowUpRight size={16} />
               </Link>
-              <Link href="/products?collection=beauty-wellness" className="category-card">
-                <span>Beauty &amp; Personal Care</span>
-                <ArrowUpRight size={17} />
+              <Link
+                href="/products?collection=smart-home"
+                className="px-6 py-3.5 bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 font-bold text-xs uppercase tracking-wider rounded-lg flex items-center gap-2 transition-colors"
+              >
+                Smart Home Setup
               </Link>
-            </>
-          )}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="section-pad product-section">
-        <div className="section-heading">
+      {/* Featured Collection Grid (4-Column) */}
+      <section className="max-w-7xl mx-auto px-6 py-16">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
           <div>
-            <span className="eyebrow flex items-center gap-1">
-              <Zap size={13} className="text-amber-500 fill-amber-500" />
-              {primaryAffinity !== "neutral" ? `Recommended For You (${primaryAffinity === "smart-home" ? "Smart Home" : "Beauty & Wellness"})` : "Nexus Catalogue"}
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 block mb-1">
+              Smart Office Upgrades
             </span>
-            <h2>
-              {primaryAffinity !== "neutral" ? (
-                <>Curated <em>for your preferences.</em></>
-              ) : (
-                <>Featured <em>picks.</em></>
-              )}
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white uppercase tracking-tight">
+              Best Sellers &amp; New Arrivals
             </h2>
           </div>
-          <Link href="/products" className="text-link">
-            Shop everything <ArrowUpRight size={15} />
+          <Link href="/products" className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white hover:text-amber-600 flex items-center gap-1 transition-colors">
+            View All Catalogue <ArrowUpRight size={15} />
           </Link>
         </div>
+
         {error ? (
-          <div className="empty-state">
-            <h3>Catalogue unavailable</h3>
+          <div className="text-center py-12 text-slate-500">
             <p>{error}</p>
           </div>
-        ) : personalizedProducts.length ? (
-          <div className="product-grid home-product-grid">
-            {personalizedProducts.slice(0, 8).map((product) => (
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredOfficeProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <h3>Featured Collection</h3>
-            <p>Browse our full range of smart home innovations and beauty products in the catalogue.</p>
           </div>
         )}
       </section>
 
-      <section className="split-callout">
-        <div>
-          <span className="eyebrow">Smart Living &amp; Wellness</span>
-          <h2>Elevate your home.<br /><em>Nurture yourself.</em></h2>
-          <Link href="/products" className="button button-dark">
-            Explore Nexus Store <ArrowUpRight size={15} />
-          </Link>
-        </div>
-        <div className="callout-panel">
-          <span>Nexus note</span>
-          <p>We blend cutting-edge home intelligence with daily self-care rituals so every corner of your life feels connected, calm, and effortlessly modern.</p>
+      {/* Categorization Visual Collections Section */}
+      <section className="bg-slate-100 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-800 py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-1">
+              Curated Collections
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white uppercase tracking-tight">
+              Engineered For Modern Work &amp; Living
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* 1. Smart Home Automation */}
+            <Link
+              href="/products?collection=smart-home"
+              className="group relative h-96 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-8 text-white"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80"
+                alt="Smart Home Automation"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+              <div className="relative z-10 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                  Collection 01
+                </span>
+                <h3 className="text-xl font-bold uppercase tracking-wide">
+                  Smart Home Automation
+                </h3>
+                <p className="text-xs text-slate-300 line-clamp-2">
+                  Ambient lighting, environmental climate hubs, and automated security controls.
+                </p>
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 pt-2 uppercase tracking-wider">
+                  Explore Hubs <ArrowUpRight size={14} />
+                </span>
+              </div>
+            </Link>
+
+            {/* 2. Workspace Productivity */}
+            <Link
+              href="/products?collection=workspace-productivity"
+              className="group relative h-96 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-8 text-white"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80"
+                alt="Workspace Productivity"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+              <div className="relative z-10 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                  Collection 02
+                </span>
+                <h3 className="text-xl font-bold uppercase tracking-wide">
+                  Workspace Productivity
+                </h3>
+                <p className="text-xs text-slate-300 line-clamp-2">
+                  Monitor light bars, high-speed Thunderbolt docks, and focus desk tools.
+                </p>
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 pt-2 uppercase tracking-wider">
+                  Upgrade Desk <ArrowUpRight size={14} />
+                </span>
+              </div>
+            </Link>
+
+            {/* 3. Tech Accessories */}
+            <Link
+              href="/products?collection=tech-accessories"
+              className="group relative h-96 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-8 text-white"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80"
+                alt="Tech Accessories"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+              <div className="relative z-10 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                  Collection 03
+                </span>
+                <h3 className="text-xl font-bold uppercase tracking-wide">
+                  Tech Accessories
+                </h3>
+                <p className="text-xs text-slate-300 line-clamp-2">
+                  Magnetic wireless chargers, studio active noise canceling headphones, and stands.
+                </p>
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 pt-2 uppercase tracking-wider">
+                  View Accessories <ArrowUpRight size={14} />
+                </span>
+              </div>
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="faq-section section-pad">
-        <div>
-          <span className="eyebrow">Support &amp; Fulfillment</span>
-          <h2>Frequently asked <em>questions.</em></h2>
+      {/* Support & Fulfillment FAQ */}
+      <section className="max-w-4xl mx-auto px-6 py-16">
+        <div className="text-center mb-10">
+          <span className="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-1">
+            Support &amp; Fulfillment
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white uppercase tracking-tight">
+            Frequently Asked Questions
+          </h2>
         </div>
-        <div className="faq-list">
-          <details open>
-            <summary>How do I track my order?</summary>
-            <p>You can track your order status in real time by visiting our <Link href="/track-order">Order Tracking page</Link> using your Shopify Order ID or email.</p>
+        <div className="space-y-4">
+          <details className="group bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 transition-all">
+            <summary className="font-semibold text-slate-900 dark:text-white cursor-pointer list-none flex justify-between items-center text-sm uppercase tracking-wider">
+              How do I track my order?
+              <ArrowUpRight size={16} className="transition-transform group-open:rotate-90" />
+            </summary>
+            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Track your order status in real time by visiting our <Link href="/track-order" className="underline font-bold text-slate-900 dark:text-white">Order Tracking page</Link> using your order ID and verification contact.
+            </p>
           </details>
-          <details>
-            <summary>How does checkout work?</summary>
-            <p>Your shopping bag is synced directly with Shopify Storefront API and completes on Shopify's secure checkout page.</p>
-          </details>
-          <details>
-            <summary>What categories does Nexus A Liverton Store offer?</summary>
-            <p>Nexus specializes exclusively in Smart Home automation and devices alongside Beauty &amp; Wellness products.</p>
+          <details className="group bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 transition-all">
+            <summary className="font-semibold text-slate-900 dark:text-white cursor-pointer list-none flex justify-between items-center text-sm uppercase tracking-wider">
+              What products does Nexus specialize in?
+              <ArrowUpRight size={16} className="transition-transform group-open:rotate-90" />
+            </summary>
+            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Nexus specializes exclusively in smart home automation devices, ergonomic desk lighting, high-speed workstation docks, and premium tech accessories.
+            </p>
           </details>
         </div>
       </section>

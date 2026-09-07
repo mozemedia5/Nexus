@@ -71,14 +71,18 @@
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
-  background-color: var(--parchment);
-  background-image: radial-gradient(rgba(48, 43, 37, 0.035) 0.55px, transparent 0.55px), linear-gradient(135deg, rgba(255,255,255,0.18), transparent 42%);
-  background-size: 5px 5px, 100% 100%;
-  color: var(--ink);
-  font-family: "Manrope", sans-serif;
+  background-color: #f8fafc;
+  color: #334155;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 15px;
-  line-height: 1.65;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-heading {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 button, input { font: inherit; }
 button:not(:disabled), a { cursor: pointer; }
@@ -106,7 +110,7 @@ img { display: block; max-width: 100%; }
 .brand-mark-wrap { width: 34px; height: 34px; display: grid; place-items: center; overflow: hidden; border: 1px solid rgba(182,138,58,0.65); background: var(--brass-gold); color: #fff; font-weight: 800; font-size: 1.1rem; border-radius: 6px; }
 .brand-mark { width: 32px; height: 32px; object-fit: contain; mix-blend-mode: multiply; }
 .brand-text-stack { display: flex; flex-direction: column; line-height: 1.1; }
-.brand-name { font-family: "DM Serif Display", serif; font-size: 1.58rem; letter-spacing: -0.04em; }
+.brand-name { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: 0.06em; text-transform: uppercase; }
 .brand-sub { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--brass-gold); margin-top: 1px; }
 
 .announcement-bar {
@@ -218,7 +222,7 @@ img { display: block; max-width: 100%; }
 .product-card-meta { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.8rem; color: var(--brass); font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 .product-card-meta span:last-child { color: var(--ink-soft); }
 .product-title-row { display: flex; justify-content: space-between; gap: 1rem; }
-.product-title-row h3 { margin: 0; font-family: "DM Serif Display", serif; font-size: 1.55rem; font-weight: 400; letter-spacing: -0.04em; line-height: 1.05; }
+.product-title-row h3 { margin: 0; font-family: "Inter", sans-serif; font-size: 0.95rem; font-weight: 500; letter-spacing: 0; text-transform: none; color: #1e293b; line-height: 1.35; }
 .product-title-row p { margin: 0.35rem 0 0; color: var(--ink-soft); font-size: 0.76rem; line-height: 1.45; }
 .product-title-row strong { flex: 0 0 auto; color: var(--brass); font-family: "DM Serif Display", serif; font-size: 1.2rem; font-weight: 400; }
 .card-add { display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 1.15rem; padding: 0; border: 0; border-bottom: 1px solid var(--brass); background: transparent; color: var(--ink); font-size: 0.64rem; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; transition: color 180ms var(--ease-out), gap 180ms var(--ease-out); }
