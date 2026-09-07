@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Sparkles, Tag, Megaphone } from "lucide-react";
 import ProductCard, { CategoryPills } from "@/components/ProductCard";
-import { getCollectionProducts, getCollections, getProducts, shopifyConfigured, type Collection, type Product } from "@/lib/store";
+import { getCollectionProducts, getCollections, getProducts, type Collection, type Product } from "@/lib/store";
+import { getActiveCampaigns } from "@/pages/Admin";
 
 export default function Collections() {
   const [location] = useLocation();
@@ -34,9 +35,32 @@ export default function Collections() {
   }, [active]);
 
   const selected = collections.find((item) => item.handle === active);
+  const campaigns = useMemo(() => getActiveCampaigns(), []);
 
   return (
     <>
+      {campaigns.length > 0 && (
+        <div className="section-pad pb-0">
+          <div className="p-6 bg-gradient-to-r from-amber-500/10 via-slate-900 to-amber-500/10 border border-amber-500/20 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-500 text-black rounded-xl font-bold">
+                <Megaphone size={20} />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                  <Tag size={10} /> Active Store Campaign
+                </span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{campaigns[0].title}</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300">{campaigns[0].subtitle}</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold text-xs rounded-full border border-amber-500/30 shrink-0">
+              {campaigns[0].discountBadge}
+            </span>
+          </div>
+        </div>
+      )}
+
       <section className="page-intro section-pad">
         <span className="eyebrow">Nexus A Liverton Store / Catalogue</span>
         <h1>Smart Home, <em>Beauty &amp; Wellness.</em></h1>

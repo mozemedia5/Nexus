@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
-import { ArrowUpRight, Sparkles, Cpu, Heart, PackageCheck, ShieldCheck, Truck } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { ArrowUpRight, Sparkles, Cpu, Heart, PackageCheck, ShieldCheck, Zap, Megaphone, Tag } from "lucide-react";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
-import { getCollections, getProducts, shopifyConfigured, type Collection, type Product } from "@/lib/store";
+import { getCollections, getProducts, type Collection, type Product } from "@/lib/store";
+import { usePersonalization } from "@/hooks/usePersonalization";
+import { getActiveCampaigns } from "@/pages/Admin";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [error, setError] = useState("");
+  const { primaryAffinity, sortProductsByPreference } = usePersonalization();
 
   useEffect(() => {
-    Promise.all([getProducts({ first: 8, sortKey: "BEST_SELLING" }), getCollections(8)])
+    Promise.all([getProducts({ first: 12, sortKey: "BEST_SELLING" }), getCollections(8)])
       .then(([items, groups]) => {
         setProducts(items);
         setCollections(groups);
@@ -18,8 +21,36 @@ export default function Home() {
       .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load the Nexus catalogue."));
   }, []);
 
+  const personalizedProducts = useMemo(() => sortProductsByPreference(products), [products, sortProductsByPreference]);
+  const activeCampaigns = useMemo(() => getActiveCampaigns(), []);
+
   return (
     <>
+      {activeCampaigns.length > 0 && (
+        <section className="bg-slate-900 text-white py-8 px-4 border-b border-amber-500/30">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl shrink-0">
+                <Megaphone size={24} />
+              </div>
+              <div>
+                <span className="inline-block px-2 py-0.5 bg-amber-500 text-black text-[10px] font-extrabold rounded tracking-wider mb-1">
+                  {activeCampaigns[0].discountBadge}
+                </span>
+                <h3 className="text-xl font-bold">{activeCampaigns[0].title}</h3>
+                <p className="text-xs text-slate-300 mt-1 max-w-xl">{activeCampaigns[0].subtitle}</p>
+              </div>
+            </div>
+            <Link
+              href={`/products?collection=${activeCampaigns[0].categoryTag}`}
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2 shrink-0 transition-colors"
+            >
+              Shop Campaign Offer <ArrowUpRight size={15} />
+            </Link>
+          </div>
+        </section>
+      )}
+
       <section className="hero-section">
         <div className="hero-copy">
           <span className="eyebrow"><Sparkles size={13} /> Nexus A Liverton Store</span>
@@ -99,8 +130,17 @@ export default function Home() {
       <section className="section-pad product-section">
         <div className="section-heading">
           <div>
-            <span className="eyebrow">Nexus Catalogue</span>
-            <h2>Featured <em>picks.</em></h2>
+            <span className="eyebrow flex items-center gap-1">
+              <Zap size={13} className="text-amber-500 fill-amber-500" />
+              {primaryAffinity !== "neutral" ? `Recommended For You (${primaryAffinity === "smart-home" ? "Smart Home" : "Beauty & Wellness"})` : "Nexus Catalogue"}
+            </span>
+            <h2>
+              {primaryAffinity !== "neutral" ? (
+                <>Curated <em>for your preferences.</em></>
+              ) : (
+                <>Featured <em>picks.</em></>
+              )}
+            </h2>
           </div>
           <Link href="/products" className="text-link">
             Shop everything <ArrowUpRight size={15} />
@@ -111,9 +151,9 @@ export default function Home() {
             <h3>Catalogue unavailable</h3>
             <p>{error}</p>
           </div>
-        ) : products.length ? (
+        ) : personalizedProducts.length ? (
           <div className="product-grid home-product-grid">
-            {products.slice(0, 4).map((product) => (
+            {personalizedProducts.slice(0, 8).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

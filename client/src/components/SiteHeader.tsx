@@ -10,6 +10,7 @@ const links = [
   { href: "/products?collection=beauty-wellness", label: "Beauty & Wellness" },
   { href: "/about", label: "Our Story" },
   { href: "/track-order", label: "Track Order" },
+  { href: "/admin", label: "Admin" },
 ];
 
 export default function SiteHeader() {
