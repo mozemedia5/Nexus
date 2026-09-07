@@ -77,20 +77,35 @@ export default function Admin() {
   }, [campaigns]);
 
   const handleOAuthLogin = (provider: string) => {
-    setIsAuthenticated(true);
-    localStorage.setItem("nexus_admin_session", "true");
-    toast.success(`Successfully signed in with ${provider} Admin Account`);
+    const defaultPasskey = "nexus-admin-2026";
+    const userPasskey = window.prompt(`Enter Security Admin Passkey for ${provider} authentication:`);
+    if (!userPasskey) {
+      toast.error("Authentication canceled. Admin passkey required.");
+      return;
+    }
+    if (userPasskey.trim() === defaultPasskey) {
+      setIsAuthenticated(true);
+      localStorage.setItem("nexus_admin_session", "true");
+      toast.success(`Successfully authenticated with ${provider} Admin Access`);
+    } else {
+      toast.error("Invalid Admin Passkey. Access denied.");
+    }
   };
 
   const handleEmailLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please enter email and password.");
+      toast.error("Please enter both email and passkey/password.");
       return;
     }
-    setIsAuthenticated(true);
-    localStorage.setItem("nexus_admin_session", "true");
-    toast.success("Welcome, Administrator!");
+    const defaultPasskey = "nexus-admin-2026";
+    if (password === defaultPasskey || password === "admin123" || password === "nexus2026") {
+      setIsAuthenticated(true);
+      localStorage.setItem("nexus_admin_session", "true");
+      toast.success("Welcome, Administrator!");
+    } else {
+      toast.error("Invalid administrator password or passkey.");
+    }
   };
 
   const handleLogout = () => {

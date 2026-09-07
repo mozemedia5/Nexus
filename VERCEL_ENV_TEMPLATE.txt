@@ -2,9 +2,10 @@
 # Store these in Vercel Project Settings -> Environment Variables (Production and Preview).
 
 # Shopify Configuration
-# Note: SHOPIFY_STORE_DOMAIN, SHOPIFY_STOREFRONT_ACCESS_TOKEN, and SHOPIFY_API_VERSION
+# Note: SHOPIFY_STORE_DOMAIN, SHOPIFY_STOREFRONT_API_ACCESS_TOKEN (or SHOPIFY_STOREFRONT_ACCESS_TOKEN), and SHOPIFY_API_VERSION
 # are injected into client bundle via Vite define without requiring a VITE_ prefix.
 SHOPIFY_STORE_DOMAIN=
+SHOPIFY_STOREFRONT_API_ACCESS_TOKEN=
 SHOPIFY_STOREFRONT_ACCESS_TOKEN=
 SHOPIFY_API_VERSION=2026-07
 

@@ -39,7 +39,11 @@ export async function fetchShopifyOrderTracking(
     .replace(/\/$/, "");
   const adminToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || "";
   const storefrontToken =
-    process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN || "";
+    process.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
+    process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+    process.env.VITE_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
+    process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+    "";
   const apiVersion = process.env.SHOPIFY_API_VERSION || process.env.VITE_SHOPIFY_API_VERSION || "2026-07";
 
   if (!domain) {

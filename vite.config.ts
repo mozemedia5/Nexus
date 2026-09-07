@@ -212,7 +212,18 @@ export default defineConfig({
       process.env.SHOPIFY_STORE_DOMAIN || process.env.VITE_SHOPIFY_STORE_DOMAIN || ""
     ),
     "import.meta.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN": JSON.stringify(
-      process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN || ""
+      process.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
+        process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+        process.env.VITE_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
+        process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+        ""
+    ),
+    "import.meta.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN": JSON.stringify(
+      process.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
+        process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+        process.env.VITE_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
+        process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+        ""
     ),
     "import.meta.env.SHOPIFY_API_VERSION": JSON.stringify(
       process.env.SHOPIFY_API_VERSION || process.env.VITE_SHOPIFY_API_VERSION || "2026-07"
