@@ -59,7 +59,12 @@ export type TrackedOrder = {
 const domain = ((import.meta.env.SHOPIFY_STORE_DOMAIN || import.meta.env.VITE_SHOPIFY_STORE_DOMAIN) ?? "")
   .replace(/^https?:\/\//, "")
   .replace(/\/$/, "");
-const token = (import.meta.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || import.meta.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN) ?? "";
+const token =
+  (import.meta.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
+    import.meta.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+    import.meta.env.VITE_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
+    import.meta.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN) ??
+  "";
 const apiVersion = (import.meta.env.SHOPIFY_API_VERSION || import.meta.env.VITE_SHOPIFY_API_VERSION) ?? "2026-07";
 
 export const shopifyConfigured = Boolean(domain && token);
