@@ -19,11 +19,6 @@ export default function Collections() {
   }, [initial]);
 
   useEffect(() => {
-    if (!shopifyConfigured) {
-      setError("Storefront configuration missing. Please verify Shopify credentials in Vercel.");
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError("");
     Promise.all([
@@ -58,14 +53,6 @@ export default function Collections() {
           <div className="empty-state">
             <h3>We couldn’t load the catalogue</h3>
             <p>{error}</p>
-          </div>
-        ) : !shopifyConfigured ? (
-          <div className="empty-state">
-            <h3>Catalogue Updating</h3>
-            <p>Our store catalogue is currently updating. Please check back shortly or explore our story.</p>
-            <Link href="/" className="button button-dark">
-              Back Home <ArrowUpRight size={15} />
-            </Link>
           </div>
         ) : loading ? (
           <div className="empty-state">
