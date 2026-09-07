@@ -239,7 +239,7 @@ img { display: block; max-width: 100%; }
 .society-banner .button { justify-self: end; }
 
 .page-intro { padding-top: clamp(5rem, 9vw, 9rem); padding-bottom: clamp(4rem, 7vw, 7rem); background: var(--parchment); }
-.page-intro h1 { max-width: 900px; margin: 1rem 0 1.3rem; font-family: "DM Serif Display", serif; font-size: clamp(4rem, 9vw, 9rem); font-weight: 400; letter-spacing: -0.085em; line-height: 0.88; }
+.page-intro h1 { max-width: 800px; margin: 0.5rem 0 1rem; font-family: "DM Serif Display", serif; font-size: clamp(2.2rem, 4.5vw, 3.8rem); font-weight: 400; letter-spacing: -0.04em; line-height: 1.1; }
 .page-intro h1 em { color: var(--brass); }
 .page-intro p { max-width: 610px; margin: 0; color: var(--ink-soft); font-size: clamp(1rem, 1.6vw, 1.22rem); }
 .catalogue { border-top: 1px solid rgba(48,43,37,0.12); background: #fbf9f1; }

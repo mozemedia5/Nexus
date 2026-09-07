@@ -1,9 +1,27 @@
-import { Minus, Plus, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Minus, Plus, X, Tag, Lock, ArrowUpRight } from "lucide-react";
 import { formatPrice } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
 
 export default function CartDrawer() {
   const { lines, subtotal, isOpen, closeCart, updateQuantity, removeItem, checkout, busy, error } = useCart();
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleCheckoutEvent = (e: any) => {
+      if (e.detail?.checkoutUrl) {
+        setCheckoutUrl(e.detail.checkoutUrl);
+      }
+    };
+    window.addEventListener("open-nexus-checkout", handleCheckoutEvent);
+    return () => window.removeEventListener("open-nexus-checkout", handleCheckoutEvent);
+  }, []);
+
+  const totalQuantity = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const isMultiItemDiscount = totalQuantity >= 2;
+  const rawSubtotalNum = subtotal ? Number(subtotal.amount) : 0;
+  const discountedNum = isMultiItemDiscount ? rawSubtotalNum * 0.5 : rawSubtotalNum;
+  const currency = subtotal?.currencyCode || "USD";
 
   return (
     <>
@@ -66,17 +84,66 @@ export default function CartDrawer() {
         </div>
         {lines.length > 0 && (
           <div className="cart-summary">
+            {isMultiItemDiscount ? (
+              <div className="p-3 mb-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-xs flex items-center gap-2">
+                <Tag size={16} className="text-amber-600 shrink-0" />
+                <div>
+                  <strong className="block text-amber-700 font-bold uppercase tracking-wider text-[10px]">Administrator 50% Offer Applied!</strong>
+                  <span className="text-slate-600 dark:text-slate-300">Buy 2+ items discount unlocked automatically.</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-amber-600 font-semibold mb-2 flex items-center gap-1">
+                <Tag size={12} /> Add 1 more product to get 50% OFF your total order!
+              </p>
+            )}
+
             <div className="summary-row">
               <span>Subtotal</span>
-              <strong>{formatPrice(subtotal)}</strong>
+              <div className="flex items-baseline gap-2">
+                {isMultiItemDiscount && (
+                  <del className="text-xs text-slate-400 font-normal">{formatPrice(subtotal)}</del>
+                )}
+                <strong>{formatPrice({ amount: discountedNum.toFixed(2), currencyCode: currency })}</strong>
+              </div>
             </div>
-            <p>Taxes and delivery are calculated by Shopify at checkout.</p>
-            <button type="button" className="button button-brass button-wide py-3 font-medium text-sm" onClick={checkout} disabled={busy}>
-              {busy ? "Updating…" : "Proceed to Checkout ↗"}
+            <p className="text-xs text-slate-500 my-2">Calculated in real-time. Direct secure checkout within Nexus website.</p>
+            <button type="button" className="button button-brass button-wide py-3 font-medium text-sm flex items-center justify-center gap-2" onClick={checkout} disabled={busy}>
+              <Lock size={14} /> {busy ? "Updating…" : "Secure Checkout"}
             </button>
           </div>
         )}
       </aside>
+
+      {/* Embedded In-Site Checkout Modal */}
+      {checkoutUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-2 sm:p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl h-[92vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Lock size={16} className="text-amber-400" />
+                <span className="text-sm font-bold tracking-wider uppercase">Nexus Secure Checkout</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCheckoutUrl(null)}
+                className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                aria-label="Close checkout"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 w-full h-full relative bg-slate-50">
+              <iframe
+                src={checkoutUrl}
+                title="Nexus Checkout"
+                className="w-full h-full border-0"
+                allow="payment"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

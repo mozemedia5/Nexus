@@ -31,23 +31,21 @@ export default function ProductCard({ product, compact = false }: { product: Pro
         <div className="product-title-row">
           <div>
             <Link href={`/products/${product.handle}`}>
-              <h3>{product.name}</h3>
+              <h3 className="text-base font-semibold text-slate-900 line-clamp-1">{product.name}</h3>
             </Link>
-            <p>{product.description || "A smart home or beauty find from Nexus A Liverton Store."}</p>
           </div>
-          <strong>{formatPrice(product.price)}</strong>
+          <strong className="text-sm font-bold text-amber-600 dark:text-amber-400">{formatPrice(product.price)}</strong>
         </div>
-        {!compact && (
-          <button type="button" className="card-add" onClick={handleAdd} disabled={!product.availableForSale}>
-            {product.availableForSale ? (
-              <>
-                Add to Bag <ArrowUpRight size={14} />
-              </>
-            ) : (
-              "Sold out"
-            )}
-          </button>
-        )}
+        <div className="product-card-actions flex items-center justify-between gap-2 mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+          <Link href={`/products/${product.handle}`} className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-amber-600 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1">
+            Description <ArrowUpRight size={12} />
+          </Link>
+          {!compact && (
+            <button type="button" className="px-3 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-amber-600 rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none" onClick={handleAdd} disabled={!product.availableForSale}>
+              {product.availableForSale ? "Add to Bag" : "Sold out"}
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );

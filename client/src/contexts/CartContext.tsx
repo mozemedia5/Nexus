@@ -15,7 +15,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = async (product: Product, variantId = product.variants[0]?.id, quantity = 1) => { if (!variantId) { setError("This product has no available variant."); return; } setIsOpen(true); if (cart && lines.some((line) => line.product.id === variantId)) { await run(() => updateCart(cart.id, lines.map((line) => ({ id: line.id, quantity: line.product.id === variantId ? line.quantity + quantity : line.quantity })))); } else if (cart) { await run(() => addCartLines(cart.id, [{ merchandiseId: variantId, quantity }])); } else { await run(() => createCart(variantId, quantity)); } };
   const updateQuantity = async (lineId: string, quantity: number) => { if (!cart) return; if (quantity <= 0) return removeItem(lineId); await run(() => updateCart(cart.id, lines.map((line) => ({ id: line.id, quantity: line.id === lineId ? quantity : line.quantity })))); };
   const removeItem = async (lineId: string) => { if (cart) await run(() => removeCartLines(cart.id, [lineId])); };
-  const checkout = () => { if (cart?.checkoutUrl) window.location.assign(cart.checkoutUrl); };
+  const checkout = () => {
+    if (cart?.checkoutUrl) {
+      // Trigger in-site checkout modal
+      window.dispatchEvent(new CustomEvent("open-nexus-checkout", { detail: { checkoutUrl: cart.checkoutUrl } }));
+    }
+  };
   return <CartContext.Provider value={{ cart, lines, itemCount, subtotal: cart?.cost?.subtotalAmount ?? null, isOpen, busy, error, addItem, updateQuantity, removeItem, checkout, openCart: () => setIsOpen(true), closeCart: () => setIsOpen(false), toggleCart: () => setIsOpen((value) => !value) }}>{children}</CartContext.Provider>;
 }
 export function useCart() { const value = useContext(CartContext); if (!value) throw new Error("useCart must be used inside CartProvider"); return value; }
