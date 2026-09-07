@@ -34,6 +34,32 @@ async function startServer() {
     });
   });
 
+  app.post("/api/chat/reserve", async (req, res) => {
+    const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+    const shoppingList = Array.isArray(req.body?.shoppingList) ? req.body.shoppingList : [];
+    const sessionTitle = typeof req.body?.title === "string" ? req.body.title : "Reserved Shopping Session";
+
+    try {
+      const admin = parseFirebaseServiceAccount();
+      if (admin) {
+        const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+        const docRef = await firestore.collection("nexus_cari_conversations").add({
+          title: sessionTitle,
+          messages,
+          shoppingList,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        res.json({ success: true, reservationId: docRef.id, storage: "firestore" });
+        return;
+      }
+      res.json({ success: true, reservationId: `local-${Date.now()}`, storage: "client" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to reserve conversation";
+      res.status(500).json({ error: message });
+    }
+  });
+
   app.post("/api/order-tracking", async (req, res) => {
     const orderNumber = typeof req.body?.orderNumber === "string" ? req.body.orderNumber : "";
     const emailOrPhone = typeof req.body?.emailOrPhone === "string" ? req.body.emailOrPhone : "";

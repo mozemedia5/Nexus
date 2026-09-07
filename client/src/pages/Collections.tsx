@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowUpRight, Sparkles, Tag, Megaphone } from "lucide-react";
 import ProductCard, { CategoryPills } from "@/components/ProductCard";
+import SEO from "@/components/SEO";
 import { getCollectionProducts, getCollections, getProducts, type Collection, type Product } from "@/lib/store";
 import { getActiveCampaigns } from "@/pages/Admin";
 
@@ -39,6 +40,39 @@ export default function Collections() {
 
   return (
     <>
+      <SEO
+        title={`${selected ? selected.title : "All Products"} — Nexus A Liverton Store`}
+        description={selected?.description || "Browse Nexus A Liverton Store catalogue: Smart Home devices, smart lighting, skincare technology, and Beauty & Wellness essentials shipped worldwide."}
+        keywords="Nexus products, Smart Home devices, Beauty tech, Wellness essentials, Home automation"
+        canonicalPath={`/products${active !== "all" ? `?collection=${active}` : ""}`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "name": selected ? selected.title : "Store Catalogue",
+          "description": selected?.description || "All Smart Home and Beauty & Wellness products from Nexus A Liverton Store.",
+          "url": `https://liverton-nexus.vercel.app/products${active !== "all" ? `?collection=${active}` : ""}`,
+          "mainEntity": {
+            "@type": "ItemList",
+            "itemListElement": products.map((prod, idx) => ({
+              "@type": "ListItem",
+              "position": idx + 1,
+              "item": {
+                "@type": "Product",
+                "name": prod.name,
+                "url": `https://liverton-nexus.vercel.app/products/${prod.handle}`,
+                "image": prod.image?.url,
+                "offers": {
+                  "@type": "Offer",
+                  "priceCurrency": prod.price.currencyCode || "USD",
+                  "price": prod.price.amount,
+                  "availability": prod.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+                }
+              }
+            }))
+          }
+        }}
+      />
+
       {campaigns.length > 0 && (
         <div className="section-pad pb-0">
           <div className="p-6 bg-gradient-to-r from-amber-500/10 via-slate-900 to-amber-500/10 border border-amber-500/20 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4">

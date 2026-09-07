@@ -4,6 +4,7 @@ import { Link, useRoute } from "wouter";
 import { toast } from "sonner";
 import { getProduct, formatPrice, shopifyConfigured, type Product } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
+import SEO from "@/components/SEO";
 
 export default function ProductDetail() {
   const [, params] = useRoute("/products/:handle");
@@ -50,7 +51,34 @@ export default function ProductDetail() {
   };
 
   return (
-    <section className="product-detail section-pad max-w-7xl mx-auto">
+    <>
+      <SEO
+        title={`${product.name} — Nexus A Liverton Store`}
+        description={product.description || `Buy ${product.name} at Nexus A Liverton Store. Curated Smart Home and Beauty & Wellness tech.`}
+        keywords={`${product.name}, ${product.categoryLabel || "Smart Home"}, Nexus A Liverton Store`}
+        image={currentImage?.url}
+        canonicalPath={`/products/${product.handle}`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": product.name,
+          "description": product.description,
+          "image": images.map((img) => img.url),
+          "category": product.categoryLabel,
+          "offers": {
+            "@type": "Offer",
+            "priceCurrency": variant?.price.currencyCode || product.price.currencyCode || "USD",
+            "price": variant?.price.amount || product.price.amount,
+            "availability": variant?.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            "url": `https://liverton-nexus.vercel.app/products/${product.handle}`,
+            "seller": {
+              "@type": "Organization",
+              "name": "Nexus A Liverton Store"
+            }
+          }
+        }}
+      />
+      <section className="product-detail section-pad max-w-7xl mx-auto">
       <Link href="/products" className="back-link inline-flex items-center gap-2 text-sm mb-6 text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft size={15} /> Back to catalogue
       </Link>
@@ -134,5 +162,6 @@ export default function ProductDetail() {
         </div>
       </div>
     </section>
+    </>
   );
 }
