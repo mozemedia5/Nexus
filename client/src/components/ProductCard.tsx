@@ -16,13 +16,13 @@ export default function ProductCard({ product, compact = false }: { product: Pro
 
   return (
     <article className={`group relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${compact ? "p-2" : ""}`}>
-      <div className="relative aspect-square w-full overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center">
+      <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center p-2">
         <Link href={`/products/${product.handle}`} className="w-full h-full block relative" aria-label={`View ${product.name}`}>
           {/* Main Image */}
           <img
             src={mainImage?.url ?? "/logo.png"}
             alt={mainImage?.altText ?? product.name}
-            className={`w-full h-full object-cover object-center transition-all duration-500 group-hover:scale-105 ${secondaryImage ? "group-hover:opacity-0" : ""}`}
+            className={`w-full h-full object-contain object-center transition-all duration-500 group-hover:scale-105 ${secondaryImage ? "group-hover:opacity-0" : ""}`}
             loading="lazy"
           />
           {/* Secondary Image on Hover */}
@@ -30,7 +30,7 @@ export default function ProductCard({ product, compact = false }: { product: Pro
             <img
               src={secondaryImage.url}
               alt={secondaryImage.altText ?? product.name}
-              className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-contain object-center transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-105"
               loading="lazy"
             />
           )}
@@ -57,7 +57,7 @@ export default function ProductCard({ product, compact = false }: { product: Pro
             {product.categoryLabel}
           </span>
           <Link href={`/products/${product.handle}`}>
-            <h3 className="text-sm font-normal text-slate-800 dark:text-slate-100 line-clamp-1 hover:text-slate-600 transition-colors">
+            <h3 className="text-sm font-normal text-slate-800 dark:text-slate-100 line-clamp-1 hover:text-slate-600 transition-colors normal-case">
               {product.name}
             </h3>
           </Link>

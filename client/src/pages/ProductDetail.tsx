@@ -111,13 +111,52 @@ export default function ProductDetail() {
         <div className="product-info flex flex-col gap-6">
           <div>
             <span className="eyebrow uppercase text-xs tracking-wider text-muted-foreground">{product.categoryLabel || "Nexus Collection"}</span>
-            <h1 className="text-3xl font-serif font-medium mt-1 text-foreground">{product.name}</h1>
+            <h1 className="text-3xl font-serif font-medium mt-1 text-foreground normal-case">{product.name}</h1>
           </div>
           <div className="detail-price flex items-baseline gap-3 text-2xl font-medium">
             <strong>{formatPrice(variant?.price ?? product.price)}</strong>
             {product.compareAtPrice && <del className="text-base text-muted-foreground font-normal">{formatPrice(product.compareAtPrice)}</del>}
           </div>
-          <p className="detail-description text-muted-foreground leading-relaxed text-sm">{product.description || "A smart home or workspace productivity gadget curated by Nexus."}</p>
+          {/* Segmented & Partitioned Description */}
+          <div className="space-y-6 text-sm text-slate-600 dark:text-slate-300 border-t border-b border-slate-200 dark:border-slate-800 py-4">
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1.5">
+                Overview
+              </h4>
+              <p className="leading-relaxed">
+                {product.description?.split(/(?<=\.)\s+/)[0] || product.description || "A smart home or workspace productivity gadget curated by Nexus."}
+              </p>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2">
+                Key Highlights
+              </h4>
+              <ul className="space-y-2">
+                {(product.description?.split(/(?<=\.)\s+/).slice(1).length ? product.description.split(/(?<=\.)\s+/).slice(1) : [
+                  "Precision-engineered build quality for long-lasting daily productivity.",
+                  "Seamless integration with modern desk and smart home environments.",
+                  "Energy-efficient performance with intelligent environmental controls."
+                ]).map((point, idx) => (
+                  <li key={idx} className="flex items-start gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
+                    <span className="leading-relaxed">{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Category</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{product.categoryLabel || "Smart Tech"}</span>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Fulfillment</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Global Courier Express</span>
+              </div>
+            </div>
+          </div>
 
           {product.variants.length > 1 && (
             <div className="variant-selector space-y-2">

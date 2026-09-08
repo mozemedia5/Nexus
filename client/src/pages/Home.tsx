@@ -37,7 +37,7 @@ export default function Home() {
       />
 
       {/* Hero Section */}
-      <section className="relative w-full bg-slate-950 text-white min-h-[580px] md:min-h-[640px] flex items-center overflow-hidden">
+      <section className="relative w-full bg-slate-950 text-white min-h-[420px] md:min-h-[480px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1800&q=80"
@@ -122,7 +122,7 @@ export default function Home() {
             {/* 1. Smart Home Automation */}
             <Link
               href="/products?collection=smart-home"
-              className="group relative h-96 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-8 text-white"
+              className="group relative h-64 sm:h-72 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-6 text-white"
             >
               <img
                 src="https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80"
@@ -149,7 +149,7 @@ export default function Home() {
             {/* 2. Workspace Productivity */}
             <Link
               href="/products?collection=workspace-productivity"
-              className="group relative h-96 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-8 text-white"
+              className="group relative h-64 sm:h-72 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-6 text-white"
             >
               <img
                 src="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80"
@@ -176,7 +176,7 @@ export default function Home() {
             {/* 3. Tech Accessories */}
             <Link
               href="/products?collection=tech-accessories"
-              className="group relative h-96 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-8 text-white"
+              className="group relative h-64 sm:h-72 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-6 text-white"
             >
               <img
                 src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80"

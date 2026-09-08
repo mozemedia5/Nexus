@@ -49,31 +49,33 @@ export default function CartDrawer() {
           ) : (
             <div className="cart-lines">
               {lines.map((line) => (
-                <div className="cart-line" key={line.id}>
-                  <img src={line.product.image?.url ?? "/logo.png"} alt={line.product.image?.altText ?? line.product.name} />
-                  <div className="cart-line-content">
-                    <div className="cart-line-title">
+                <div className="cart-line flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800" key={line.id}>
+                  <img src={line.product.image?.url ?? "/logo.png"} alt={line.product.image?.altText ?? line.product.name} className="w-16 h-16 object-cover rounded-lg shrink-0" />
+                  <div className="flex-1 min-w-0 flex flex-col justify-between gap-1">
+                    <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="eyebrow">{line.product.variantTitle}</p>
-                        <h3>{line.product.name}</h3>
+                        <h3 className="text-xs font-semibold text-slate-900 dark:text-white normal-case line-clamp-1">{line.product.name}</h3>
+                        {line.product.variantTitle && line.product.variantTitle !== "Default Title" && (
+                          <span className="text-[11px] text-slate-400 block">{line.product.variantTitle}</span>
+                        )}
                       </div>
-                      <button type="button" className="remove-button" onClick={() => removeItem(line.id)}>
+                      <button type="button" className="text-[11px] text-rose-500 hover:text-rose-600 font-medium shrink-0" onClick={() => removeItem(line.id)}>
                         Remove
                       </button>
                     </div>
-                    <div className="cart-line-foot">
-                      <div className="quantity-control">
-                        <button type="button" onClick={() => updateQuantity(line.id, line.quantity - 1)} aria-label="Decrease quantity">
-                          <Minus size={14} />
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-md bg-slate-50 dark:bg-slate-800">
+                        <button type="button" className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700" onClick={() => updateQuantity(line.id, line.quantity - 1)} aria-label="Decrease quantity">
+                          <Minus size={12} />
                         </button>
-                        <span>{line.quantity}</span>
-                        <button type="button" onClick={() => updateQuantity(line.id, line.quantity + 1)} aria-label="Increase quantity">
-                          <Plus size={14} />
+                        <span className="px-2 text-xs font-bold">{line.quantity}</span>
+                        <button type="button" className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700" onClick={() => updateQuantity(line.id, line.quantity + 1)} aria-label="Increase quantity">
+                          <Plus size={12} />
                         </button>
                       </div>
-                      <strong>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
                         {formatPrice({ amount: (Number(line.product.price.amount) * line.quantity).toString(), currencyCode: line.product.price.currencyCode })}
-                      </strong>
+                      </span>
                     </div>
                   </div>
                 </div>
