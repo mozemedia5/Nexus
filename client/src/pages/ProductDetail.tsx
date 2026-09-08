@@ -53,9 +53,9 @@ export default function ProductDetail() {
   return (
     <>
       <SEO
-        title={`${product.name} — Nexus A Liverton Store`}
-        description={product.description || `Buy ${product.name} at Nexus A Liverton Store. Curated Smart Home and Beauty & Wellness tech.`}
-        keywords={`${product.name}, ${product.categoryLabel || "Smart Home"}, Nexus A Liverton Store`}
+        title={`${product.name} — Nexus`}
+        description={product.description || `Buy ${product.name} at Nexus. Smart Home automation and workspace gadgets.`}
+        keywords={`${product.name}, ${product.categoryLabel || "Smart Home"}, Nexus`}
         image={currentImage?.url}
         canonicalPath={`/products/${product.handle}`}
         jsonLd={{
@@ -117,7 +117,7 @@ export default function ProductDetail() {
             <strong>{formatPrice(variant?.price ?? product.price)}</strong>
             {product.compareAtPrice && <del className="text-base text-muted-foreground font-normal">{formatPrice(product.compareAtPrice)}</del>}
           </div>
-          <p className="detail-description text-muted-foreground leading-relaxed text-sm">{product.description || "A smart home or beauty & wellness find curated by Nexus A Liverton Store."}</p>
+          <p className="detail-description text-muted-foreground leading-relaxed text-sm">{product.description || "A smart home or workspace productivity gadget curated by Nexus."}</p>
 
           {product.variants.length > 1 && (
             <div className="variant-selector space-y-2">

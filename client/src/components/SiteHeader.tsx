@@ -7,10 +7,10 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Shop All" },
   { href: "/products?collection=smart-home", label: "Smart Home" },
-  { href: "/products?collection=beauty-wellness", label: "Beauty & Wellness" },
+  { href: "/products?collection=workspace-productivity", label: "Workspace" },
+  { href: "/products?collection=tech-accessories", label: "Accessories" },
   { href: "/about", label: "Our Story" },
   { href: "/track-order", label: "Track Order" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export default function SiteHeader() {
@@ -23,7 +23,7 @@ export default function SiteHeader() {
   return (
     <>
       <div className="announcement-bar">
-        Nexus A Liverton Store <span>·</span> Smart Home, Beauty &amp; Wellness Essentials
+        Nexus A Liverton Store <span>·</span> Smart Home &amp; Office Electronics
       </div>
       <header className="site-header">
         <div className="header-inner">

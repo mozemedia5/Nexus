@@ -31,14 +31,14 @@ interface ShoppingListItem {
 
 const DEFAULT_SUGGESTIONS = [
   "Recommend top Smart Home devices",
-  "Show Beauty & Wellness essentials",
+  "Show Workspace Productivity gadgets",
   "How do I track my order?",
-  "Tell me about Nexus A Liverton Store"
+  "Tell me about Nexus Store"
 ];
 
 const SHOPPING_SUGGESTIONS = [
-  "Smart lighting & automation items",
-  "Trending beauty & skincare tech",
+  "Smart lighting & ambient items",
+  "Best ergonomic desk setups",
   "How do I place an order?",
   "Track an existing purchase"
 ];
@@ -46,7 +46,7 @@ const SHOPPING_SUGGESTIONS = [
 const STORE_SUGGESTIONS = [
   "Where can I track my order?",
   "Browse Smart Home collection",
-  "Browse Beauty & Wellness collection",
+  "Browse Workspace collection",
   "Can you help me compare products?",
 ];
 
@@ -113,7 +113,7 @@ export default function AiAssistant() {
       {
         id: "welcome",
         role: "assistant",
-        content: "Hello! I'm Cari, your Shopping Assistant at Nexus A Liverton Store. I'm here to help you discover our curated Smart Home devices and Beauty & Wellness essentials. How can I help today?",
+        content: "Hello! I'm Cari, your Shopping Assistant at Nexus. I'm here to help you discover our smart home automation devices and workspace productivity gadgets. How can I help today?",
         timestamp: new Date(),
       },
     ];
@@ -612,7 +612,7 @@ export default function AiAssistant() {
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="Ask Cari about Smart Home or Beauty products..."
+                      placeholder="Ask Cari about Smart Home or Workspace gadgets..."
                       className="ai-assistant-input"
                       disabled={loading}
                     />

@@ -14,7 +14,7 @@ export default function SiteFooter() {
               <span className="brand-sub">A Liverton Store</span>
             </div>
           </Link>
-          <p>Smart Home, Beauty &amp; Wellness essentials curated for elevated modern living.</p>
+          <p>Smart Home &amp; Workspace Productivity gadgets curated for elevated modern living.</p>
 
           <div className="footer-socials flex flex-wrap gap-3 mt-4">
             <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="social-icon hover:opacity-80 transition-opacity" aria-label="TikTok">
@@ -41,7 +41,8 @@ export default function SiteFooter() {
           <span className="eyebrow">Catalogue</span>
           <Link href="/products">All Products</Link>
           <Link href="/products?collection=smart-home">Smart Home</Link>
-          <Link href="/products?collection=beauty-wellness">Beauty &amp; Wellness</Link>
+          <Link href="/products?collection=workspace-productivity">Workspace Productivity</Link>
+          <Link href="/products?collection=tech-accessories">Tech Accessories</Link>
           <Link href="/about">Our Story</Link>
         </div>
         <div className="footer-column">

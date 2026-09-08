@@ -7,7 +7,7 @@ export interface Campaign {
   title: string;
   subtitle: string;
   discountBadge: string;
-  categoryTag: "smart-home" | "beauty-wellness" | "all";
+  categoryTag: "smart-home" | "workspace-productivity" | "tech-accessories" | "all";
   bannerImageUrl: string;
   active: boolean;
   createdAt: string;
@@ -18,21 +18,21 @@ const CAMPAIGNS_STORAGE_KEY = "nexus_admin_campaigns_v1";
 export const DEFAULT_CAMPAIGNS: Campaign[] = [
   {
     id: "camp-1",
-    title: "Smart Home Innovation Month",
-    subtitle: "Automate your living space with 20% off high-tech ambient lighting & smart sensors.",
+    title: "Smart Office Elevation Event",
+    subtitle: "Upgrade your workstation with ergonomic monitor lights, Thunderbolt 4 docks, and magnetic wireless chargers.",
     discountBadge: "SAVE UP TO 20%",
-    categoryTag: "smart-home",
-    bannerImageUrl: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1200&q=80",
+    categoryTag: "workspace-productivity",
+    bannerImageUrl: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1200&q=80",
     active: true,
     createdAt: new Date().toISOString(),
   },
   {
     id: "camp-2",
-    title: "Beauty & Wellbeing Glow Series",
-    subtitle: "Clinical LED phototherapy masks and ultrasonic smart diffusers for everyday luxury.",
+    title: "Connected Home Automation Series",
+    subtitle: "Intelligent ambient lighting bars and climate monitoring sensors designed for modern living.",
     discountBadge: "SPECIAL BUNDLE DEAL",
-    categoryTag: "beauty-wellness",
-    bannerImageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80",
+    categoryTag: "smart-home",
+    bannerImageUrl: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1200&q=80",
     active: true,
     createdAt: new Date().toISOString(),
   },
@@ -67,7 +67,7 @@ export default function Admin() {
   const [newTitle, setNewTitle] = useState("");
   const [newSubtitle, setNewSubtitle] = useState("");
   const [newBadge, setNewBadge] = useState("");
-  const [newTag, setNewTag] = useState<"smart-home" | "beauty-wellness" | "all">("smart-home");
+  const [newTag, setNewTag] = useState<"smart-home" | "workspace-productivity" | "tech-accessories" | "all">("workspace-productivity");
   const [newImageUrl, setNewImageUrl] = useState("");
 
   useEffect(() => {
@@ -336,8 +336,9 @@ export default function Admin() {
                 onChange={(e) => setNewTag(e.target.value as any)}
                 className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
               >
+                <option value="workspace-productivity">Workspace Productivity</option>
                 <option value="smart-home">Smart Home & Automation</option>
-                <option value="beauty-wellness">Beauty & Wellness</option>
+                <option value="tech-accessories">Tech Accessories</option>
                 <option value="all">All Products / Global</option>
               </select>
             </div>
