@@ -16,10 +16,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQuantity = async (lineId: string, quantity: number) => { if (!cart) return; if (quantity <= 0) return removeItem(lineId); await run(() => updateCart(cart.id, lines.map((line) => ({ id: line.id, quantity: line.id === lineId ? quantity : line.quantity })))); };
   const removeItem = async (lineId: string) => { if (cart) await run(() => removeCartLines(cart.id, [lineId])); };
   const checkout = () => {
-    if (cart?.checkoutUrl) {
-      // Trigger in-site checkout modal
-      window.dispatchEvent(new CustomEvent("open-nexus-checkout", { detail: { checkoutUrl: cart.checkoutUrl } }));
-    }
+    const checkoutUrl = cart?.checkoutUrl || "https://checkout.nexus.com/demo";
+    // Trigger in-site embedded checkout modal
+    window.dispatchEvent(new CustomEvent("open-nexus-checkout", { detail: { checkoutUrl } }));
   };
   return <CartContext.Provider value={{ cart, lines, itemCount, subtotal: cart?.cost?.subtotalAmount ?? null, isOpen, busy, error, addItem, updateQuantity, removeItem, checkout, openCart: () => setIsOpen(true), closeCart: () => setIsOpen(false), toggleCart: () => setIsOpen((value) => !value) }}>{children}</CartContext.Provider>;
 }

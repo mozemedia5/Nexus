@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Search, ShoppingBag, PackageCheck, X } from "lucide-react";
+import { Menu, Search, ShoppingBag, PackageCheck, Shield, X } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 const links = [
@@ -48,6 +48,9 @@ export default function SiteHeader() {
             <Link href="/track-order" className="header-icon" aria-label="Track order">
               <PackageCheck size={18} />
             </Link>
+            <Link href="/admin" className="header-icon" aria-label="Admin Portal">
+              <Shield size={18} />
+            </Link>
             <button className="cart-trigger" type="button" onClick={openCart} aria-label={`Open shopping bag with ${itemCount} items`}>
               <ShoppingBag size={19} />
               <span className="cart-label">Bag</span>
@@ -73,9 +76,12 @@ export default function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <div className="mobile-menu-foot">
+        <div className="mobile-menu-foot flex flex-col gap-3">
           <Link href="/track-order" className="text-link">
             <PackageCheck size={15} /> Track Your Order
+          </Link>
+          <Link href="/admin" className="text-link">
+            <Shield size={15} /> Admin Portal / Login
           </Link>
           <button type="button" className="text-link" onClick={openCart}>
             <ShoppingBag size={15} /> Open your bag
