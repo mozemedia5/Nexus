@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Shield, Mail, Eye, EyeOff, ArrowUpRight, User } from "lucide-react";
 import { toast } from "sonner";
 import { getFirebaseAuth, getFirebaseStatus } from "@/lib/firebase";
 import SEO from "@/components/SEO";
 
 export default function Register() {
+  const [, setLocation] = useLocation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,13 +49,14 @@ export default function Register() {
       } catch {}
 
       toast.success("Account created!", { description: "Welcome to Nexus A Liverton Store." });
+      setLocation("/");
     } catch (err: any) {
       const msg = err.code === "auth/email-already-in-use"
         ? "An account with this email already exists."
         : err.code === "auth/weak-password"
-        ? "Password is too weak."
+        ? "Password is too weak. Please use at least 6 characters."
         : err.code === "auth/invalid-email"
-        ? "Invalid email address."
+        ? "Invalid email address format."
         : "Registration failed. Please try again.";
       toast.error(msg);
     } finally {
@@ -86,10 +88,19 @@ export default function Register() {
       } catch {}
 
       toast.success("Account created!", { description: "Signed up with Google." });
+      setLocation("/");
     } catch (err: any) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        toast.error("Google sign-up failed. Please try again.");
+      if (err.code === "auth/popup-closed-by-user") {
+        return;
       }
+      const msg = err.code === "auth/popup-blocked"
+        ? "Pop-up blocked by browser. Please allow pop-ups for this site."
+        : err.code === "auth/unauthorized-domain"
+        ? "This domain is not authorized for Google Sign-In in Firebase Console."
+        : err.code === "auth/account-exists-with-different-credential"
+        ? "An account already exists with the same email using a different provider."
+        : "Google sign-up failed. Please try again.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -119,10 +130,19 @@ export default function Register() {
       } catch {}
 
       toast.success("Account created!", { description: "Signed up with Apple." });
+      setLocation("/");
     } catch (err: any) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        toast.error("Apple sign-up failed. Please try again.");
+      if (err.code === "auth/popup-closed-by-user") {
+        return;
       }
+      const msg = err.code === "auth/popup-blocked"
+        ? "Pop-up blocked by browser. Please allow pop-ups for this site."
+        : err.code === "auth/unauthorized-domain"
+        ? "This domain is not authorized for Apple Sign-In in Firebase Console."
+        : err.code === "auth/account-exists-with-different-credential"
+        ? "An account already exists with the same email using a different provider."
+        : "Apple sign-up failed. Please try again.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Shield, Mail, Eye, EyeOff, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { getFirebaseAuth, getFirebaseStatus } from "@/lib/firebase";
 import SEO from "@/components/SEO";
 
 export default function Login() {
+  const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,13 +29,16 @@ export default function Login() {
       const { signInWithEmailAndPassword } = await import("firebase/auth");
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Welcome back!", { description: "You are now signed in to Nexus." });
+      setLocation("/");
     } catch (err: any) {
-      const msg = err.code === "auth/user-not-found"
-        ? "No account found with this email."
+      const msg = err.code === "auth/user-not-found" || err.code === "auth/invalid-credential"
+        ? "Invalid email or password."
         : err.code === "auth/wrong-password"
         ? "Incorrect password."
         : err.code === "auth/invalid-email"
-        ? "Invalid email address."
+        ? "Invalid email address format."
+        : err.code === "auth/too-many-requests"
+        ? "Too many failed attempts. Please try again later."
         : "Sign in failed. Please try again.";
       toast.error(msg);
     } finally {
@@ -52,12 +56,35 @@ export default function Login() {
       }
       const { signInWithPopup, GoogleAuthProvider } = await import("firebase/auth");
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+
+      // Store/update user profile in Firestore
+      try {
+        const { getFirestore, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
+        const db = getFirestore();
+        await setDoc(doc(db, "nexus_users", result.user.uid), {
+          uid: result.user.uid,
+          fullName: result.user.displayName || "",
+          email: result.user.email || "",
+          hasDiscountEligible: true,
+          lastLoginAt: serverTimestamp(),
+        }, { merge: true });
+      } catch {}
+
       toast.success("Welcome!", { description: "Signed in with Google." });
+      setLocation("/");
     } catch (err: any) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        toast.error("Google sign-in failed. Please try again.");
+      if (err.code === "auth/popup-closed-by-user") {
+        return;
       }
+      const msg = err.code === "auth/popup-blocked"
+        ? "Pop-up blocked by browser. Please allow pop-ups for this site."
+        : err.code === "auth/unauthorized-domain"
+        ? "This domain is not authorized for Google Sign-In in Firebase Console."
+        : err.code === "auth/account-exists-with-different-credential"
+        ? "An account already exists with the same email using a different provider."
+        : "Google sign-in failed. Please try again.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -73,12 +100,35 @@ export default function Login() {
       }
       const { signInWithPopup, OAuthProvider } = await import("firebase/auth");
       const provider = new OAuthProvider("apple.com");
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+
+      // Store/update user profile in Firestore
+      try {
+        const { getFirestore, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
+        const db = getFirestore();
+        await setDoc(doc(db, "nexus_users", result.user.uid), {
+          uid: result.user.uid,
+          fullName: result.user.displayName || "",
+          email: result.user.email || "",
+          hasDiscountEligible: true,
+          lastLoginAt: serverTimestamp(),
+        }, { merge: true });
+      } catch {}
+
       toast.success("Welcome!", { description: "Signed in with Apple." });
+      setLocation("/");
     } catch (err: any) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        toast.error("Apple sign-in failed. Please try again.");
+      if (err.code === "auth/popup-closed-by-user") {
+        return;
       }
+      const msg = err.code === "auth/popup-blocked"
+        ? "Pop-up blocked by browser. Please allow pop-ups for this site."
+        : err.code === "auth/unauthorized-domain"
+        ? "This domain is not authorized for Apple Sign-In in Firebase Console."
+        : err.code === "auth/account-exists-with-different-credential"
+        ? "An account already exists with the same email using a different provider."
+        : "Apple sign-in failed. Please try again.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
