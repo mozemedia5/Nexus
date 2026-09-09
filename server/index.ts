@@ -5,6 +5,7 @@ import { isCloudinaryConfigured, createCloudinaryUploadSignature, CLOUDINARY_RES
 import { parseFirebaseServiceAccount } from "./firebaseAdmin.js";
 import { generateCariReply, isHannaConfigured, type ShoppingCatalogContext, type ShoppingMessage } from "./hanna.js";
 import { fetchShopifyOrderTracking } from "../api/order-tracking.js";
+import { fetchShopifyAdminOrders, fetchShopifyAdminMetrics } from "./shopifyAdmin.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -114,6 +115,175 @@ async function startServer() {
       const message = error instanceof Error ? error.message : "Shopping assistant unavailable";
       const status = message.includes("not configured") || message.includes("needs a shopper") ? 412 : 502;
       res.status(status).json({ error: message });
+    }
+  });
+
+  // Admin Orders received endpoint using Shopify Admin Access Token
+  app.get("/api/admin/orders", async (_req, res) => {
+    try {
+      const orders = await fetchShopifyAdminOrders();
+      res.json({ orders });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch admin orders";
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // Admin Analytics & Metrics endpoint
+  app.get("/api/admin/metrics", async (_req, res) => {
+    try {
+      const orders = await fetchShopifyAdminOrders();
+      const metrics = await fetchShopifyAdminMetrics(orders);
+      res.json({ metrics });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to calculate analytics metrics";
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // Memory/Firestore subscriber and interaction stores
+  const inMemorySubscribers: Array<{ id: string; email: string; source: string; subscribedAt: string }> = [
+    { id: "sub-1", email: "sarah.m@example.com", source: "Society Modal", subscribedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
+    { id: "sub-2", email: "james.cooper@example.com", source: "Footer Newsletter", subscribedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
+    { id: "sub-3", email: "aisha.p@example.com", source: "Society Modal", subscribedAt: new Date(Date.now() - 86400000 * 1).toISOString() },
+  ];
+
+  const inMemoryInteractions: Array<{ id: string; userEmail?: string; action: string; productTitle: string; category?: string; timestamp: string }> = [
+    { id: "int-1", userEmail: "sarah.m@example.com", action: "like", productTitle: "Nexus Ergonomic Smart Light Bar", category: "workspace-productivity", timestamp: new Date(Date.now() - 3600000 * 2).toISOString() },
+    { id: "int-2", userEmail: "sarah.m@example.com", action: "click", productTitle: "Nexus Smart Climate Sensor & Gateway", category: "smart-home", timestamp: new Date(Date.now() - 3600000 * 3).toISOString() },
+    { id: "int-3", userEmail: "aisha.p@example.com", action: "like", productTitle: "Nexus Magnetic Wireless Charging Stand", category: "tech-accessories", timestamp: new Date(Date.now() - 3600000 * 5).toISOString() },
+    { id: "int-4", userEmail: "james.cooper@example.com", action: "view", productTitle: "Nexus Thunderbolt 4 Pro Docking Station", category: "workspace-productivity", timestamp: new Date(Date.now() - 3600000 * 10).toISOString() },
+  ];
+
+  // Newsletter Subscription API
+  app.post("/api/newsletter/subscribe", async (req, res) => {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const source = typeof req.body?.source === "string" ? req.body.source : "Newsletter Modal";
+
+    if (!email || !email.includes("@")) {
+      res.status(400).json({ error: "Valid email address is required" });
+      return;
+    }
+
+    try {
+      const admin = parseFirebaseServiceAccount();
+      if (admin) {
+        const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+        await firestore.collection("nexus_subscribers").doc(email).set({
+          email,
+          source,
+          subscribedAt: new Date().toISOString(),
+        }, { merge: true });
+      }
+
+      if (!inMemorySubscribers.some((s) => s.email === email)) {
+        inMemorySubscribers.unshift({
+          id: `sub-${Date.now()}`,
+          email,
+          source,
+          subscribedAt: new Date().toISOString(),
+        });
+      }
+
+      res.json({ success: true, message: "Successfully subscribed to Nexus updates" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Subscription failed";
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // Track User Interaction / Likes API
+  app.post("/api/user/interactions", async (req, res) => {
+    const { userEmail, action, productTitle, category } = req.body || {};
+    if (!productTitle) {
+      res.status(400).json({ error: "productTitle is required" });
+      return;
+    }
+
+    const interaction = {
+      id: `int-${Date.now()}`,
+      userEmail: typeof userEmail === "string" ? userEmail.toLowerCase() : "anonymous",
+      action: typeof action === "string" ? action : "view",
+      productTitle: String(productTitle),
+      category: typeof category === "string" ? category : "all",
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      const admin = parseFirebaseServiceAccount();
+      if (admin) {
+        const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+        await firestore.collection("nexus_user_interactions").add(interaction);
+      }
+      inMemoryInteractions.unshift(interaction);
+      res.json({ success: true, interaction });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to record interaction" });
+    }
+  });
+
+  // Admin Leads and Tracked Interests API
+  app.get("/api/admin/leads", async (_req, res) => {
+    try {
+      let subscribers = [...inMemorySubscribers];
+      let interactions = [...inMemoryInteractions];
+
+      const admin = parseFirebaseServiceAccount();
+      if (admin) {
+        try {
+          const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+          const subSnap = await firestore.collection("nexus_subscribers").get();
+          if (!subSnap.empty) {
+            subscribers = subSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+          }
+          const intSnap = await firestore.collection("nexus_user_interactions").limit(100).get();
+          if (!intSnap.empty) {
+            interactions = intSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+          }
+        } catch {}
+      }
+
+      res.json({ subscribers, interactions });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch leads" });
+    }
+  });
+
+  // Superadmin endpoint: Create / Add New Admin with Assigned Role
+  app.post("/api/admin/create-admin", async (req, res) => {
+    const { email, fullName, role, adminAccessToken } = req.body || {};
+
+    if (!email || !email.includes("@")) {
+      res.status(400).json({ error: "Valid email address is required" });
+      return;
+    }
+
+    const assignedRole = role === "superadmin" ? "superadmin" : "admin";
+    const name = typeof fullName === "string" && fullName.trim() ? fullName.trim() : "Nexus Store Admin";
+    const token = typeof adminAccessToken === "string" && adminAccessToken.trim() ? adminAccessToken.trim() : "nexus-admin-2026";
+
+    const newAdmin = {
+      uid: `admin-${Date.now()}`,
+      fullName: name,
+      email: email.toLowerCase().trim(),
+      role: assignedRole,
+      isAdmin: true,
+      adminAccessToken: token,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      const admin = parseFirebaseServiceAccount();
+      if (admin) {
+        const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+        await firestore.collection("nexus_admins").doc(newAdmin.uid).set(newAdmin, { merge: true });
+      }
+
+      res.json({ success: true, admin: newAdmin, message: `Created new ${assignedRole} successfully.` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create admin";
+      res.status(500).json({ error: message });
     }
   });
 

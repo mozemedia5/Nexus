@@ -9,8 +9,41 @@ export default function ProductCard({ product, compact = false }: { product: Pro
   const { addItem } = useCart();
   const [showAnalysis, setShowAnalysis] = useState(false);
   const variant = product.variants.find((item) => item.availableForSale) ?? product.variants[0];
+  const trackInteraction = (action: "click" | "like" | "add_to_cart") => {
+    try {
+      const userSession = localStorage.getItem("nexus_admin_session");
+      let userEmail = "";
+      if (userSession) {
+        try { userEmail = JSON.parse(userSession).email || ""; } catch {}
+      }
+
+      fetch("/api/user/interactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userEmail,
+          action,
+          productTitle: product.name,
+          category: product.categoryLabel,
+        }),
+      }).catch(() => {});
+
+      const saved = localStorage.getItem("nexus_user_interactions_v1");
+      const list = saved ? JSON.parse(saved) : [];
+      list.unshift({
+        userEmail: userEmail || "guest",
+        action,
+        productTitle: product.name,
+        category: product.categoryLabel,
+        timestamp: new Date().toISOString(),
+      });
+      localStorage.setItem("nexus_user_interactions_v1", JSON.stringify(list.slice(0, 50)));
+    } catch {}
+  };
+
   const handleAdd = async () => {
     await addItem(product, variant?.id);
+    trackInteraction("add_to_cart");
     toast("Added to your bag", { description: product.name });
   };
   const mainImage = product.image ?? product.images[0];
@@ -19,7 +52,7 @@ export default function ProductCard({ product, compact = false }: { product: Pro
   return (
     <article className={`group relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${compact ? "p-2" : ""}`}>
       <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center p-2">
-        <Link href={`/products/${product.handle}`} className="w-full h-full block relative" aria-label={`View ${product.name}`}>
+        <Link href={`/products/${product.handle}`} onClick={() => trackInteraction("click")} className="w-full h-full block relative" aria-label={`View ${product.name}`}>
           <img
             src={mainImage?.url ?? "/logo.png"}
             alt={mainImage?.altText ?? product.name}

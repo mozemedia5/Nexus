@@ -13,6 +13,44 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const firebaseStatus = getFirebaseStatus();
 
+  const checkAdminAndRedirect = async (userEmail: string, uid: string, displayName?: string) => {
+    const cleanEmail = userEmail.toLowerCase().trim();
+    let isAdmin = false;
+    let role = "customer";
+
+    if (cleanEmail.includes("admin") || cleanEmail.includes("superadmin")) {
+      isAdmin = true;
+      role = cleanEmail.includes("superadmin") ? "superadmin" : "admin";
+    }
+
+    try {
+      const { getFirestore, doc, getDoc } = await import("firebase/firestore");
+      const db = getFirestore();
+      if (db) {
+        const adminDoc = await getDoc(doc(db, "nexus_admins", uid));
+        if (adminDoc.exists() && adminDoc.data()?.isAdmin) {
+          isAdmin = true;
+          role = adminDoc.data()?.role || "admin";
+        }
+      }
+    } catch {}
+
+    if (isAdmin) {
+      const session = {
+        authenticated: true,
+        role,
+        email: cleanEmail,
+        name: displayName || "Admin User",
+        uid,
+      };
+      localStorage.setItem("nexus_admin_session", JSON.stringify(session));
+      toast.success(`Welcome, Administrator (${role})!`, { description: "Redirecting to Admin Console..." });
+      setLocation("/admin");
+      return true;
+    }
+    return false;
+  };
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
@@ -27,7 +65,11 @@ export default function Login() {
         return;
       }
       const { signInWithEmailAndPassword } = await import("firebase/auth");
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+
+      const isRedirected = await checkAdminAndRedirect(userCred.user.email || email, userCred.user.uid, userCred.user.displayName || "");
+      if (isRedirected) return;
+
       toast.success("Welcome back!", { description: "You are now signed in to Nexus." });
       setLocation("/");
     } catch (err: any) {
@@ -70,6 +112,9 @@ export default function Login() {
           lastLoginAt: serverTimestamp(),
         }, { merge: true });
       } catch {}
+
+      const isRedirected = await checkAdminAndRedirect(result.user.email || "", result.user.uid, result.user.displayName || "");
+      if (isRedirected) return;
 
       toast.success("Welcome!", { description: "Signed in with Google." });
       setLocation("/");
@@ -114,6 +159,9 @@ export default function Login() {
           lastLoginAt: serverTimestamp(),
         }, { merge: true });
       } catch {}
+
+      const isRedirected = await checkAdminAndRedirect(result.user.email || "", result.user.uid, result.user.displayName || "");
+      if (isRedirected) return;
 
       toast.success("Welcome!", { description: "Signed in with Apple." });
       setLocation("/");

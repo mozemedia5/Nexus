@@ -22,6 +22,19 @@ export default function ProductDetail() {
       .then((item) => {
         setProduct(item);
         setSelected(item?.variants.find((variant) => variant.availableForSale)?.id ?? item?.variants[0]?.id ?? "");
+        if (item) {
+          try {
+            fetch("/api/user/interactions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "view",
+                productTitle: item.name,
+                category: item.categoryLabel,
+              }),
+            }).catch(() => {});
+          } catch {}
+        }
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load this product."));
   }, [params?.handle]);
@@ -48,6 +61,17 @@ export default function ProductDetail() {
 
   const add = async () => {
     await addItem(product, variant?.id, quantity);
+    try {
+      fetch("/api/user/interactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add_to_cart",
+          productTitle: product.name,
+          category: product.categoryLabel,
+        }),
+      }).catch(() => {});
+    } catch {}
     toast.success("Added to your shopping bag", { description: `${product.name} (x${quantity})` });
   };
 
