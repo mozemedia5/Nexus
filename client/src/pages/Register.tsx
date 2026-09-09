@@ -14,6 +14,32 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const firebaseStatus = getFirebaseStatus();
 
+  const checkAdminAndRedirect = async (userEmail: string, uid: string, displayName?: string) => {
+    const cleanEmail = userEmail.toLowerCase().trim();
+    let isAdmin = false;
+    let role = "customer";
+
+    if (cleanEmail.includes("admin") || cleanEmail.includes("superadmin")) {
+      isAdmin = true;
+      role = cleanEmail.includes("superadmin") ? "superadmin" : "admin";
+    }
+
+    if (isAdmin) {
+      const session = {
+        authenticated: true,
+        role,
+        email: cleanEmail,
+        name: displayName || "Admin User",
+        uid,
+      };
+      localStorage.setItem("nexus_admin_session", JSON.stringify(session));
+      toast.success(`Welcome, Administrator (${role})!`, { description: "Redirecting to Admin Console..." });
+      setLocation("/admin");
+      return true;
+    }
+    return false;
+  };
+
   const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !email.trim() || !password.trim()) {
@@ -39,14 +65,19 @@ export default function Register() {
       try {
         const { getFirestore, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
         const db = getFirestore();
-        await setDoc(doc(db, "nexus_users", result.user.uid), {
-          uid: result.user.uid,
-          fullName,
-          email,
-          hasDiscountEligible: true,
-          registeredAt: serverTimestamp(),
-        });
+        if (db) {
+          await setDoc(doc(db, "nexus_users", result.user.uid), {
+            uid: result.user.uid,
+            fullName,
+            email,
+            hasDiscountEligible: true,
+            registeredAt: serverTimestamp(),
+          });
+        }
       } catch {}
+
+      const isRedirected = await checkAdminAndRedirect(email, result.user.uid, fullName);
+      if (isRedirected) return;
 
       toast.success("Account created!", { description: "Welcome to Nexus A Liverton Store." });
       setLocation("/");

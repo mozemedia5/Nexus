@@ -27,12 +27,29 @@ export default function SocietyModal() {
     };
   }, []);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!email.trim() || !email.includes("@")) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
       toast.error("Please enter a valid email address.");
       return;
     }
+
+    try {
+      fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, source: "Nexus Society Club Modal" }),
+      }).catch(() => {});
+
+      const saved = localStorage.getItem("nexus_subscribers_v1");
+      const list = saved ? JSON.parse(saved) : [];
+      if (!list.some((item: any) => item.email === cleanEmail)) {
+        list.unshift({ email: cleanEmail, source: "Nexus Club", subscribedAt: new Date().toISOString() });
+        localStorage.setItem("nexus_subscribers_v1", JSON.stringify(list));
+      }
+    } catch {}
+
     toast.success("Welcome to Nexus Club", { description: "You are now subscribed to Smart Home & Workspace updates." });
     setEmail("");
     setOpen(false);
