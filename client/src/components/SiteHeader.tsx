@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Search, ShoppingBag, PackageCheck, Shield, X } from "lucide-react";
+import { Menu, Search, ShoppingBag, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 const links = [
-  { href: "/", label: "Home" },
-  { href: "/products", label: "Shop All" },
-  { href: "/products?collection=smart-home", label: "Smart Home" },
-  { href: "/products?collection=workspace-productivity", label: "Workspace" },
-  { href: "/products?collection=tech-accessories", label: "Accessories" },
-  { href: "/about", label: "Our Story" },
-  { href: "/track-order", label: "Track Order" },
+  { href: "/", label: "Home", icon: Home },
+  { href: "/products", label: "Shop All", icon: Store },
+  { href: "/products?collection=smart-home", label: "Smart Home", icon: Sparkles },
+  { href: "/products?collection=workspace-productivity", label: "Workspace", icon: Cable },
+  { href: "/products?collection=tech-accessories", label: "Accessories", icon: Accessibility },
+  { href: "/about", label: "Our Story", icon: null },
 ];
 
 export default function SiteHeader() {
@@ -28,7 +27,7 @@ export default function SiteHeader() {
       <header className="site-header">
         <div className="header-inner">
           <Link href="/" className="brand-lockup" aria-label="Nexus A Liverton Store home">
-            <img src="/logo.png" alt="Nexus Logo" className="brand-logo-img h-9 w-auto object-contain" />
+            <img src="/logo.png" alt="Nexus Logo" className="brand-logo-img h-8 w-auto object-contain" />
             <div className="brand-text-stack">
               <span className="brand-name">Nexus</span>
               <span className="brand-sub">A Liverton Store</span>
@@ -37,27 +36,25 @@ export default function SiteHeader() {
           <nav className="desktop-nav" aria-label="Primary navigation">
             {links.map((link) => (
               <Link key={link.href} href={link.href} className="nav-link">
+                {link.icon && <link.icon size={14} strokeWidth={2} />}
                 {link.label}
               </Link>
             ))}
           </nav>
           <div className="header-actions">
             <Link href="/products" className="header-icon" aria-label="Search products">
-              <Search size={18} />
+              <Search size={16} />
             </Link>
             <Link href="/track-order" className="header-icon" aria-label="Track order">
-              <PackageCheck size={18} />
-            </Link>
-            <Link href="/admin" className="header-icon" aria-label="Admin Portal">
-              <Shield size={18} />
+              <PackageCheck size={16} />
             </Link>
             <button className="cart-trigger" type="button" onClick={openCart} aria-label={`Open shopping bag with ${itemCount} items`}>
-              <ShoppingBag size={19} />
+              <ShoppingBag size={17} />
               <span className="cart-label">Bag</span>
               <span className="cart-count">{itemCount}</span>
             </button>
             <button className="menu-trigger" type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu">
-              <Menu size={22} />
+              <Menu size={20} />
             </button>
           </div>
         </div>
@@ -66,7 +63,7 @@ export default function SiteHeader() {
         <div className="mobile-menu-head">
           <span className="eyebrow">Nexus A Liverton Store</span>
           <button type="button" className="icon-button" onClick={() => setMenuOpen(false)} aria-label="Close menu">
-            <X size={22} />
+            <X size={20} />
           </button>
         </div>
         <nav className="mobile-nav" aria-label="Mobile navigation">
@@ -78,13 +75,10 @@ export default function SiteHeader() {
         </nav>
         <div className="mobile-menu-foot flex flex-col gap-3">
           <Link href="/track-order" className="text-link">
-            <PackageCheck size={15} /> Track Your Order
-          </Link>
-          <Link href="/admin" className="text-link">
-            <Shield size={15} /> Admin Portal / Login
+            <PackageCheck size={14} /> Track Your Order
           </Link>
           <button type="button" className="text-link" onClick={openCart}>
-            <ShoppingBag size={15} /> Open your bag
+            <ShoppingBag size={14} /> Open your bag
           </button>
         </div>
       </div>

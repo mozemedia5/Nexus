@@ -38,6 +38,8 @@ function Router() {
       <Route path="/products" component={CollectionsRoute} />
       <Route path="/products/:handle" component={() => <SiteLayout><ProductDetail /></SiteLayout>} />
       <Route path="/products.html" component={CollectionsRoute} />
+      <Route path="/new-arrivals" component={CollectionsRoute} />
+      <Route path="/smart-office" component={CollectionsRoute} />
       <Route path="/about" component={HeritageRoute} />
       <Route path="/about.html" component={HeritageRoute} />
       <Route path="/track-order" component={OrderTrackingRoute} />

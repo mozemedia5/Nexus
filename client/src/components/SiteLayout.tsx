@@ -13,7 +13,11 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     normalizedPath === "/" ||
     normalizedPath === "/about" ||
     normalizedPath === "/about.html" ||
-    normalizedPath === "/heritage";
+    normalizedPath === "/heritage" ||
+    normalizedPath === "/products" ||
+    normalizedPath.startsWith("/products/") ||
+    normalizedPath === "/track-order" ||
+    normalizedPath === "/order-tracking";
 
   return (
     <div className="site-frame">

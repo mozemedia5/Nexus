@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ChevronLeft, ChevronRight, Camera, Sparkles } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import { toast } from "sonner";
 import { getProduct, formatPrice, shopifyConfigured, type Product } from "@/lib/store";
@@ -12,6 +12,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [selected, setSelected] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const [error, setError] = useState("");
   const { addItem } = useCart();
 
@@ -37,7 +38,7 @@ export default function ProductDetail() {
   if (!product)
     return (
       <div className="empty-state page-pad">
-        <h2>Loading product details…</h2>
+        <h2>Loading product details...</h2>
       </div>
     );
 
@@ -48,6 +49,10 @@ export default function ProductDetail() {
   const add = async () => {
     await addItem(product, variant?.id, quantity);
     toast.success("Added to your shopping bag", { description: `${product.name} (x${quantity})` });
+  };
+
+  const goImage = (dir: number) => {
+    setActiveImageIndex((prev) => (prev + dir + images.length) % images.length);
   };
 
   return (
@@ -84,12 +89,46 @@ export default function ProductDetail() {
       </Link>
       <div className="product-detail-grid">
         <div className="product-gallery flex flex-col gap-4">
-          <div className="main-image-frame overflow-hidden rounded-xl bg-neutral-100 border border-border/50 aspect-square flex items-center justify-center relative">
+          <div className="main-image-frame overflow-hidden rounded-xl bg-neutral-100 border border-border/50 aspect-square flex items-center justify-center relative group">
             <img
               src={currentImage?.url ?? "/logo.png"}
               alt={currentImage?.altText ?? product.name}
               className="w-full h-full object-cover transition-all duration-300"
             />
+            {images.length > 1 && (
+              <>
+                <button type="button" onClick={() => goImage(-1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md" aria-label="Previous image">
+                  <ChevronLeft size={16} />
+                </button>
+                <button type="button" onClick={() => goImage(1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md" aria-label="Next image">
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+            {/* Image Analysis Button */}
+            <button
+              type="button"
+              onClick={() => setShowAnalysis(!showAnalysis)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 text-slate-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-amber-500 hover:text-white"
+              title="Analyze this image"
+              aria-label="Analyze product image"
+            >
+              <Camera size={14} />
+            </button>
+            {showAnalysis && (
+              <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-6 z-10 rounded-xl">
+                <div className="text-center text-white max-w-sm">
+                  <Sparkles size={24} className="mx-auto mb-3 text-amber-400" />
+                  <h4 className="text-sm font-bold mb-2">Image Analysis</h4>
+                  <p className="text-xs leading-relaxed text-slate-300">
+                    This product features a {product.categoryLabel.toLowerCase()} design with premium materials and build quality. Optimized for seamless integration into modern smart home ecosystems and productive workspace environments.
+                  </p>
+                  <button type="button" onClick={() => setShowAnalysis(false)} className="mt-3 text-xs text-amber-400 underline">
+                    Close Analysis
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           {images.length > 1 && (
             <div className="product-thumbs flex flex-wrap gap-2">
@@ -108,19 +147,19 @@ export default function ProductDetail() {
             </div>
           )}
         </div>
-        <div className="product-info flex flex-col gap-6">
+        <div className="product-info flex flex-col gap-5">
           <div>
-            <span className="eyebrow uppercase text-xs tracking-wider text-muted-foreground">{product.categoryLabel || "Nexus Collection"}</span>
-            <h1 className="text-3xl font-serif font-medium mt-1 text-foreground normal-case">{product.name}</h1>
+            <span className="eyebrow text-xs tracking-wide text-muted-foreground">{product.categoryLabel || "Nexus Collection"}</span>
+            <h1 className="text-2xl font-serif font-medium mt-1 text-foreground">{product.name}</h1>
           </div>
-          <div className="detail-price flex items-baseline gap-3 text-2xl font-medium">
+          <div className="detail-price flex items-baseline gap-3 text-xl font-medium">
             <strong>{formatPrice(variant?.price ?? product.price)}</strong>
-            {product.compareAtPrice && <del className="text-base text-muted-foreground font-normal">{formatPrice(product.compareAtPrice)}</del>}
+            {product.compareAtPrice && <del className="text-sm text-muted-foreground font-normal">{formatPrice(product.compareAtPrice)}</del>}
           </div>
-          {/* Segmented & Partitioned Description */}
-          <div className="space-y-6 text-sm text-slate-600 dark:text-slate-300 border-t border-b border-slate-200 dark:border-slate-800 py-4">
+          {/* Segmented Description */}
+          <div className="space-y-5 text-sm text-slate-600 dark:text-slate-300 border-t border-b border-slate-200 dark:border-slate-800 py-4">
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1.5">
+              <h4 className="text-xs font-bold tracking-wide text-amber-600 dark:text-amber-400 mb-1.5">
                 Overview
               </h4>
               <p className="leading-relaxed">
@@ -129,7 +168,7 @@ export default function ProductDetail() {
             </div>
 
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2">
+              <h4 className="text-xs font-bold tracking-wide text-amber-600 dark:text-amber-400 mb-2">
                 Key Highlights
               </h4>
               <ul className="space-y-2">
@@ -148,11 +187,11 @@ export default function ProductDetail() {
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Category</span>
+                <span className="text-[10px] font-bold tracking-wide text-slate-400 block">Category</span>
                 <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{product.categoryLabel || "Smart Tech"}</span>
               </div>
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Fulfillment</span>
+                <span className="text-[10px] font-bold tracking-wide text-slate-400 block">Fulfillment</span>
                 <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Global Courier Express</span>
               </div>
             </div>
@@ -160,7 +199,7 @@ export default function ProductDetail() {
 
           {product.variants.length > 1 && (
             <div className="variant-selector space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-foreground">Select Variant</label>
+              <label className="text-xs font-semibold tracking-wide text-foreground">Select Variant</label>
               <div className="flex flex-wrap gap-2">
                 {product.variants.map((item) => (
                   <button
@@ -168,7 +207,7 @@ export default function ProductDetail() {
                     type="button"
                     disabled={!item.availableForSale}
                     onClick={() => setSelected(item.id)}
-                    className={`px-4 py-2 text-xs font-medium rounded-md border transition-all ${
+                    className={`px-4 py-2 text-xs font-medium rounded-lg border transition-all ${
                       selected === item.id
                         ? "border-foreground bg-foreground text-background"
                         : "border-border hover:border-foreground/50 text-foreground"
@@ -182,7 +221,7 @@ export default function ProductDetail() {
           )}
 
           <div className="detail-actions flex items-center gap-4">
-            <div className="quantity-control flex items-center border border-border rounded-md px-3 py-2">
+            <div className="quantity-control flex items-center border border-border rounded-lg px-3 py-2">
               <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Decrease quantity" className="p-1 hover:opacity-70">
                 <Minus size={14} />
               </button>
