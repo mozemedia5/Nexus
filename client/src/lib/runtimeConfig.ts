@@ -13,19 +13,37 @@ let firebaseConfigError: string | null = null;
 
 function readFirebaseConfig(): FirebaseConfig {
   const fallback: FirebaseConfig = { apiKey: "", authDomain: "", projectId: "", appId: "" };
-  const raw = import.meta.env.VITE_FIREBASE_CONFIG_JSON;
+  let raw = import.meta.env.VITE_FIREBASE_CONFIG_JSON;
 
-  if (raw?.trim()) {
+  if (raw && typeof raw === "string") {
+    raw = raw.trim();
+    // Clean wrapping single/double quotes if added by environment variable setups (e.g., Vercel)
+    if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+      raw = raw.slice(1, -1).trim();
+    }
+  }
+
+  if (raw) {
     try {
-      const parsed = JSON.parse(raw) as Partial<FirebaseConfig>;
-      const missing = REQUIRED_FIREBASE_FIELDS.filter((field) => !parsed[field]);
+      const parsedAny = JSON.parse(raw) as Record<string, any>;
+      // Support both camelCase and snake_case field names from Firebase JSON configs
+      const config: FirebaseConfig = {
+        apiKey: parsedAny.apiKey || parsedAny.api_key || "",
+        authDomain: parsedAny.authDomain || parsedAny.auth_domain || (parsedAny.projectId || parsedAny.project_id ? `${parsedAny.projectId || parsedAny.project_id}.firebaseapp.com` : ""),
+        projectId: parsedAny.projectId || parsedAny.project_id || "",
+        storageBucket: parsedAny.storageBucket || parsedAny.storage_bucket || "",
+        messagingSenderId: parsedAny.messagingSenderId || parsedAny.messaging_sender_id || "",
+        appId: parsedAny.appId || parsedAny.app_id || parsedAny.client?.[0]?.client_info?.mobilesdk_app_id || "",
+      };
+
+      const missing = REQUIRED_FIREBASE_FIELDS.filter((field) => !config[field]);
       if (missing.length > 0) {
-        firebaseConfigError = `VITE_FIREBASE_CONFIG_JSON is missing: ${missing.join(", ")}`;
+        firebaseConfigError = `VITE_FIREBASE_CONFIG_JSON is missing required fields: ${missing.join(", ")}`;
         return fallback;
       }
       firebaseConfigError = null;
-      return parsed as FirebaseConfig;
-    } catch {
+      return config;
+    } catch (e) {
       firebaseConfigError = "VITE_FIREBASE_CONFIG_JSON must be valid JSON";
       return fallback;
     }
