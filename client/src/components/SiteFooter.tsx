@@ -47,6 +47,7 @@ export default function SiteFooter() {
         </div>
         <div className="footer-column">
           <span className="eyebrow">Customer Care</span>
+          <Link href="/login">Sign In / Register</Link>
           <Link href="/track-order">Order Tracking</Link>
           <a href="mailto:support@nexus.liverton.store">Contact Support <span aria-hidden="true">↗</span></a>
         </div>

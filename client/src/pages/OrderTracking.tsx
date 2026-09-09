@@ -49,7 +49,7 @@ export default function OrderTracking() {
       <section className="page-intro section-pad">
         <span className="eyebrow">Nexus A Liverton Store / Customer Service</span>
         <h1>Order <em>Tracking.</em></h1>
-        <p>Check the live status of your Smart Home and Beauty &amp; Wellness purchase in real time.</p>
+        <p>Check the live status of your Smart Home purchase in real time.</p>
       </section>
 
       <section className="section-pad track-order-section">

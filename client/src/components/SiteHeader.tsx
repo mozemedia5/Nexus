@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Search, ShoppingBag, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility } from "lucide-react";
+import { Menu, Search, ShoppingBag, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 const links = [
@@ -42,6 +42,9 @@ export default function SiteHeader() {
             ))}
           </nav>
           <div className="header-actions">
+            <Link href="/login" className="header-icon" aria-label="Sign in to your account">
+              <User size={16} />
+            </Link>
             <Link href="/products" className="header-icon" aria-label="Search products">
               <Search size={16} />
             </Link>
@@ -72,8 +75,10 @@ export default function SiteHeader() {
               {link.label}
             </Link>
           ))}
-        </nav>
-        <div className="mobile-menu-foot flex flex-col gap-3">
+        </nav>          <div className="mobile-menu-foot flex flex-col gap-3">
+          <Link href="/login" className="text-link">
+            <User size={14} /> Sign In / Register
+          </Link>
           <Link href="/track-order" className="text-link">
             <PackageCheck size={14} /> Track Your Order
           </Link>

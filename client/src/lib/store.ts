@@ -241,116 +241,7 @@ export const FALLBACK_COLLECTIONS: Collection[] = [
   }
 ];
 
-export const FALLBACK_PRODUCTS: Product[] = [
-  {
-    id: "gid://shopify/Product/1",
-    handle: "nexus-ergonomic-desk-light",
-    name: "Nexus Ergonomic Smart Light Bar",
-    description: "Screen-glare free monitor light bar with auto-dimming ambient temperature control and wireless rotary controller.",
-    categoryLabel: "Workspace Productivity",
-    tags: ["workspace-productivity", "best-sellers", "desk-lighting"],
-    image: { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80", altText: "Ergonomic Smart Light Bar" },
-    images: [
-      { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80", altText: "Desk Light Bar Setup" },
-      { url: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=800&q=80", altText: "Minimal Desk Lamp Angle" }
-    ],
-    price: { amount: "129.00", currencyCode: "USD" },
-    compareAtPrice: { amount: "159.00", currencyCode: "USD" },
-    availableForSale: true,
-    variants: [
-      { id: "gid://shopify/ProductVariant/1", title: "Matte Black", availableForSale: true, price: { amount: "129.00", currencyCode: "USD" } }
-    ]
-  },
-  {
-    id: "gid://shopify/Product/2",
-    handle: "nexus-smart-docking-station",
-    name: "Nexus Thunderbolt 4 Smart Dock",
-    description: "14-in-1 high-speed workstation dock with integrated power delivery and dual 4K display output.",
-    categoryLabel: "Workspace Productivity",
-    tags: ["workspace-productivity", "best-sellers", "docks"],
-    image: { url: "https://images.unsplash.com/photo-1593062096033-9a26b09da705?auto=format&fit=crop&w=800&q=80", altText: "Smart Docking Station" },
-    images: [
-      { url: "https://images.unsplash.com/photo-1593062096033-9a26b09da705?auto=format&fit=crop&w=800&q=80", altText: "Workstation Setup" },
-      { url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80", altText: "Desk Charging Pad" }
-    ],
-    price: { amount: "219.00", currencyCode: "USD" },
-    compareAtPrice: { amount: "259.00", currencyCode: "USD" },
-    availableForSale: true,
-    variants: [
-      { id: "gid://shopify/ProductVariant/2", title: "Space Gray", availableForSale: true, price: { amount: "219.00", currencyCode: "USD" } }
-    ]
-  },
-  {
-    id: "gid://shopify/Product/3",
-    handle: "nexus-ambient-light-strip",
-    name: "Nexus Smart Gradient Light Strip",
-    description: "Dynamic multi-color sync light bar designed for monitor backlighting and desk atmosphere.",
-    categoryLabel: "Smart Home Automation",
-    tags: ["smart-home", "best-sellers", "ambient-lighting"],
-    image: { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Gradient Light Strip" },
-    images: [
-      { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80", altText: "Ambient Sync Lights" },
-      { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80", altText: "Smart Home Hub" }
-    ],
-    price: { amount: "89.00", currencyCode: "USD" },
-    compareAtPrice: { amount: "109.00", currencyCode: "USD" },
-    availableForSale: true,
-    variants: [
-      { id: "gid://shopify/ProductVariant/3", title: "2-Meter Starter Kit", availableForSale: true, price: { amount: "89.00", currencyCode: "USD" } }
-    ]
-  },
-  {
-    id: "gid://shopify/Product/4",
-    handle: "nexus-magnetic-wireless-charger",
-    name: "Nexus 3-in-1 Magnetic Charging Stand",
-    description: "Ultra-compact fast wireless charging stand for phone, earbuds, and smart watch with weighted aluminum base.",
-    categoryLabel: "Tech Accessories",
-    tags: ["tech-accessories", "best-sellers", "chargers"],
-    image: { url: "https://images.unsplash.com/photo-1616410011236-7a42121dd981?auto=format&fit=crop&w=800&q=80", altText: "3-in-1 Charging Stand" },
-    images: [
-      { url: "https://images.unsplash.com/photo-1616410011236-7a42121dd981?auto=format&fit=crop&w=800&q=80", altText: "Desk Charger" },
-      { url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80", altText: "Wireless Charger Top View" }
-    ],
-    price: { amount: "79.00", currencyCode: "USD" },
-    compareAtPrice: null,
-    availableForSale: true,
-    variants: [
-      { id: "gid://shopify/ProductVariant/4", title: "Silver Aluminum", availableForSale: true, price: { amount: "79.00", currencyCode: "USD" } }
-    ]
-  },
-  {
-    id: "gid://shopify/Product/5",
-    handle: "nexus-climate-sensor-hub",
-    name: "Nexus Climate & Air Quality Monitor",
-    description: "Real-time indoor air quality, temperature, and humidity tracker with smart home scene automation.",
-    categoryLabel: "Smart Home Automation",
-    tags: ["smart-home", "sensors"],
-    image: { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=800&q=80", altText: "Climate Sensor Hub" },
-    images: CATEGORY_IMAGES_GALLERY["smart-home"],
-    price: { amount: "119.00", currencyCode: "USD" },
-    compareAtPrice: { amount: "139.00", currencyCode: "USD" },
-    availableForSale: true,
-    variants: [
-      { id: "gid://shopify/ProductVariant/5", title: "White", availableForSale: true, price: { amount: "119.00", currencyCode: "USD" } }
-    ]
-  },
-  {
-    id: "gid://shopify/Product/6",
-    handle: "nexus-anc-wireless-headphones",
-    name: "Nexus Precision Studio Wireless Headphones",
-    description: "Active noise canceling studio headphones with custom acoustic drivers and 40-hour battery life.",
-    categoryLabel: "Tech Accessories",
-    tags: ["tech-accessories", "audio"],
-    image: { url: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80", altText: "Studio Wireless Headphones" },
-    images: CATEGORY_IMAGES_GALLERY["tech-accessories"],
-    price: { amount: "249.00", currencyCode: "USD" },
-    compareAtPrice: { amount: "299.00", currencyCode: "USD" },
-    availableForSale: true,
-    variants: [
-      { id: "gid://shopify/ProductVariant/6", title: "Matte Black", availableForSale: true, price: { amount: "249.00", currencyCode: "USD" } }
-    ]
-  }
-];
+export const FALLBACK_PRODUCTS: Product[] = [];
 
 export async function getProducts(options: { first?: number; query?: string; sortKey?: string } = {}): Promise<Product[]> {
   const cacheKey = `products_${options.first ?? 24}_${options.query || ""}_${options.sortKey || "BEST_SELLING"}`;
@@ -519,14 +410,12 @@ export async function getOrderDetails(orderInput: string, emailOrPhone: string):
         title: "Nexus Ergonomic Smart Light Bar",
         quantity: 1,
         price: { amount: "129.00", currencyCode: "USD" },
-        image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80",
         variantTitle: "Matte Black",
       },
       {
         title: "Nexus Smart Gradient Light Strip",
         quantity: 1,
         price: { amount: "89.00", currencyCode: "USD" },
-        image: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=400&q=80",
         variantTitle: "2-Meter Starter Kit",
       },
     ],

@@ -123,7 +123,7 @@ export default function Home() {
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white/10 backdrop-blur border border-white/20 rounded-full text-[10px] font-semibold tracking-wide text-slate-200">
               <Sparkles size={12} className="text-amber-400" /> Elevated Productivity &amp; Automation
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-[1.1]">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-[1.1]">
               Precision Gadgets for <br />
               <span className="text-amber-400">Smart Office &amp; Home</span>
             </h1>
@@ -155,7 +155,7 @@ export default function Home() {
             <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
               Nexus catalogue
             </span>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
               Smart Home &amp; Office Electronics
             </h2>
           </div>
@@ -170,7 +170,7 @@ export default function Home() {
             <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
               Best Sellers
             </span>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
               Featured Products
             </h2>
           </div>
@@ -200,9 +200,9 @@ export default function Home() {
               <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
                 Just Arrived
               </span>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                New Arrivals
-              </h2>
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+              New Arrivals
+            </h2>
             </div>
             <Link href="/products" className="text-xs font-semibold tracking-wide text-slate-900 dark:text-white hover:text-amber-600 flex items-center gap-1 transition-colors">
               View All <ArrowUpRight size={14} />
@@ -223,7 +223,7 @@ export default function Home() {
             <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">
               Curated Collections
             </span>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
               Engineered For Modern Work &amp; Living
             </h2>
           </div>
@@ -244,7 +244,7 @@ export default function Home() {
                 <span className="text-[10px] font-semibold tracking-wide text-amber-400">
                   Collection 01
                 </span>
-                <h3 className="text-lg font-bold tracking-wide">
+                <h3 className="text-sm font-bold tracking-wide">
                   Smart Home Automation
                 </h3>
                 <p className="text-xs text-slate-300 line-clamp-2">
@@ -271,7 +271,7 @@ export default function Home() {
                 <span className="text-[10px] font-semibold tracking-wide text-amber-400">
                   Collection 02
                 </span>
-                <h3 className="text-lg font-bold tracking-wide">
+                <h3 className="text-sm font-bold tracking-wide">
                   Workspace Productivity
                 </h3>
                 <p className="text-xs text-slate-300 line-clamp-2">
@@ -298,7 +298,7 @@ export default function Home() {
                 <span className="text-[10px] font-semibold tracking-wide text-amber-400">
                   Collection 03
                 </span>
-                <h3 className="text-lg font-bold tracking-wide">
+                <h3 className="text-sm font-bold tracking-wide">
                   Tech Accessories
                 </h3>
                 <p className="text-xs text-slate-300 line-clamp-2">
@@ -320,7 +320,7 @@ export default function Home() {
             <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
               Smart Office
             </span>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
               Office Essentials
             </h2>
           </div>
@@ -341,7 +341,7 @@ export default function Home() {
           <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">
             Support &amp; Fulfillment
           </span>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
             Frequently Asked Questions
           </h2>
         </div>

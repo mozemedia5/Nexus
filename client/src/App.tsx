@@ -18,6 +18,8 @@ import ProductDetail from "@/pages/ProductDetail";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import Admin from "@/pages/Admin";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -44,6 +46,8 @@ function Router() {
       <Route path="/about.html" component={HeritageRoute} />
       <Route path="/track-order" component={OrderTrackingRoute} />
       <Route path="/order-tracking" component={OrderTrackingRoute} />
+      <Route path="/login" component={() => <SiteLayout><Login /></SiteLayout>} />
+      <Route path="/register" component={() => <SiteLayout><Register /></SiteLayout>} />
       <Route path="/terms" component={() => <SiteLayout><Terms /></SiteLayout>} />
       <Route path="/privacy" component={() => <SiteLayout><Privacy /></SiteLayout>} />
       <Route path="/admin" component={() => <SiteLayout><Admin /></SiteLayout>} />

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2, ShoppingBag, ArrowUpRight, Bookmark, ListChecks, Trash2, CheckCircle2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
@@ -85,6 +85,70 @@ export default function AiAssistant() {
   const [activeTab, setActiveTab] = useState<"chat" | "list">("chat");
   const [reserving, setReserving] = useState(false);
   const [reservedSuccess, setReservedSuccess] = useState<string | null>(null);
+
+  // Draggable button state
+  const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<HTMLButtonElement>(null);
+  const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean }>({ startX: 0, startY: 0, origX: 0, origY: 0, moved: false });
+
+  const onDragStart = useCallback((clientX: number, clientY: number) => {
+    const el = dragRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    dragState.current = {
+      startX: clientX,
+      startY: clientY,
+      origX: rect.left,
+      origY: rect.top,
+      moved: false,
+    };
+  }, []);
+
+  const onDragMove = useCallback((clientX: number, clientY: number) => {
+    const dx = clientX - dragState.current.startX;
+    const dy = clientY - dragState.current.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragState.current.moved = true;
+    const newX = dragState.current.origX + dx;
+    const newY = dragState.current.origY + dy;
+    const maxX = window.innerWidth - 60;
+    const maxY = window.innerHeight - 60;
+    setBtnPos({ x: Math.max(0, Math.min(maxX, newX)), y: Math.max(0, Math.min(maxY, newY)) });
+  }, []);
+
+  const onDragEnd = useCallback(() => {
+    document.removeEventListener("mousemove", onMouseMoveRef.current!);
+    document.removeEventListener("mouseup", onMouseUpRef.current!);
+    document.removeEventListener("touchmove", onTouchMoveRef.current!);
+    document.removeEventListener("touchend", onTouchEndRef.current!);
+    if (dragState.current.moved) {
+      // Open was prevented during drag
+    }
+  }, []);
+
+  const onMouseMoveRef = useRef<(e: MouseEvent) => void>(() => {});
+  const onMouseUpRef = useRef<() => void>(() => {});
+  const onTouchMoveRef = useRef<(e: TouchEvent) => void>(() => {});
+  const onTouchEndRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    onMouseMoveRef.current = (e: MouseEvent) => onDragMove(e.clientX, e.clientY);
+    onMouseUpRef.current = () => onDragEnd();
+    onTouchMoveRef.current = (e: TouchEvent) => { if (e.touches[0]) onDragMove(e.touches[0].clientX, e.touches[0].clientY); };
+    onTouchEndRef.current = () => onDragEnd();
+  }, [onDragMove, onDragEnd]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onDragStart(e.clientX, e.clientY);
+    document.addEventListener("mousemove", onMouseMoveRef.current!);
+    document.addEventListener("mouseup", onMouseUpRef.current!);
+  }, [onDragStart]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches[0]) onDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    document.addEventListener("touchmove", onTouchMoveRef.current!, { passive: false });
+    document.addEventListener("touchend", onTouchEndRef.current!);
+  }, [onDragStart]);
 
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>(() => {
     try {
@@ -329,9 +393,15 @@ export default function AiAssistant() {
     <div className="ai-assistant-wrapper">
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          ref={dragRef}
+          onClick={(e) => {
+            if (!dragState.current.moved) setIsOpen(true);
+          }}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
           className="ai-assistant-trigger-btn"
           aria-label="Ask Cari AI Shopping Assistant"
+          style={btnPos ? { position: "fixed", left: btnPos.x, top: btnPos.y, right: "auto", bottom: "auto" } : { position: "fixed", right: 24, bottom: 24, left: "auto", top: "auto" }}
         >
           <div className="ai-trigger-icon-wrap">
             <Sparkles className="ai-sparkle-icon" size={20} />
