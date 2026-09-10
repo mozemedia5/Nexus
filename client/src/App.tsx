@@ -17,6 +17,7 @@ import NotFound from "@/pages/NotFound";
 import ProductDetail from "@/pages/ProductDetail";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import AdminLayout from "@/components/AdminLayout";
 import Admin from "@/pages/Admin";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -34,6 +35,16 @@ function OrderTrackingRoute() { return <SiteLayout><OrderTracking /></SiteLayout
 function NotFoundRoute() { return <SiteLayout><NotFound /></SiteLayout>; }
 
 function Router() {
+  const [location] = useLocation();
+
+  if (location.startsWith("/admin")) {
+    return (
+      <AdminLayout>
+        <Admin />
+      </AdminLayout>
+    );
+  }
+
   return (
     <Switch>
       <Route path="/" component={HomeRoute} />
@@ -50,7 +61,6 @@ function Router() {
       <Route path="/register" component={() => <SiteLayout><Register /></SiteLayout>} />
       <Route path="/terms" component={() => <SiteLayout><Terms /></SiteLayout>} />
       <Route path="/privacy" component={() => <SiteLayout><Privacy /></SiteLayout>} />
-      <Route path="/admin" component={() => <SiteLayout><Admin /></SiteLayout>} />
       <Route path="/404" component={NotFoundRoute} />
       <Route component={NotFoundRoute} />
     </Switch>
