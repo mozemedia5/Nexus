@@ -47,20 +47,20 @@ export default function AdminHeader({ session, onLogout, activePath }: AdminHead
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#1e1f20] border-b border-white/10 text-white shadow-sm">
+    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo & Portal Badge */}
           <div className="flex items-center gap-3">
             <Link href="/admin/dashboard" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-[#4285f4]/20 border border-[#4285f4]/40 flex items-center justify-center text-[#4285f4] group-hover:bg-[#4285f4]/30 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 group-hover:bg-amber-500/30 transition-colors">
                 <Shield size={20} />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium text-base tracking-tight text-white flex items-center gap-1.5 font-gemini">
-                  Nexus <span className="text-[#4285f4] text-[11px] px-2 py-0.5 rounded-full bg-[#4285f4]/15 font-mono">GEMINI ADMIN</span>
+                <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1">
+                  Nexus <span className="text-amber-400 text-xs px-1.5 py-0.5 rounded bg-amber-500/10 font-mono">ADMIN</span>
                 </span>
-                <span className="text-[10px] text-[#9aa0a6] font-normal">A Liverton Store Portal</span>
+                <span className="text-[10px] text-slate-400 font-medium">A Liverton Store Portal</span>
               </div>
             </Link>
           </div>
@@ -77,10 +77,10 @@ export default function AdminHeader({ session, onLogout, activePath }: AdminHead
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-normal transition-all flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                     isActive
-                      ? "bg-[#28292a] text-[#4285f4] font-semibold border border-[#4285f4]/30"
-                      : "text-[#c4c7c5] hover:text-white hover:bg-[#28292a]"
+                      ? "bg-amber-500 text-slate-950 font-bold shadow-md"
+                      : "text-slate-300 hover:text-white hover:bg-slate-800/80"
                   }`}
                 >
                   <Icon size={14} />
