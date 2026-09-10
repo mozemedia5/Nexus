@@ -108,12 +108,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#131314] text-[#e3e3e3] flex flex-col font-gemini">
       <AdminHeader session={session} onLogout={handleLogout} />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
-      <AiAssistant isAdminMode={true} adminRole={session.role} />
+      <AiAssistant />
     </div>
   );
 }
