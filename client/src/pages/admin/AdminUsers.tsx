@@ -78,7 +78,12 @@ export default function AdminUsers() {
 
       {/* Users Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-        {filteredUsers.map((user) => (
+        {filteredUsers.length === 0 ? (
+          <div className="col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-xs text-slate-400">
+            {loading ? "Loading tracked store users..." : "No tracked users found. User activity and subscriptions will automatically populate profiles."}
+          </div>
+        ) : (
+          filteredUsers.map((user) => (
           <div
             key={user.id}
             className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4 hover:border-slate-700 transition-colors"
@@ -132,7 +137,7 @@ export default function AdminUsers() {
               </div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   );

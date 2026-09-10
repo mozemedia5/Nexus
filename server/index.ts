@@ -249,6 +249,126 @@ async function startServer() {
     }
   });
 
+  // Admin Tracked Users Endpoint
+  app.get("/api/admin/users", async (_req, res) => {
+    try {
+      let subscribers = [...inMemorySubscribers];
+      let interactions = [...inMemoryInteractions];
+
+      const admin = parseFirebaseServiceAccount();
+      if (admin) {
+        try {
+          const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+          const subSnap = await firestore.collection("nexus_subscribers").get();
+          if (!subSnap.empty) {
+            subscribers = subSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+          }
+          const intSnap = await firestore.collection("nexus_user_interactions").limit(100).get();
+          if (!intSnap.empty) {
+            interactions = intSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+          }
+        } catch {}
+      }
+
+      const orders = await fetchShopifyAdminOrders();
+
+      const usersMap: Record<string, any> = {};
+
+      subscribers.forEach((sub, idx) => {
+        const email = sub.email.toLowerCase();
+        const userOrders = orders.filter((o) => o.customerEmail?.toLowerCase() === email);
+        const totalSpent = userOrders.reduce((sum, o) => sum + (parseFloat(o.totalPrice?.amount) || 0), 0);
+        const userInts = interactions.filter((i) => i.userEmail?.toLowerCase() === email);
+        const smartCount = userInts.filter((i) => i.category === "smart-home").length;
+        const workCount = userInts.filter((i) => i.category === "workspace-productivity").length;
+        const totalInts = userInts.length || 1;
+
+        const smartScore = Math.round((smartCount / totalInts) * 100) || 50;
+        const workScore = 100 - smartScore;
+
+        usersMap[email] = {
+          id: `usr-${idx + 1}`,
+          fullName: userOrders[0]?.customerName || email.split("@")[0].replace(".", " "),
+          email,
+          location: "Global Customer",
+          totalOrders: userOrders.length,
+          totalSpent,
+          primaryInterest: smartScore >= workScore ? "Smart Home Automation" : "Workspace Productivity",
+          smartHomeScore: smartScore,
+          workspaceScore: workScore,
+          searchedKeywords: userInts.map((i) => i.productTitle).slice(0, 5),
+          likedProducts: userInts.filter((i) => i.action === "like").map((i) => i.productTitle),
+          lastActive: sub.subscribedAt || new Date().toISOString(),
+        };
+      });
+
+      res.json({ users: Object.values(usersMap) });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Admin Single User Profile Endpoint
+  app.get("/api/admin/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const orders = await fetchShopifyAdminOrders();
+      let subscribers = [...inMemorySubscribers];
+      let interactions = [...inMemoryInteractions];
+
+      const admin = parseFirebaseServiceAccount();
+      if (admin) {
+        try {
+          const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+          const subSnap = await firestore.collection("nexus_subscribers").get();
+          if (!subSnap.empty) {
+            subscribers = subSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+          }
+          const intSnap = await firestore.collection("nexus_user_interactions").limit(100).get();
+          if (!intSnap.empty) {
+            interactions = intSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+          }
+        } catch {}
+      }
+
+      const matchedSub = subscribers.find((_, idx) => `usr-${idx + 1}` === id) || subscribers[0];
+      if (!matchedSub) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const email = matchedSub.email.toLowerCase();
+      const userOrders = orders.filter((o) => o.customerEmail?.toLowerCase() === email);
+      const totalSpent = userOrders.reduce((sum, o) => sum + (parseFloat(o.totalPrice?.amount) || 0), 0);
+      const userInts = interactions.filter((i) => i.userEmail?.toLowerCase() === email);
+      const smartCount = userInts.filter((i) => i.category === "smart-home").length;
+      const workCount = userInts.filter((i) => i.category === "workspace-productivity").length;
+      const totalInts = userInts.length || 1;
+
+      const smartScore = Math.round((smartCount / totalInts) * 100) || 50;
+      const workScore = 100 - smartScore;
+
+      const user = {
+        id,
+        fullName: userOrders[0]?.customerName || email.split("@")[0].replace(".", " "),
+        email,
+        location: "Global Customer",
+        totalOrders: userOrders.length,
+        totalSpent,
+        primaryInterest: smartScore >= workScore ? "Smart Home Automation" : "Workspace Productivity",
+        smartHomeScore: smartScore,
+        workspaceScore: workScore,
+        searchedKeywords: userInts.map((i) => i.productTitle).slice(0, 5),
+        likedProducts: userInts.filter((i) => i.action === "like").map((i) => i.productTitle),
+        lastActive: matchedSub.subscribedAt || new Date().toISOString(),
+      };
+
+      res.json({ user });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user details" });
+    }
+  });
+
   // Superadmin endpoint: Create / Add New Admin with Assigned Role
   app.post("/api/admin/create-admin", async (req, res) => {
     const { email, fullName, role, adminAccessToken } = req.body || {};

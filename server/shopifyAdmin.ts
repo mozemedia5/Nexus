@@ -149,67 +149,8 @@ export async function fetchShopifyAdminOrders(): Promise<AdminOrder[]> {
     }
   }
 
-  // Fallback demo orders
-  return [
-    {
-      id: "gid://shopify/Order/1001",
-      name: "#1001",
-      orderNumber: "1001",
-      processedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      financialStatus: "PAID",
-      fulfillmentStatus: "FULFILLED",
-      customerName: "Sarah Mitchell",
-      customerEmail: "sarah.m@example.com",
-      totalPrice: { amount: "218.00", currencyCode: "USD" },
-      lineItems: [
-        { title: "Nexus Ergonomic Smart Light Bar", quantity: 1, price: { amount: "129.00", currencyCode: "USD" }, image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80" },
-        { title: "Nexus Smart Gradient Light Strip", quantity: 1, price: { amount: "89.00", currencyCode: "USD" }, image: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=400&q=80" },
-      ],
-    },
-    {
-      id: "gid://shopify/Order/1002",
-      name: "#1002",
-      orderNumber: "1002",
-      processedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-      financialStatus: "PAID",
-      fulfillmentStatus: "IN_TRANSIT",
-      customerName: "James Cooper",
-      customerEmail: "james.cooper@example.com",
-      totalPrice: { amount: "199.00", currencyCode: "USD" },
-      lineItems: [
-        { title: "Nexus Thunderbolt 4 Pro Docking Station", quantity: 1, price: { amount: "199.00", currencyCode: "USD" }, image: "https://images.unsplash.com/photo-1544652478-6653e09f18a2?auto=format&fit=crop&w=400&q=80" },
-      ],
-    },
-    {
-      id: "gid://shopify/Order/1003",
-      name: "#1003",
-      orderNumber: "1003",
-      processedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
-      financialStatus: "PAID",
-      fulfillmentStatus: "UNFULFILLED",
-      customerName: "Aisha Patel",
-      customerEmail: "aisha.p@example.com",
-      totalPrice: { amount: "328.00", currencyCode: "USD" },
-      lineItems: [
-        { title: "Nexus Smart Climate Sensor & Gateway", quantity: 2, price: { amount: "158.00", currencyCode: "USD" }, image: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=400&q=80" },
-        { title: "Nexus Magnetic Wireless Charging Stand", quantity: 2, price: { amount: "170.00", currencyCode: "USD" }, image: "https://images.unsplash.com/photo-1586953208448-b95a79798f07?auto=format&fit=crop&w=400&q=80" },
-      ],
-    },
-    {
-      id: "gid://shopify/Order/1004",
-      name: "#1004",
-      orderNumber: "1004",
-      processedAt: new Date(Date.now() - 3600000 * 30).toISOString(),
-      financialStatus: "PAID",
-      fulfillmentStatus: "FULFILLED",
-      customerName: "David Kim",
-      customerEmail: "david.kim@example.com",
-      totalPrice: { amount: "129.00", currencyCode: "USD" },
-      lineItems: [
-        { title: "Nexus Ergonomic Smart Light Bar", quantity: 1, price: { amount: "129.00", currencyCode: "USD" }, image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80" },
-      ],
-    },
-  ];
+  // Return empty list if no Shopify orders exist or credentials are not configured
+  return [];
 }
 
 export async function fetchShopifyAdminMetrics(orders: AdminOrder[]): Promise<AnalyticsSummary> {
