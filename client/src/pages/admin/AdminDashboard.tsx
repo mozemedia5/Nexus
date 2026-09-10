@@ -27,27 +27,27 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-gemini">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
         <div>
-          <span className="text-xs font-bold text-amber-400 tracking-wider uppercase flex items-center gap-1.5">
-            <Sparkles size={14} /> Nexus Executive Dashboard
+          <span className="text-xs font-normal text-[#4285f4] tracking-wide uppercase flex items-center gap-1.5">
+            <Sparkles size={14} /> Gemini Executive Overview
           </span>
-          <h1 className="text-2xl font-black text-white mt-1">
+          <h1 className="text-2xl font-medium text-[#e3e3e3] mt-1">
             Store Performance &amp; Real-time Metrics
           </h1>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/admin/orders"
-            className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-colors flex items-center gap-1.5"
+            className="px-4 py-2 bg-[#28292a] hover:bg-[#2e2f31] text-[#e3e3e3] border border-white/10 font-normal text-xs rounded-full transition-colors flex items-center gap-1.5"
           >
-            <ShoppingBag size={14} /> Manage Orders
+            <ShoppingBag size={14} className="text-[#4285f4]" /> Manage Orders
           </Link>
           <Link
             href="/admin/analytics"
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5"
+            className="px-4 py-2 bg-[#28292a] hover:bg-[#2e2f31] text-[#c4c7c5] text-xs font-normal rounded-full border border-white/10 transition-colors flex items-center gap-1.5"
           >
             <BarChart3 size={14} /> Full Analytics
           </Link>
@@ -56,52 +56,52 @@ export default function AdminDashboard() {
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Sales Revenue</span>
-            <DollarSign size={18} className="text-amber-400" />
+        <div className="bg-[#1e1f20] border border-white/10 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between text-[#9aa0a6] mb-2">
+            <span className="text-xs font-normal uppercase tracking-wider">Total Sales Revenue</span>
+            <DollarSign size={18} className="text-[#4285f4]" />
           </div>
-          <div className="text-2xl font-black text-white">
+          <div className="text-2xl font-medium text-[#e3e3e3]">
             ${metrics?.totalRevenue ? metrics.totalRevenue.toFixed(2) : "874.00"}
           </div>
-          <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+          <p className="text-[11px] text-emerald-400 font-normal mt-1 flex items-center gap-1">
             <TrendingUp size={12} /> +18.4% compared to previous period
           </p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Orders</span>
-            <ShoppingBag size={18} className="text-amber-400" />
+        <div className="bg-[#1e1f20] border border-white/10 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between text-[#9aa0a6] mb-2">
+            <span className="text-xs font-normal uppercase tracking-wider">Total Orders</span>
+            <ShoppingBag size={18} className="text-[#9b51e0]" />
           </div>
-          <div className="text-2xl font-black text-white">
+          <div className="text-2xl font-medium text-[#e3e3e3]">
             {metrics?.totalOrders ?? orders.length ?? 4}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Directly synced via Shopify Admin API</p>
+          <p className="text-[11px] text-[#9aa0a6] mt-1">Directly synced via Shopify Admin API</p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Conversion Rate</span>
-            <Percent size={18} className="text-amber-400" />
+        <div className="bg-[#1e1f20] border border-white/10 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between text-[#9aa0a6] mb-2">
+            <span className="text-xs font-normal uppercase tracking-wider">Conversion Rate</span>
+            <Percent size={18} className="text-[#ea4335]" />
           </div>
-          <div className="text-2xl font-black text-white">
+          <div className="text-2xl font-medium text-[#e3e3e3]">
             {metrics?.conversionRate ?? "3.33"}%
           </div>
-          <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+          <p className="text-[11px] text-emerald-400 font-normal mt-1 flex items-center gap-1">
             <TrendingUp size={12} /> High purchase intent
           </p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Avg Order Value (AOV)</span>
-            <BarChart3 size={18} className="text-amber-400" />
+        <div className="bg-[#1e1f20] border border-white/10 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between text-[#9aa0a6] mb-2">
+            <span className="text-xs font-normal uppercase tracking-wider">Avg Order Value (AOV)</span>
+            <BarChart3 size={18} className="text-[#4285f4]" />
           </div>
-          <div className="text-2xl font-black text-white">
+          <div className="text-2xl font-medium text-[#e3e3e3]">
             ${metrics?.averageOrderValue ? metrics.averageOrderValue.toFixed(2) : "218.50"}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Multi-item 50% discount active</p>
+          <p className="text-[11px] text-[#9aa0a6] mt-1">Multi-item 50% discount active</p>
         </div>
       </div>
 

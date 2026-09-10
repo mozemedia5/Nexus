@@ -2,6 +2,7 @@
   Nexus A Liverton Store — global visual language.
   Smart Home & Workspace Productivity curated for modern living.
 */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Google+Sans+Text:wght@400;500;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -518,6 +519,131 @@ img { display: block; max-width: 100%; }
 /* Liverton Store layer: additive responsive styles. */
 .hero-section{display:grid;grid-template-columns:minmax(0,1.03fr) minmax(300px,.97fr);min-height:clamp(560px,72vh,760px);background:#f1eee6;overflow:hidden}.hero-copy{display:flex;flex-direction:column;justify-content:center;padding:clamp(4rem,8vw,8rem) clamp(1.3rem,7vw,8rem)}.hero-copy h1{max-width:680px;margin:1rem 0 1.35rem;font-family:"DM Serif Display",serif;font-size:clamp(3.7rem,7vw,7.8rem);font-weight:400;letter-spacing:-.08em;line-height:.9}.hero-copy h1 em,.section-heading h2 em,.split-callout h2 em,.faq-section h2 em{color:var(--brass)}.hero-copy p{max-width:490px;margin:0 0 2rem;color:var(--ink-soft);font-size:clamp(1rem,1.6vw,1.2rem)}.eyebrow{display:inline-flex;align-items:center;gap:.45rem}.button-quiet{border:1px solid rgba(48,43,37,.25);background:transparent}.hero-art{position:relative;min-height:420px;background:linear-gradient(145deg,#d8d8c9,#eee8db);overflow:hidden}.hero-art-shape{position:absolute;border-radius:50%}.shape-one{width:70%;aspect-ratio:1;right:-12%;top:-8%;background:#d0a65d;opacity:.82}.shape-two{width:66%;aspect-ratio:1;left:-20%;bottom:-25%;background:#91a59b;opacity:.82}.hero-art-card{position:absolute;right:14%;bottom:13%;width:min(280px,62%);aspect-ratio:.84;display:flex;flex-direction:column;justify-content:space-between;padding:1.4rem;background:#faf7ef;box-shadow:0 18px 55px rgba(48,43,37,.18);transform:rotate(5deg)}.hero-art-card strong{font-family:"DM Serif Display",serif;font-size:clamp(2.1rem,4vw,4rem);font-weight:400;letter-spacing:-.06em;line-height:.9}.hero-art-card em{color:var(--brass)}.hero-art-card small{color:var(--ink-soft);font-size:.64rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.value-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;padding:1.3rem clamp(1.3rem,5vw,7rem);background:var(--ink);color:#fffaf0}.value-strip div{display:flex;flex-direction:column;gap:.35rem;padding-right:1rem;border-right:1px solid rgba(255,255,255,.18)}.value-strip div:last-child{border:0}.value-strip strong{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase}.value-strip span{color:rgba(255,250,240,.64);font-size:.78rem}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:2rem;margin-bottom:2.5rem}.section-heading h2{margin:.6rem 0 0;font-family:"DM Serif Display",serif;font-size:clamp(2.7rem,5vw,5.3rem);font-weight:400;letter-spacing:-.07em;line-height:.9}.category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}.category-card{position:relative;min-height:230px;display:flex;align-items:end;justify-content:space-between;padding:1.25rem;overflow:hidden;background:var(--sage);color:var(--ink)}.category-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.78;transition:transform 240ms var(--ease-out)}.category-card:hover img{transform:scale(1.04)}.category-card span,.category-card svg{position:relative;z-index:1;font-size:.76rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.product-section{background:#fbf9f1}.split-callout{display:grid;grid-template-columns:1.05fr .95fr;padding:clamp(4rem,8vw,8rem) clamp(1.3rem,8vw,10rem);background:var(--sage)}.split-callout h2{margin:1rem 0 2rem;font-family:"DM Serif Display",serif;font-size:clamp(3rem,6vw,6.2rem);font-weight:400;letter-spacing:-.07em;line-height:.88}.callout-panel{align-self:end;max-width:360px;padding:2rem;border-left:1px solid var(--brass)}.callout-panel span{color:var(--brass);font-size:.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.callout-panel p{margin:1rem 0 0;color:var(--ink-soft);line-height:1.7}.faq-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(3rem,9vw,10rem)}.faq-section h2{margin-top:1rem;font-family:"DM Serif Display",serif;font-size:clamp(2.8rem,5vw,5rem);font-weight:400;letter-spacing:-.07em;line-height:.9}.faq-list details{padding:1.25rem 0;border-bottom:1px solid rgba(48,43,37,.16)}.faq-list summary{cursor:pointer;font-size:.83rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.faq-list p{max-width:580px;margin:1rem 0 0;color:var(--ink-soft);line-height:1.65}.empty-state{grid-column:1/-1;padding:3.5rem 1rem;text-align:center}.empty-state h3{margin:0 0 .7rem;font-family:"DM Serif Display",serif;font-size:2rem;font-weight:400}.empty-state p{max-width:520px;margin:0 auto 1.3rem;color:var(--ink-soft)}.product-detail-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:clamp(2rem,7vw,7rem);margin-top:2rem}.product-gallery>img{width:100%;max-height:680px;object-fit:cover;background:var(--sage)}.product-thumbs{display:flex;gap:.6rem;margin-top:.7rem;overflow:auto}.product-thumbs img{width:70px;height:80px;object-fit:cover}.product-info{align-self:center}.product-info h1{margin:1rem 0;font-family:"DM Serif Display",serif;font-size:clamp(3rem,6vw,6.4rem);font-weight:400;letter-spacing:-.08em;line-height:.88}.detail-price{display:flex;gap:.8rem;align-items:baseline;margin-bottom:1.5rem}.detail-price strong{color:var(--brass);font-family:"DM Serif Display",serif;font-size:1.7rem;font-weight:400}.detail-price del{color:var(--ink-soft)}.detail-description{color:var(--ink-soft);line-height:1.7}.variant-label{display:flex;flex-direction:column;gap:.55rem;margin:1.5rem 0;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.variant-label select{width:100%;padding:.85rem;border:1px solid rgba(48,43,37,.2);background:#fffaf0;font:inherit;letter-spacing:0;text-transform:none}.detail-actions{display:flex;gap:.8rem;align-items:center;margin:2rem 0}.detail-actions .quantity-control{height:46px}.detail-actions .quantity-control button{height:40px;width:30px}.detail-note{color:var(--ink-soft);font-size:.78rem;line-height:1.6}.back-link{display:inline-flex;align-items:center;gap:.45rem;color:var(--ink-soft);font-size:.73rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}@media(max-width:800px){.hero-section,.product-detail-grid,.split-callout,.faq-section{grid-template-columns:1fr}.hero-art{min-height:360px}.value-strip{grid-template-columns:1fr;gap:.8rem}.value-strip div{padding:0 0 .8rem;border-right:0;border-bottom:1px solid rgba(255,255,255,.18)}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-heading{align-items:start;flex-direction:column;gap:1rem}.product-detail-grid{gap:2rem}.product-info{order:2}}@media(max-width:480px){.category-grid{grid-template-columns:1fr 1fr;gap:.65rem}.category-card{min-height:170px;padding:.85rem}.hero-copy h1{font-size:3.4rem}.hero-actions{align-items:stretch;flex-direction:column}.hero-actions .button{justify-content:center}.split-callout{padding:4rem 1.3rem}.callout-panel{margin-top:3rem}.detail-actions .button{flex:1;justify-content:center}}
 
+
+/* ==========================================
+   Google Gemini UI Theme, Typography & Sparkle
+   ========================================== */
+
+:root, .dark {
+  --gemini-bg: #131314;
+  --gemini-surface: #1e1f20;
+  --gemini-surface-hover: #28292a;
+  --gemini-surface-active: #2e2f31;
+  --gemini-sidebar-bg: #1e1f20;
+  --gemini-input-bg: #1e1f20;
+  --gemini-text-primary: #e3e3e3;
+  --gemini-text-secondary: #c4c7c5;
+  --gemini-text-muted: #9aa0a6;
+  --gemini-border: rgba(255, 255, 255, 0.08);
+  --gemini-prompt-bg: #28292a;
+  --gemini-sparkle-blue: #4285f4;
+  --gemini-sparkle-purple: #9b51e0;
+  --gemini-sparkle-pink: #ea4335;
+}
+
+.gemini-light, body.gemini-light {
+  --gemini-bg: #f0f4f9;
+  --gemini-surface: #ffffff;
+  --gemini-surface-hover: #e9eef6;
+  --gemini-surface-active: #dfe4ec;
+  --gemini-sidebar-bg: #e9eef6;
+  --gemini-input-bg: #ffffff;
+  --gemini-text-primary: #1f1f1f;
+  --gemini-text-secondary: #444746;
+  --gemini-text-muted: #747775;
+  --gemini-border: rgba(0, 0, 0, 0.08);
+  --gemini-prompt-bg: #e9eef6;
+}
+
+.font-gemini {
+  font-family: "Google Sans", "Google Sans Text", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Gemini Animated Sparkle Gradient */
+@keyframes geminiSparkleGradient {
+  0% {
+    stop-color: #4285f4;
+  }
+  33% {
+    stop-color: #9b51e0;
+  }
+  66% {
+    stop-color: #ea4335;
+  }
+  100% {
+    stop-color: #4285f4;
+  }
+}
+
+@keyframes geminiSparkleGradientAlt {
+  0% {
+    stop-color: #ea4335;
+  }
+  33% {
+    stop-color: #4285f4;
+  }
+  66% {
+    stop-color: #9b51e0;
+  }
+  100% {
+    stop-color: #ea4335;
+  }
+}
+
+@keyframes geminiSpinPulse {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.gemini-sparkle-animated {
+  animation: geminiSpinPulse 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.gemini-sparkle-stop-1 {
+  animation: geminiSparkleGradient 4s linear infinite;
+}
+
+.gemini-sparkle-stop-2 {
+  animation: geminiSparkleGradientAlt 4s linear infinite;
+}
+
+/* User Prompt vs Assistant Response Typography */
+.gemini-user-prompt-text {
+  font-family: "Google Sans", "Google Sans Text", "Inter", sans-serif;
+  font-size: 1rem; /* 16px */
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.gemini-assistant-response-text {
+  font-family: "Google Sans", "Google Sans Text", "Inter", sans-serif;
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Custom scrollbar for Gemini containers */
+.gemini-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.gemini-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.gemini-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+.gemini-light .gemini-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
 
 /* Custom premium curve for that buttery-smooth slow motion */
 .premium-glide {
