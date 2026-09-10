@@ -20,14 +20,17 @@ export default function AdminSales() {
       .catch(() => {});
   }, []);
 
-  const totalRev = metrics?.totalRevenue || 874.00;
-  const totalOrders = metrics?.totalOrders || 4;
-  const aov = metrics?.averageOrderValue || 218.50;
+  const totalRev = metrics?.totalRevenue || 0;
+  const totalOrders = metrics?.totalOrders || 0;
+  const aov = metrics?.averageOrderValue || 0;
+
+  const catPerf = metrics?.categoryPerformance || {};
+  const totalCatSales = (catPerf["Smart Home Automation"] || 0) + (catPerf["Workspace Productivity"] || 0) + (catPerf["Tech Accessories"] || 0) || 1;
 
   const categoryBreakdown = [
-    { name: "Workspace Productivity", sales: 1548.00, percentage: 55, color: "bg-amber-500" },
-    { name: "Smart Home Automation", sales: 890.00, percentage: 32, color: "bg-blue-500" },
-    { name: "Tech Accessories", sales: 360.00, percentage: 13, color: "bg-emerald-500" },
+    { name: "Workspace Productivity", sales: catPerf["Workspace Productivity"] || 0, percentage: Math.round(((catPerf["Workspace Productivity"] || 0) / totalCatSales) * 100), color: "bg-amber-500" },
+    { name: "Smart Home Automation", sales: catPerf["Smart Home Automation"] || 0, percentage: Math.round(((catPerf["Smart Home Automation"] || 0) / totalCatSales) * 100), color: "bg-blue-500" },
+    { name: "Tech Accessories", sales: catPerf["Tech Accessories"] || 0, percentage: Math.round(((catPerf["Tech Accessories"] || 0) / totalCatSales) * 100), color: "bg-emerald-500" },
   ];
 
   return (

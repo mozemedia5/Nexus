@@ -18,18 +18,14 @@ export default function AdminAnalytics() {
       .catch(() => {});
   }, []);
 
-  const topProducts = metrics?.topSellingProducts || [
-    { id: "p1", title: "Nexus Ergonomic Smart Light Bar", category: "Workspace Productivity", unitsSold: 12, revenue: 1548, views: 320, clicks: 84, conversionRate: 3.75 },
-    { id: "p2", title: "Nexus Thunderbolt 4 Pro Docking Station", category: "Workspace Productivity", unitsSold: 8, revenue: 1592, views: 210, clicks: 52, conversionRate: 3.81 },
-    { id: "p3", title: "Nexus Smart Climate Sensor & Gateway", category: "Smart Home", unitsSold: 6, revenue: 474, views: 185, clicks: 41, conversionRate: 3.24 },
-    { id: "p4", title: "Nexus Magnetic Wireless Charging Stand", category: "Tech Accessories", unitsSold: 5, revenue: 425, views: 150, clicks: 33, conversionRate: 3.33 },
-  ];
+  const topProducts = metrics?.topSellingProducts || [];
+  const topWinner = topProducts[0];
 
   const trafficSources = [
-    { source: "Google Organic Search", percentage: 42, sessions: 1420, revenue: 2450.00 },
-    { source: "Direct / Bookmark", percentage: 28, sessions: 940, revenue: 1820.00 },
-    { source: "Targeted Email Campaigns", percentage: 18, sessions: 610, revenue: 1240.00 },
-    { source: "Social Media / Referrals", percentage: 12, sessions: 410, revenue: 860.00 },
+    { source: "Google Organic Search", percentage: 42, sessions: 1420, revenue: (metrics?.totalRevenue || 0) * 0.42 },
+    { source: "Direct / Bookmark", percentage: 28, sessions: 940, revenue: (metrics?.totalRevenue || 0) * 0.28 },
+    { source: "Targeted Email Campaigns", percentage: 18, sessions: 610, revenue: (metrics?.totalRevenue || 0) * 0.18 },
+    { source: "Social Media / Referrals", percentage: 12, sessions: 410, revenue: (metrics?.totalRevenue || 0) * 0.12 },
   ];
 
   return (
@@ -49,34 +45,40 @@ export default function AdminAnalytics() {
 
       {/* Winning Product Spotlight */}
       <div className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-slate-950 uppercase tracking-wider">
-              <Award size={14} /> #1 Winning Product
-            </span>
-            <h2 className="text-xl font-extrabold text-white">
-              Nexus Ergonomic Smart Light Bar
-            </h2>
-            <p className="text-xs text-slate-300">
-              Highest search frequency, view-to-buy conversion rate (3.75%), and total sales volume. Generated over $1,548 in revenue this month.
-            </p>
-          </div>
+        {topWinner ? (
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-xl">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-slate-950 uppercase tracking-wider">
+                <Award size={14} /> #1 Winning Product
+              </span>
+              <h2 className="text-xl font-extrabold text-white">
+                {topWinner.title}
+              </h2>
+              <p className="text-xs text-slate-300">
+                Highest view-to-buy conversion rate ({topWinner.conversionRate}%), and top sales volume. Generated over ${topWinner.revenue} in revenue.
+              </p>
+            </div>
 
-          <div className="flex gap-4 border-l border-slate-800 pl-6 text-center">
-            <div>
-              <div className="text-xl font-black text-amber-400">12</div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Units Sold</div>
-            </div>
-            <div>
-              <div className="text-xl font-black text-emerald-400">$1,548</div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Total Revenue</div>
-            </div>
-            <div>
-              <div className="text-xl font-black text-white">320</div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Product Views</div>
+            <div className="flex gap-4 border-l border-slate-800 pl-6 text-center">
+              <div>
+                <div className="text-xl font-black text-amber-400">{topWinner.unitsSold}</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Units Sold</div>
+              </div>
+              <div>
+                <div className="text-xl font-black text-emerald-400">${topWinner.revenue}</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Total Revenue</div>
+              </div>
+              <div>
+                <div className="text-xl font-black text-white">{topWinner.views}</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Product Views</div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-6 text-xs text-slate-400">
+            No winning product calculated yet. Store activity will dynamically feature top sellers.
+          </div>
+        )}
       </div>
 
       {/* Detailed Product Performance Table */}
@@ -101,17 +103,25 @@ export default function AdminAnalytics() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {topProducts.map((prod: any) => (
-                <tr key={prod.id || prod.title} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="px-4 py-3 font-bold text-white">{prod.title}</td>
-                  <td className="px-4 py-3 text-slate-400">{prod.category}</td>
-                  <td className="px-4 py-3 font-bold text-white">{prod.unitsSold}</td>
-                  <td className="px-4 py-3 font-bold text-amber-400">${prod.revenue}</td>
-                  <td className="px-4 py-3 text-slate-300">{prod.views}</td>
-                  <td className="px-4 py-3 text-slate-300">{prod.clicks}</td>
-                  <td className="px-4 py-3 font-bold text-emerald-400">{prod.conversionRate}%</td>
+              {topProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                    No product sales logged yet.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                topProducts.map((prod: any) => (
+                  <tr key={prod.id || prod.title} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="px-4 py-3 font-bold text-white">{prod.title}</td>
+                    <td className="px-4 py-3 text-slate-400">{prod.category}</td>
+                    <td className="px-4 py-3 font-bold text-white">{prod.unitsSold}</td>
+                    <td className="px-4 py-3 font-bold text-amber-400">${prod.revenue}</td>
+                    <td className="px-4 py-3 text-slate-300">{prod.views}</td>
+                    <td className="px-4 py-3 text-slate-300">{prod.clicks}</td>
+                    <td className="px-4 py-3 font-bold text-emerald-400">{prod.conversionRate}%</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
