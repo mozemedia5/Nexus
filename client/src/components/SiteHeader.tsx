@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Search, ShoppingBag, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility, User } from "lucide-react";
+import { Menu, Search, ShoppingBag, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility, User, Award } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 const links = [
   { href: "/", label: "Home", icon: Home },
   { href: "/products", label: "Shop All", icon: Store },
+  { href: "/nexus-club", label: "Nexus Club", icon: Award },
   { href: "/products?collection=smart-home", label: "Smart Home", icon: Sparkles },
   { href: "/products?collection=workspace-productivity", label: "Workspace", icon: Cable },
   { href: "/products?collection=tech-accessories", label: "Accessories", icon: Accessibility },

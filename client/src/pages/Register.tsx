@@ -76,6 +76,14 @@ export default function Register() {
         }
       } catch {}
 
+      localStorage.setItem("nexus_user_profile", JSON.stringify({
+        email,
+        name: fullName,
+        uid: result.user.uid,
+      }));
+      localStorage.setItem("nexus_club_member_v1", "true");
+      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
+
       const isRedirected = await checkAdminAndRedirect(email, result.user.uid, fullName);
       if (isRedirected) return;
 
@@ -118,6 +126,16 @@ export default function Register() {
         }, { merge: true });
       } catch {}
 
+      const cleanUserEmail = result.user.email || "";
+      const cleanDisplayName = result.user.displayName || fullName || cleanUserEmail.split("@")[0] || "Nexus Member";
+      localStorage.setItem("nexus_user_profile", JSON.stringify({
+        email: cleanUserEmail,
+        name: cleanDisplayName,
+        uid: result.user.uid,
+      }));
+      localStorage.setItem("nexus_club_member_v1", "true");
+      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
+
       toast.success("Account created!", { description: "Signed up with Google." });
       setLocation("/");
     } catch (err: any) {
@@ -159,6 +177,16 @@ export default function Register() {
           registeredAt: serverTimestamp(),
         }, { merge: true });
       } catch {}
+
+      const cleanUserEmail = result.user.email || "";
+      const cleanDisplayName = result.user.displayName || fullName || cleanUserEmail.split("@")[0] || "Nexus Member";
+      localStorage.setItem("nexus_user_profile", JSON.stringify({
+        email: cleanUserEmail,
+        name: cleanDisplayName,
+        uid: result.user.uid,
+      }));
+      localStorage.setItem("nexus_club_member_v1", "true");
+      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
 
       toast.success("Account created!", { description: "Signed up with Apple." });
       setLocation("/");

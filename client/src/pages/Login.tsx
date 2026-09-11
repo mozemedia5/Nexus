@@ -67,7 +67,17 @@ export default function Login() {
       const { signInWithEmailAndPassword } = await import("firebase/auth");
       const userCred = await signInWithEmailAndPassword(auth, email, password);
 
-      const isRedirected = await checkAdminAndRedirect(userCred.user.email || email, userCred.user.uid, userCred.user.displayName || "");
+      const cleanUserEmail = userCred.user.email || email;
+      const cleanDisplayName = userCred.user.displayName || cleanUserEmail.split("@")[0];
+      localStorage.setItem("nexus_user_profile", JSON.stringify({
+        email: cleanUserEmail,
+        name: cleanDisplayName,
+        uid: userCred.user.uid,
+      }));
+      localStorage.setItem("nexus_club_member_v1", "true");
+      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
+
+      const isRedirected = await checkAdminAndRedirect(cleanUserEmail, userCred.user.uid, cleanDisplayName);
       if (isRedirected) return;
 
       toast.success("Welcome back!", { description: "You are now signed in to Nexus." });
@@ -113,7 +123,17 @@ export default function Login() {
         }, { merge: true });
       } catch {}
 
-      const isRedirected = await checkAdminAndRedirect(result.user.email || "", result.user.uid, result.user.displayName || "");
+      const cleanUserEmail = result.user.email || "";
+      const cleanDisplayName = result.user.displayName || cleanUserEmail.split("@")[0] || "Nexus Member";
+      localStorage.setItem("nexus_user_profile", JSON.stringify({
+        email: cleanUserEmail,
+        name: cleanDisplayName,
+        uid: result.user.uid,
+      }));
+      localStorage.setItem("nexus_club_member_v1", "true");
+      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
+
+      const isRedirected = await checkAdminAndRedirect(cleanUserEmail, result.user.uid, cleanDisplayName);
       if (isRedirected) return;
 
       toast.success("Welcome!", { description: "Signed in with Google." });
@@ -160,7 +180,17 @@ export default function Login() {
         }, { merge: true });
       } catch {}
 
-      const isRedirected = await checkAdminAndRedirect(result.user.email || "", result.user.uid, result.user.displayName || "");
+      const cleanUserEmail = result.user.email || "";
+      const cleanDisplayName = result.user.displayName || cleanUserEmail.split("@")[0] || "Nexus Member";
+      localStorage.setItem("nexus_user_profile", JSON.stringify({
+        email: cleanUserEmail,
+        name: cleanDisplayName,
+        uid: result.user.uid,
+      }));
+      localStorage.setItem("nexus_club_member_v1", "true");
+      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
+
+      const isRedirected = await checkAdminAndRedirect(cleanUserEmail, result.user.uid, cleanDisplayName);
       if (isRedirected) return;
 
       toast.success("Welcome!", { description: "Signed in with Apple." });

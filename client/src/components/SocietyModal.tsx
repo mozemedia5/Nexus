@@ -1,31 +1,60 @@
 import { FormEvent, useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, UserPlus, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 import { toast } from "sonner";
 
 export default function SocietyModal() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [isMember, setIsMember] = useState(false);
 
   useEffect(() => {
-    const openModal = () => setOpen(true);
-    window.addEventListener("open-society", openModal);
+    const checkMembership = () => {
+      const isClubMember = localStorage.getItem("nexus_club_member_v1") === "true";
+      const userSession = localStorage.getItem("nexus_user_profile");
+      const isUserSignedIn = Boolean(userSession);
+      const memberStatus = isClubMember || isUserSignedIn;
+      setIsMember(memberStatus);
+      return memberStatus;
+    };
 
-    // Auto-trigger after 60 seconds (1 minute) if not previously shown in this session
+    if (checkMembership()) {
+      setOpen(false);
+      return;
+    }
+
+    const openModal = () => {
+      if (!checkMembership()) {
+        setOpen(true);
+      }
+    };
+
+    window.addEventListener("open-society", openModal);
+    window.addEventListener("nexus-member-updated", checkMembership);
+
+    // Auto-trigger after 60 seconds (1 minute) if not previously shown in this session & user not a member
     const hasBeenShown = sessionStorage.getItem("nexus_society_modal_shown");
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    if (!hasBeenShown) {
+    if (!hasBeenShown && !checkMembership()) {
       timer = setTimeout(() => {
-        setOpen(true);
-        sessionStorage.setItem("nexus_society_modal_shown", "true");
+        if (!checkMembership()) {
+          setOpen(true);
+          sessionStorage.setItem("nexus_society_modal_shown", "true");
+        }
       }, 60000); // 60,000 ms = 1 minute
     }
 
     return () => {
       window.removeEventListener("open-society", openModal);
+      window.removeEventListener("nexus-member-updated", checkMembership);
       if (timer) clearTimeout(timer);
     };
   }, []);
+
+  if (isMember) {
+    return null;
+  }
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -50,7 +79,14 @@ export default function SocietyModal() {
       }
     } catch {}
 
-    toast.success("Welcome to Nexus Club", { description: "You are now subscribed to Smart Home & Workspace updates." });
+    // Store membership state so user never sees newsletter prompt again
+    localStorage.setItem("nexus_club_member_v1", "true");
+    localStorage.setItem("nexus_club_member_email", cleanEmail);
+    window.dispatchEvent(new CustomEvent("nexus-member-updated"));
+
+    toast.success("Welcome to Nexus Club!", {
+      description: "You are now a member. Access exclusive perks and community reviews in Nexus Club.",
+    });
     setEmail("");
     setOpen(false);
   };
@@ -67,10 +103,24 @@ export default function SocietyModal() {
           <label htmlFor="society-email">Email address</label>
           <div className="society-input-row">
             <input id="society-email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" required />
-            <button type="submit" className="button button-dark">Join <span aria-hidden="true">↗</span></button>
+            <button type="submit" className="button button-dark">Join Club <span aria-hidden="true">↗</span></button>
           </div>
         </form>
-        <small>By joining, you agree to occasional updates from Nexus A Liverton Store. No spam, only value.</small>
+
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2 text-center">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Want a full store account?</p>
+          <Link
+            href="/register"
+            onClick={() => setOpen(false)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs rounded-xl transition-colors"
+          >
+            <UserPlus size={14} />
+            Register or Sign Up for Nexus Store Instead
+            <ArrowRight size={12} />
+          </Link>
+        </div>
+
+        <small className="mt-2 block">By joining, you agree to occasional updates from Nexus A Liverton Store. No spam, only value.</small>
       </section>
     </div>
   );
