@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   BarChart3,
   Award,
-  Sparkles,
+  Shield,
   Globe,
 } from "lucide-react";
 
@@ -85,7 +85,7 @@ export default function AdminAnalytics() {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
         <div className="p-5 border-b border-slate-800">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Sparkles size={16} className="text-amber-400" /> Catalog Product Sales &amp; Conversion Breakdown
+            <Shield size={16} className="text-amber-400" /> Catalog Product Sales &amp; Conversion Breakdown
           </h2>
         </div>
 

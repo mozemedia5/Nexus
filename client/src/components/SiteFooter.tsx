@@ -1,7 +1,22 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
+import { Award, ArrowRight } from "lucide-react";
 
 export default function SiteFooter() {
   const currentYear = new Date().getFullYear();
+  const [isMember, setIsMember] = useState(false);
+
+  useEffect(() => {
+    const checkMember = () => {
+      const isClubMember = localStorage.getItem("nexus_club_member_v1") === "true";
+      const userSession = localStorage.getItem("nexus_user_profile");
+      setIsMember(isClubMember || Boolean(userSession));
+    };
+
+    checkMember();
+    window.addEventListener("nexus-member-updated", checkMember);
+    return () => window.removeEventListener("nexus-member-updated", checkMember);
+  }, []);
 
   return (
     <footer className="site-footer">
@@ -47,17 +62,33 @@ export default function SiteFooter() {
         </div>
         <div className="footer-column">
           <span className="eyebrow">Customer Care</span>
+          <Link href="/nexus-club">Nexus Member Club</Link>
           <Link href="/login">Sign In / Register</Link>
           <Link href="/track-order">Order Tracking</Link>
           <a href="mailto:support@nexus.liverton.store">Contact Support <span aria-hidden="true">↗</span></a>
         </div>
         <div className="footer-society" id="society">
-          <span className="eyebrow">Nexus Club</span>
-          <h3>Innovation meets everyday wellbeing.</h3>
-          <p>Subscribe for exclusive updates on smart home releases and wellness launches.</p>
-          <button type="button" className="text-link" onClick={() => window.dispatchEvent(new CustomEvent("open-society"))}>
-            Join Nexus Club <span aria-hidden="true">↗</span>
-          </button>
+          {isMember ? (
+            <>
+              <span className="eyebrow flex items-center gap-1">
+                <Award size={14} className="text-amber-500" /> Nexus Member Active
+              </span>
+              <h3>Welcome to Nexus Club</h3>
+              <p>You have full access to community reviews, member product sharing, and exclusive deals.</p>
+              <Link href="/nexus-club" className="text-link inline-flex items-center gap-1 font-bold">
+                Access Member Hub <ArrowRight size={14} />
+              </Link>
+            </>
+          ) : (
+            <>
+              <span className="eyebrow">Nexus Club</span>
+              <h3>Innovation meets everyday wellbeing.</h3>
+              <p>Subscribe for exclusive updates on smart home releases and wellness launches.</p>
+              <button type="button" className="text-link" onClick={() => window.dispatchEvent(new CustomEvent("open-society"))}>
+                Join Nexus Club <span aria-hidden="true">↗</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div className="footer-bottom flex flex-col sm:flex-row justify-between items-center gap-2">

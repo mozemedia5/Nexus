@@ -5,8 +5,10 @@ import {
   Percent,
   BarChart3,
   TrendingUp,
-  Sparkles,
+  Award,
   ArrowRight,
+  Shield,
+  Users,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -32,7 +34,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800 dark:border-slate-800">
         <div>
           <span className="text-xs font-bold text-amber-500 dark:text-amber-400 tracking-wider uppercase flex items-center gap-1.5">
-            <Sparkles size={14} /> Nexus Executive Dashboard
+            <Shield size={14} /> Nexus Executive Dashboard
           </span>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
             Store Performance &amp; Real-time Metrics
@@ -155,7 +157,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-1 bg-white dark:bg-[#1E1F20] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4 transition-colors">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Sparkles size={16} className="text-amber-500 dark:text-amber-400" /> Top Sellers
+              <Award size={16} className="text-amber-500 dark:text-amber-400" /> Top Sellers
             </h2>
             <Link
               href="/admin/analytics"

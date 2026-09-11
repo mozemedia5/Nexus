@@ -17,6 +17,7 @@ import NotFound from "@/pages/NotFound";
 import ProductDetail from "@/pages/ProductDetail";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import NexusClub from "@/pages/NexusClub";
 import AdminLayout from "@/components/AdminLayout";
 import Admin from "@/pages/Admin";
 import Login from "@/pages/Login";
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/about.html" component={HeritageRoute} />
       <Route path="/track-order" component={OrderTrackingRoute} />
       <Route path="/order-tracking" component={OrderTrackingRoute} />
+      <Route path="/nexus-club" component={() => <SiteLayout><NexusClub /></SiteLayout>} />
       <Route path="/login" component={() => <SiteLayout><Login /></SiteLayout>} />
       <Route path="/register" component={() => <SiteLayout><Register /></SiteLayout>} />
       <Route path="/terms" component={() => <SiteLayout><Terms /></SiteLayout>} />

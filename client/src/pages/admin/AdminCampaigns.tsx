@@ -6,7 +6,7 @@ import {
   Send,
   Trash2,
   Tag,
-  Sparkles,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_CAMPAIGNS, type Campaign } from "@/pages/Admin";

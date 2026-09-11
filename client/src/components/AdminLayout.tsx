@@ -3,7 +3,8 @@ import { useLocation, Link } from "wouter";
 import {
   Menu,
   X,
-  Sparkles,
+  Shield,
+  Award,
   LayoutDashboard,
   BarChart3,
   ShoppingBag,
@@ -20,8 +21,8 @@ import {
   Image as ImageIcon,
   Mic,
   ArrowRight,
-  Shield,
   Key,
+  Command,
 } from "lucide-react";
 import { toast } from "sonner";
 import AiAssistant from "@/components/AiAssistant";
@@ -272,17 +273,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             {sidebarExpanded ? (
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500">
-                  <Sparkles size={18} />
+                  <Shield size={18} />
                 </div>
                 <div className="flex flex-col">
                   <span className="font-bold text-sm tracking-tight flex items-center gap-1">
-                    Nexus <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 font-mono">GEMINI ADMIN</span>
+                    Nexus <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 font-mono">EXECUTIVE</span>
                   </span>
                 </div>
               </div>
             ) : (
               <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 mx-auto">
-                <Sparkles size={18} />
+                <Shield size={18} />
               </div>
             )}
 
@@ -375,8 +376,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             >
               <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                  <Sparkles size={20} className="text-amber-500" />
-                  <span className="font-bold text-sm">Nexus Gemini Admin</span>
+                  <Shield size={20} className="text-amber-500" />
+                  <span className="font-bold text-sm">Nexus Executive Console</span>
                 </div>
                 <button
                   type="button"
@@ -501,7 +502,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             {children}
           </main>
 
-          {/* Fixed Bottom Quick Action / Command Pill Box (Gemini Pill) */}
+          {/* Fixed Bottom Quick Action / Command Pill Box */}
           <div className="fixed bottom-4 left-0 right-0 z-30 pointer-events-none px-4">
             <div className="max-w-3xl mx-auto pointer-events-auto">
               <form
@@ -512,7 +513,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     : "bg-[#F0F4F9] border-slate-300 text-slate-900 focus-within:border-amber-500"
                 }`}
               >
-                <Sparkles size={18} className="text-amber-500 shrink-0" />
+                <Command size={18} className="text-amber-500 shrink-0" />
                 <input
                   type="text"
                   value={commandInput}
