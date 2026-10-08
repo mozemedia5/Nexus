@@ -10,10 +10,10 @@ export default function SocietyModal() {
 
   useEffect(() => {
     const checkMembership = () => {
-      const isClubMember = localStorage.getItem("nexus_club_member_v1") === "true";
+      const isSubscribed = localStorage.getItem("nexus_newsletter_subscribed") === "true";
       const userSession = localStorage.getItem("nexus_user_profile");
       const isUserSignedIn = Boolean(userSession);
-      const memberStatus = isClubMember || isUserSignedIn;
+      const memberStatus = isSubscribed || isUserSignedIn;
       setIsMember(memberStatus);
       return memberStatus;
     };
@@ -65,30 +65,26 @@ export default function SocietyModal() {
     }
 
     try {
-      fetch("/api/newsletter/subscribe", {
+      const res = await fetch("/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: cleanEmail, source: "Nexus Society Club Modal" }),
-      }).catch(() => {});
+        body: JSON.stringify({ email: cleanEmail, source: "Newsletter Modal" }),
+      });
 
-      const saved = localStorage.getItem("nexus_subscribers_v1");
-      const list = saved ? JSON.parse(saved) : [];
-      if (!list.some((item: any) => item.email === cleanEmail)) {
-        list.unshift({ email: cleanEmail, source: "Nexus Club", subscribedAt: new Date().toISOString() });
-        localStorage.setItem("nexus_subscribers_v1", JSON.stringify(list));
+      if (res.ok) {
+        toast.success("Subscribed!", {
+          description: "Thank you for subscribing to Nexus drops and deals.",
+        });
+        localStorage.setItem("nexus_newsletter_subscribed", "true");
+        setEmail("");
+        setOpen(false);
+      } else {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to subscribe. Please try again.");
       }
-    } catch {}
-
-    // Store membership state so user never sees newsletter prompt again
-    localStorage.setItem("nexus_club_member_v1", "true");
-    localStorage.setItem("nexus_club_member_email", cleanEmail);
-    window.dispatchEvent(new CustomEvent("nexus-member-updated"));
-
-    toast.success("Welcome to Nexus Club!", {
-      description: "You are now a member. Access exclusive perks and community reviews in Nexus Club.",
-    });
-    setEmail("");
-    setOpen(false);
+    } catch {
+      toast.error("Subscription failed. Please check your connection.");
+    }
   };
 
   return (
@@ -96,14 +92,14 @@ export default function SocietyModal() {
       <button className="modal-scrim" type="button" aria-label="Close newsletter sign-up" onClick={() => setOpen(false)} />
       <section className="society-dialog" role="dialog" aria-modal="true" aria-labelledby="society-title">
         <button type="button" className="icon-button modal-close" onClick={() => setOpen(false)} aria-label="Close"><X size={20} /></button>
-        <span className="eyebrow">The Nexus Club</span>
-        <h2 id="society-title">Smart home innovations &amp; workspace gadgets.</h2>
-        <p>Join for early access to new product drops, technological insights, and exclusive member updates from Nexus A Liverton Store.</p>
+        <span className="eyebrow">Nexus Insider</span>
+        <h2 id="society-title">Get new drops &amp; deals.</h2>
+        <p>Subscribe for early access to new product drops, technological insights, and exclusive updates from Nexus.</p>
         <form onSubmit={handleSubmit} className="society-form">
           <label htmlFor="society-email">Email address</label>
           <div className="society-input-row">
             <input id="society-email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" required />
-            <button type="submit" className="button button-dark">Join Club <span aria-hidden="true">↗</span></button>
+            <button type="submit" className="button button-dark">Subscribe <span aria-hidden="true">↗</span></button>
           </div>
         </form>
 

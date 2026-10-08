@@ -6,6 +6,7 @@ import {
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getAdminAuthHeaders } from "@/lib/firebase";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -16,9 +17,10 @@ export default function AdminOrders() {
   const [editNotes, setEditNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const fetchOrders = () => {
+  const fetchOrders = async () => {
     setLoading(true);
-    fetch("/api/admin/orders")
+    const headers = await getAdminAuthHeaders();
+    fetch("/api/admin/orders", { headers })
       .then((r) => r.json())
       .then((d) => {
         if (d.orders) setOrders(d.orders);

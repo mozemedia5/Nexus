@@ -5,17 +5,22 @@ import {
   Shield,
   Globe,
 } from "lucide-react";
+import { getAdminAuthHeaders } from "@/lib/firebase";
 
 export default function AdminAnalytics() {
   const [metrics, setMetrics] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/admin/metrics")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.metrics) setMetrics(d.metrics);
-      })
-      .catch(() => {});
+    async function loadMetrics() {
+      const headers = await getAdminAuthHeaders();
+      fetch("/api/admin/metrics", { headers })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.metrics) setMetrics(d.metrics);
+        })
+        .catch(() => {});
+    }
+    loadMetrics();
   }, []);
 
   const topProducts = metrics?.topSellingProducts || [];

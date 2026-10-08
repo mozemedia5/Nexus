@@ -217,30 +217,7 @@ export function formatPrice(price: { amount: string; currencyCode: string } | nu
   }).format(Number(price.amount));
 }
 
-export const FALLBACK_COLLECTIONS: Collection[] = [
-  {
-    id: "gid://shopify/Collection/1",
-    handle: "smart-home",
-    title: "Smart Home Automation",
-    description: "Intelligent ambient lighting, environmental sensors, and connected automation hubs.",
-    image: { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80", altText: "Smart Home Automation" }
-  },
-  {
-    id: "gid://shopify/Collection/2",
-    handle: "workspace-productivity",
-    title: "Workspace Productivity",
-    description: "Ergonomic desk lamps, smart docking hubs, monitor light bars, and focus tools.",
-    image: { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80", altText: "Workspace Productivity" }
-  },
-  {
-    id: "gid://shopify/Collection/3",
-    handle: "tech-accessories",
-    title: "Tech Accessories",
-    description: "Precision wireless charging pads, noise-canceling audio gear, and minimalist stands.",
-    image: { url: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80", altText: "Tech Accessories" }
-  }
-];
-
+export const FALLBACK_COLLECTIONS: Collection[] = [];
 export const FALLBACK_PRODUCTS: Product[] = [];
 
 export async function getProducts(options: { first?: number; query?: string; sortKey?: string } = {}): Promise<Product[]> {
@@ -249,9 +226,7 @@ export async function getProducts(options: { first?: number; query?: string; sor
   if (cached) return cached;
 
   if (!shopifyConfigured) {
-    const res = FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
-    setCached(cacheKey, res);
-    return res;
+    return [];
   }
   try {
     const data = await shopifyFetch<{ products: { nodes: any[] } }>(
@@ -259,14 +234,11 @@ export async function getProducts(options: { first?: number; query?: string; sor
       { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" }
     );
     const items = data.products.nodes.map(normalizeProduct);
-    const res = items.length > 0 ? items : FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
-    setCached(cacheKey, res);
-    return res;
+    setCached(cacheKey, items);
+    return items;
   } catch (err) {
-    console.warn("Shopify fetch failed, using fallback products:", err);
-    const res = FALLBACK_PRODUCTS.slice(0, options.first ?? 24);
-    setCached(cacheKey, res);
-    return res;
+    console.error("Shopify fetch failed:", err);
+    return [];
   }
 }
 
@@ -276,9 +248,7 @@ export async function getProduct(handle: string): Promise<Product | null> {
   if (cached) return cached;
 
   if (!shopifyConfigured) {
-    const res = FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? FALLBACK_PRODUCTS[0] ?? null;
-    if (res) setCached(cacheKey, res);
-    return res;
+    return null;
   }
   try {
     const data = await shopifyFetch<{ productByHandle: any }>(
@@ -290,14 +260,10 @@ export async function getProduct(handle: string): Promise<Product | null> {
       setCached(cacheKey, res);
       return res;
     }
-    const res = FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? null;
-    if (res) setCached(cacheKey, res);
-    return res;
+    return null;
   } catch (err) {
-    console.warn("Shopify fetch failed for product, using fallback:", err);
-    const res = FALLBACK_PRODUCTS.find((p) => p.handle === handle) ?? FALLBACK_PRODUCTS[0] ?? null;
-    if (res) setCached(cacheKey, res);
-    return res;
+    console.error("Shopify fetch failed for product:", err);
+    return null;
   }
 }
 
@@ -307,9 +273,7 @@ export async function getCollections(first = 30): Promise<Collection[]> {
   if (cached) return cached;
 
   if (!shopifyConfigured) {
-    const res = FALLBACK_COLLECTIONS.slice(0, first);
-    setCached(cacheKey, res);
-    return res;
+    return [];
   }
   try {
     const data = await shopifyFetch<{ collections: { nodes: any[] } }>(
@@ -317,14 +281,11 @@ export async function getCollections(first = 30): Promise<Collection[]> {
       { first }
     );
     const items = data.collections.nodes as Collection[];
-    const res = items.length > 0 ? items : FALLBACK_COLLECTIONS.slice(0, first);
-    setCached(cacheKey, res);
-    return res;
+    setCached(cacheKey, items);
+    return items;
   } catch (err) {
-    console.warn("Shopify fetch failed for collections, using fallback:", err);
-    const res = FALLBACK_COLLECTIONS.slice(0, first);
-    setCached(cacheKey, res);
-    return res;
+    console.error("Shopify fetch failed for collections:", err);
+    return [];
   }
 }
 
@@ -334,11 +295,7 @@ export async function getCollectionProducts(handle: string, first = 24): Promise
   if (cached) return cached;
 
   if (!shopifyConfigured) {
-    if (handle === "all") return FALLBACK_PRODUCTS.slice(0, first);
-    const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
-    const res = (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
-    setCached(cacheKey, res);
-    return res;
+    return [];
   }
   try {
     const data = await shopifyFetch<{ collection: { products: { nodes: any[] } } | null }>(
@@ -346,20 +303,11 @@ export async function getCollectionProducts(handle: string, first = 24): Promise
       { handle, first }
     );
     const items = data.collection?.products.nodes.map(normalizeProduct) ?? [];
-    if (items.length > 0) {
-      setCached(cacheKey, items);
-      return items;
-    }
-    const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
-    const res = (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
-    setCached(cacheKey, res);
-    return res;
+    setCached(cacheKey, items);
+    return items;
   } catch (err) {
-    console.warn("Shopify fetch failed for collection products, using fallback:", err);
-    const filtered = FALLBACK_PRODUCTS.filter((p) => p.tags.includes(handle));
-    const res = (filtered.length > 0 ? filtered : FALLBACK_PRODUCTS).slice(0, first);
-    setCached(cacheKey, res);
-    return res;
+    console.error("Shopify fetch failed for collection products:", err);
+    return [];
   }
 }
 

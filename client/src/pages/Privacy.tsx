@@ -5,7 +5,7 @@ export default function Privacy() {
   return (
     <div className="section-pad max-w-4xl mx-auto text-foreground">
       <div className="mb-8">
-        <span className="eyebrow">Nexus A Liverton Store</span>
+        <span className="eyebrow">Nexus</span>
         <h1 className="text-3xl font-serif font-medium mt-2">Privacy Policy</h1>
         <p className="text-sm text-muted-foreground mt-1">Last Updated: 2026</p>
       </div>
@@ -14,14 +14,14 @@ export default function Privacy() {
         <section>
           <h2 className="text-base font-semibold text-foreground mb-2">1. Personal Information We Collect</h2>
           <p>
-            When you visit Nexus A Liverton Store or place an order, we collect certain information about your device, interaction with the site, and information necessary to process your purchases, including contact details and shipping address.
+            When you visit Nexus or place an order, we collect certain information about your device, interaction with the site, and information necessary to process your purchases, including contact details and shipping address.
           </p>
         </section>
 
         <section>
           <h2 className="text-base font-semibold text-foreground mb-2">2. How We Use Your Information</h2>
           <p>
-            We use your personal information to fulfill orders, process payments, arrange global shipping, communicate with you regarding your orders, and provide updates on new Smart Home & Beauty product releases when subscribed.
+            We use your personal information to fulfill orders, process payments, arrange shipping, communicate with you regarding your orders, and provide updates on new Smart Home & Workspace product releases when subscribed.
           </p>
         </section>
 
