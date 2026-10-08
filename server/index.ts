@@ -118,8 +118,53 @@ async function startServer() {
     }
   });
 
+  // Middleware to authenticate and authorize admin users using Firebase ID Tokens
+  const verifyAdminAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.status(401).json({ error: "Unauthorized: Missing or invalid Authorization header" });
+      return;
+    }
+
+    const idToken = authHeader.split("Bearer ")[1]?.trim();
+    if (!idToken) {
+      res.status(401).json({ error: "Unauthorized: Token missing" });
+      return;
+    }
+
+    try {
+      const admin = parseFirebaseServiceAccount();
+      if (!admin) {
+        res.status(500).json({ error: "Server Configuration Error: Firebase Admin service account is not configured." });
+        return;
+      }
+
+      const { auth, firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+      const decodedToken = await auth.verifyIdToken(idToken);
+      const uid = decodedToken.uid;
+
+      // Check if user has admin claim or is listed in nexus_admins collection
+      const adminDoc = await firestore.collection("nexus_admins").doc(uid).get();
+      const adminData = adminDoc.data();
+
+      const isAdmin = decodedToken.admin === true || decodedToken.role === "admin" || decodedToken.role === "superadmin" || (adminDoc.exists && adminData?.isAdmin === true);
+
+      if (!isAdmin) {
+        res.status(403).json({ error: "Forbidden: Admin privileges required" });
+        return;
+      }
+
+      (req as any).user = decodedToken;
+      (req as any).adminData = adminData;
+      next();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Authentication failed";
+      res.status(401).json({ error: `Unauthorized: ${message}` });
+    }
+  };
+
   // Admin Orders received endpoint using Shopify Admin Access Token
-  app.get("/api/admin/orders", async (_req, res) => {
+  app.get("/api/admin/orders", verifyAdminAuth, async (_req, res) => {
     try {
       const orders = await fetchShopifyAdminOrders();
       res.json({ orders });
@@ -130,7 +175,7 @@ async function startServer() {
   });
 
   // Admin Analytics & Metrics endpoint
-  app.get("/api/admin/metrics", async (_req, res) => {
+  app.get("/api/admin/metrics", verifyAdminAuth, async (_req, res) => {
     try {
       const orders = await fetchShopifyAdminOrders();
       const metrics = await fetchShopifyAdminMetrics(orders);
@@ -142,18 +187,8 @@ async function startServer() {
   });
 
   // Memory/Firestore subscriber and interaction stores
-  const inMemorySubscribers: Array<{ id: string; email: string; source: string; subscribedAt: string }> = [
-    { id: "sub-1", email: "sarah.m@example.com", source: "Society Modal", subscribedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-    { id: "sub-2", email: "james.cooper@example.com", source: "Footer Newsletter", subscribedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-    { id: "sub-3", email: "aisha.p@example.com", source: "Society Modal", subscribedAt: new Date(Date.now() - 86400000 * 1).toISOString() },
-  ];
-
-  const inMemoryInteractions: Array<{ id: string; userEmail?: string; action: string; productTitle: string; category?: string; timestamp: string }> = [
-    { id: "int-1", userEmail: "sarah.m@example.com", action: "like", productTitle: "Nexus Ergonomic Smart Light Bar", category: "workspace-productivity", timestamp: new Date(Date.now() - 3600000 * 2).toISOString() },
-    { id: "int-2", userEmail: "sarah.m@example.com", action: "click", productTitle: "Nexus Smart Climate Sensor & Gateway", category: "smart-home", timestamp: new Date(Date.now() - 3600000 * 3).toISOString() },
-    { id: "int-3", userEmail: "aisha.p@example.com", action: "like", productTitle: "Nexus Magnetic Wireless Charging Stand", category: "tech-accessories", timestamp: new Date(Date.now() - 3600000 * 5).toISOString() },
-    { id: "int-4", userEmail: "james.cooper@example.com", action: "view", productTitle: "Nexus Thunderbolt 4 Pro Docking Station", category: "workspace-productivity", timestamp: new Date(Date.now() - 3600000 * 10).toISOString() },
-  ];
+  const inMemorySubscribers: Array<{ id: string; email: string; source: string; subscribedAt: string }> = [];
+  const inMemoryInteractions: Array<{ id: string; userEmail?: string; action: string; productTitle: string; category?: string; timestamp: string }> = [];
 
   // Newsletter Subscription API
   app.post("/api/newsletter/subscribe", async (req, res) => {
@@ -223,7 +258,7 @@ async function startServer() {
   });
 
   // Admin Leads and Tracked Interests API
-  app.get("/api/admin/leads", async (_req, res) => {
+  app.get("/api/admin/leads", verifyAdminAuth, async (_req, res) => {
     try {
       let subscribers = [...inMemorySubscribers];
       let interactions = [...inMemoryInteractions];
@@ -250,7 +285,7 @@ async function startServer() {
   });
 
   // Admin Tracked Users Endpoint
-  app.get("/api/admin/users", async (_req, res) => {
+  app.get("/api/admin/users", verifyAdminAuth, async (_req, res) => {
     try {
       let subscribers = [...inMemorySubscribers];
       let interactions = [...inMemoryInteractions];
@@ -309,7 +344,7 @@ async function startServer() {
   });
 
   // Admin Single User Profile Endpoint
-  app.get("/api/admin/users/:id", async (req, res) => {
+  app.get("/api/admin/users/:id", verifyAdminAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const orders = await fetchShopifyAdminOrders();
@@ -370,7 +405,7 @@ async function startServer() {
   });
 
   // Superadmin endpoint: Create / Add New Admin with Assigned Role
-  app.post("/api/admin/create-admin", async (req, res) => {
+  app.post("/api/admin/create-admin", verifyAdminAuth, async (req, res) => {
     const { email, fullName, role, adminAccessToken } = req.body || {};
 
     if (!email || !email.includes("@")) {

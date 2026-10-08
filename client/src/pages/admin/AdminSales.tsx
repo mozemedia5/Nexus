@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from "react";
 import {
   TrendingUp,
-  DollarSign,
   PieChart,
-  ShoppingBag,
-  ArrowUpRight,
-  Download,
 } from "lucide-react";
+import { getAdminAuthHeaders } from "@/lib/firebase";
 
 export default function AdminSales() {
   const [metrics, setMetrics] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/admin/metrics")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.metrics) setMetrics(d.metrics);
-      })
-      .catch(() => {});
+    async function loadMetrics() {
+      const headers = await getAdminAuthHeaders();
+      fetch("/api/admin/metrics", { headers })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.metrics) setMetrics(d.metrics);
+        })
+        .catch(() => {});
+    }
+    loadMetrics();
   }, []);
 
   const totalRev = metrics?.totalRevenue || 0;

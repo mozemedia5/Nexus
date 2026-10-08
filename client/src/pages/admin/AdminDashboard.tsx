@@ -8,24 +8,28 @@ import {
   Award,
   ArrowRight,
   Shield,
-  Users,
 } from "lucide-react";
 import { Link } from "wouter";
+import { getAdminAuthHeaders } from "@/lib/firebase";
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/admin/metrics").then((r) => r.json()),
-      fetch("/api/admin/orders").then((r) => r.json()),
-    ])
-      .then(([metricsData, ordersData]) => {
-        if (metricsData.metrics) setMetrics(metricsData.metrics);
-        if (ordersData.orders) setOrders(ordersData.orders);
-      })
-      .catch(() => {});
+    async function loadData() {
+      const headers = await getAdminAuthHeaders();
+      Promise.all([
+        fetch("/api/admin/metrics", { headers }).then((r) => r.json()),
+        fetch("/api/admin/orders", { headers }).then((r) => r.json()),
+      ])
+        .then(([metricsData, ordersData]) => {
+          if (metricsData.metrics) setMetrics(metricsData.metrics);
+          if (ordersData.orders) setOrders(ordersData.orders);
+        })
+        .catch(() => {});
+    }
+    loadData();
   }, []);
 
   return (

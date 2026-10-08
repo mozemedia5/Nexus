@@ -1,26 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Shield, UserPlus, Trash2 } from "lucide-react";
+import { Shield, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import type { AdminUser } from "@/pages/Admin";
-
-const DEFAULT_ADMINS: AdminUser[] = [
-  {
-    uid: "admin-1",
-    fullName: "System Owner",
-    email: "superadmin@nexus.com",
-    role: "superadmin",
-    isAdmin: true,
-    createdAt: "2026-01-01T00:00:00.000Z",
-  },
-  {
-    uid: "admin-2",
-    fullName: "Store Operations Manager",
-    email: "admin@nexus.com",
-    role: "admin",
-    isAdmin: true,
-    createdAt: "2026-02-15T00:00:00.000Z",
-  },
-];
+import { getAdminAuthHeaders } from "@/lib/firebase";
 
 const ADMINS_STORAGE_KEY = "nexus_admins_v1";
 
@@ -30,7 +12,7 @@ export default function AdminAdmins() {
       const saved = localStorage.getItem(ADMINS_STORAGE_KEY);
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEFAULT_ADMINS;
+    return [];
   });
 
   const [adminName, setAdminName] = useState("");
@@ -51,9 +33,10 @@ export default function AdminAdmins() {
     }
 
     try {
+      const authHeaders = await getAdminAuthHeaders();
       const res = await fetch("/api/admin/create-admin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           fullName: adminName || "Store Admin",
           email: adminEmail,

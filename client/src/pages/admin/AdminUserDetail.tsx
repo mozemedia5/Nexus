@@ -1,54 +1,41 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  User,
   Mail,
   MapPin,
-  Calendar,
-  ShoppingBag,
-  DollarSign,
   Search,
   Heart,
-  FileText,
-  FileSpreadsheet,
-  FileCode,
-  Image as ImageIcon,
   Download,
   ArrowLeft,
-  CheckCircle2,
 } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import { toast } from "sonner";
+import { getAdminAuthHeaders } from "@/lib/firebase";
 
 export default function AdminUserDetail() {
   const [, params] = useRoute("/admin/users/:id");
-  const userId = params?.id || "usr-1";
+  const userId = params?.id || "";
 
-  const DEFAULT_USER = {
-    id: "usr-1",
-    fullName: "Sarah Mitchell",
-    email: "sarah.m@example.com",
-    location: "San Francisco, CA, USA",
-    totalOrders: 3,
-    totalSpent: 436.00,
-    primaryInterest: "Workspace Productivity",
-    smartHomeScore: 40,
-    workspaceScore: 85,
-    searchedKeywords: ["Light Bar", "Ergonomic Setup", "Thunderbolt Dock"],
-    likedProducts: ["Nexus Ergonomic Smart Light Bar", "Nexus Smart Climate Sensor & Gateway"],
-    lastActive: new Date(Date.now() - 3600000 * 2).toISOString(),
-  };
-
-  const [user, setUser] = useState<any>(DEFAULT_USER);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch(`/api/admin/users/${userId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.user) setUser(d.user);
-      })
-      .catch(() => {});
+    async function loadUser() {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      const headers = await getAdminAuthHeaders();
+      fetch(`/api/admin/users/${userId}`, { headers })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.user) setUser(d.user);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+    loadUser();
   }, [userId]);
 
   if (loading) {

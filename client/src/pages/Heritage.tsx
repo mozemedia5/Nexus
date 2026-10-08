@@ -55,7 +55,7 @@ export default function Heritage() {
           "url": "https://liverton-nexus.vercel.app/about",
           "publisher": {
             "@type": "Organization",
-            "name": "Nexus A Liverton Store",
+            "name": "Nexus",
             "url": "https://liverton-nexus.vercel.app"
           }
         }}
@@ -72,7 +72,7 @@ export default function Heritage() {
           <h2>Built for the future of<br /><em>home and office.</em></h2>
           <p>Nexus was born from a clear realization: modern work and home environments demand high-tech, intuitive gadgets that reduce friction, improve productivity, and enhance everyday comfort.</p>
           <p>We set out to eliminate complexity. By selecting only high-performance ambient light bars, ergonomic desk lamps, Thunderbolt docking stations, and connected home sensors, Nexus delivers a premium lifestyle upgrade.</p>
-          <p>As a proud Liverton Store brand, Nexus combines technological innovation with trusted customer service, secure checkout, and transparent order tracking.</p>
+          <p>Nexus combines technological innovation with trusted customer service, secure checkout, and transparent order tracking.</p>
         </div>
         <div className="story-image-wrap">
           <div className="heritage-card-box">
@@ -92,7 +92,7 @@ export default function Heritage() {
           <div><span className="eyebrow">Our Milestones</span><h2>The <em>Nexus Journey.</em></h2></div>
           <span className="section-number">05 milestones</span>
         </div>
-        <p className="section-lede">Key chapters in our evolution as a premier destination for smart home technology and beauty &amp; wellness.</p>
+        <p className="section-lede">Key chapters in our evolution as a premier destination for smart home technology and workspace tools.</p>
         <div className="timeline">
           {milestones.map((milestone) => (
             <article key={milestone.year} className="timeline-item">
@@ -112,7 +112,7 @@ export default function Heritage() {
           <div><span className="eyebrow">What Guides Us</span><h2>Our <em>Core Values.</em></h2></div>
           <span className="section-number">06 principles</span>
         </div>
-        <p className="section-lede">The principles that guide every smart home selection and beauty &amp; wellness launch at Nexus A Liverton Store.</p>
+        <p className="section-lede">The principles that guide every smart home selection and workspace productivity release at Nexus.</p>
         <div className="values-grid">
           {values.map(([number, title, copy]) => (
             <article className="value-card" key={title}>
@@ -127,41 +127,13 @@ export default function Heritage() {
       <section className="numbers-section">
         <div className="numbers-head">
           <span className="eyebrow eyebrow-light">Nexus at a glance</span>
-          <p>Dedicated to excellence across smart home automation and wellness curation.</p>
+          <p>Dedicated to excellence across smart home automation and workspace curation.</p>
         </div>
         <div className="numbers-grid">
           <div><strong>100%</strong><span>Smart Home Focus</span></div>
           <div><strong>24/7</strong><span>Order Tracking</span></div>
           <div><strong>100%</strong><span>Secure Checkout</span></div>
-          <div><strong>Premium</strong><span>Beauty &amp; Wellness</span></div>
-        </div>
-      </section>
-
-      <section className="society-detail section-pad" id="society-detail">
-        <div className="society-detail-copy">
-          <span className="eyebrow">An Invitation</span>
-          <h2>Join the<br /><em>Nexus Club.</em></h2>
-          <p>Become part of our community for early access to smart home tech releases and beauty &amp; wellness innovations.</p>
-          <button type="button" className="button button-dark" onClick={() => window.dispatchEvent(new CustomEvent("open-society"))}>
-            Join Nexus Club <ArrowUpRight size={15} />
-          </button>
-        </div>
-        <div className="benefits-list">
-          <span className="eyebrow">Member Benefits</span>
-          {[
-            ["01", "Early Tech Access", "Preview and purchase new smart home controllers before public releases."],
-            ["02", "Exclusive Promotions", "Enjoy special member pricing on selected beauty & wellness gadgets."],
-            ["03", "Order Support", "Dedicated priority help for setting up devices and tracking deliveries."],
-            ["04", "Innovation Updates", "Stay informed on the latest trends in smart automation and skincare tech."]
-          ].map(([number, title, copy]) => (
-            <div className="benefit" key={title}>
-              <span>{number}</span>
-              <div>
-                <h3>{title}</h3>
-                <p>{copy}</p>
-              </div>
-            </div>
-          ))}
+          <div><strong>Premium</strong><span>Workspace Tools</span></div>
         </div>
       </section>
     </>

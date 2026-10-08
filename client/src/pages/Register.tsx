@@ -81,8 +81,6 @@ export default function Register() {
         name: fullName,
         uid: result.user.uid,
       }));
-      localStorage.setItem("nexus_club_member_v1", "true");
-      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
 
       const isRedirected = await checkAdminAndRedirect(email, result.user.uid, fullName);
       if (isRedirected) return;
@@ -133,8 +131,6 @@ export default function Register() {
         name: cleanDisplayName,
         uid: result.user.uid,
       }));
-      localStorage.setItem("nexus_club_member_v1", "true");
-      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
 
       toast.success("Account created!", { description: "Signed up with Google." });
       setLocation("/");
@@ -185,8 +181,6 @@ export default function Register() {
         name: cleanDisplayName,
         uid: result.user.uid,
       }));
-      localStorage.setItem("nexus_club_member_v1", "true");
-      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
 
       toast.success("Account created!", { description: "Signed up with Apple." });
       setLocation("/");

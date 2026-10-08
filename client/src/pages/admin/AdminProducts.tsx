@@ -1,22 +1,30 @@
 import React, { useState, useEffect } from "react";
 import {
   Package,
-  Edit3,
   UploadCloud,
   Video,
   Image as ImageIcon,
   Save,
-  Plus,
-  CheckCircle2,
   Play,
 } from "lucide-react";
 import { toast } from "sonner";
-import { FALLBACK_PRODUCTS, type Product } from "@/lib/store";
+import { getProducts, type Product } from "@/lib/store";
+import { getAdminAuthHeaders } from "@/lib/firebase";
 
 export default function AdminProducts() {
-  const [products, setProducts] = useState<Product[]>(FALLBACK_PRODUCTS);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(FALLBACK_PRODUCTS[0]);
-  const [editDescription, setEditDescription] = useState(FALLBACK_PRODUCTS[0]?.description || "");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editDescription, setEditDescription] = useState("");
+
+  useEffect(() => {
+    getProducts().then((data) => {
+      setProducts(data);
+      if (data.length > 0) {
+        setSelectedProduct(data[0]);
+        setEditDescription(data[0].description || "");
+      }
+    });
+  }, []);
   const [editVideoUrl, setEditVideoUrl] = useState("");
   const [editImageUrl, setEditImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -88,9 +96,10 @@ export default function AdminProducts() {
 
     setSaving(true);
     try {
+      const authHeaders = await getAdminAuthHeaders();
       const res = await fetch("/api/admin/products/update", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           handle: selectedProduct.handle,
           description: editDescription,

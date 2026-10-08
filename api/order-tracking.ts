@@ -265,54 +265,7 @@ export async function fetchShopifyOrderTracking(
     }
   }
 
-  // Fallback demo order tracking if Shopify credentials are not configured or live order is not found
-  return getDemoTrackedOrder(orderInput, emailOrPhoneInput);
-}
-
-function getDemoTrackedOrder(orderInput: string, emailOrPhoneInput: string): TrackedOrder {
-  const cleanNum = orderInput.trim().toUpperCase().replace(/^#/, "");
-  const orderName = `#${cleanNum || "1001"}`;
-
-  return {
-    id: `gid://shopify/Order/demo-${cleanNum || "1001"}`,
-    name: orderName,
-    orderNumber: cleanNum || "1001",
-    processedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    financialStatus: "PAID",
-    fulfillmentStatus: "IN_TRANSIT",
-    statusUrl: "https://nexus.com/order-tracking",
-    totalPrice: { amount: "218.00", currencyCode: "USD" },
-    shippingAddress: {
-      firstName: "Customer",
-      lastName: "Recipient",
-      address1: "100 Innovation Way",
-      city: "Global Hub",
-      country: "United States",
-    },
-    lineItems: [
-      {
-        title: "Nexus Ergonomic Smart Light Bar",
-        quantity: 1,
-        price: { amount: "129.00", currencyCode: "USD" },
-        image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80",
-        variantTitle: "Matte Black",
-      },
-      {
-        title: "Nexus Smart Gradient Light Strip",
-        quantity: 1,
-        price: { amount: "89.00", currencyCode: "USD" },
-        image: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=400&q=80",
-        variantTitle: "2-Meter Starter Kit",
-      },
-    ],
-    fulfillments: [
-      {
-        trackingNumber: `NEXUS-TRK-${cleanNum || "98765"}`,
-        trackingUrl: "https://www.dhl.com/en/express/tracking.html",
-        company: "DHL Express Global",
-      },
-    ],
-  };
+  return null;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

@@ -3,13 +3,11 @@ import {
   Users,
   Search,
   MapPin,
-  Heart,
-  TrendingUp,
   ArrowRight,
   Mail,
-  UserCheck,
 } from "lucide-react";
 import { Link } from "wouter";
+import { getAdminAuthHeaders } from "@/lib/firebase";
 
 export interface TrackedUser {
   id: string;
@@ -32,13 +30,18 @@ export default function AdminUsers() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    fetch("/api/admin/users")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.users) setUsers(d.users);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    async function loadUsers() {
+      setLoading(true);
+      const headers = await getAdminAuthHeaders();
+      fetch("/api/admin/users", { headers })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.users) setUsers(d.users);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+    loadUsers();
   }, []);
 
   const filteredUsers = users.filter(

@@ -10,9 +10,9 @@ interface SEOProps {
   jsonLd?: object | object[];
 }
 
-const DEFAULT_TITLE = "Nexus A Liverton Store — Smart Home, Beauty & Wellness Essentials";
-const DEFAULT_DESCRIPTION = "Explore Nexus A Liverton Store: Curated Smart Home devices, intelligent lighting, and Beauty & Wellness essentials with worldwide global delivery.";
-const DEFAULT_KEYWORDS = "Nexus, Liverton Store, Smart Home, Beauty and Wellness, Smart Lighting, Home Automation, Skincare Tech, Global Shipping";
+const DEFAULT_TITLE = "Nexus — Smart Home & Workspace Productivity";
+const DEFAULT_DESCRIPTION = "Explore Nexus: Curated Smart Home devices, intelligent lighting, and Workspace Productivity tools.";
+const DEFAULT_KEYWORDS = "Nexus, Smart Home, Workspace Productivity, Smart Lighting, Home Automation, Tech Accessories";
 const DEFAULT_IMAGE = "https://liverton-nexus.vercel.app/logo.png";
 const DOMAIN = "https://liverton-nexus.vercel.app";
 
@@ -50,7 +50,7 @@ export default function SEO({
     setMetaTag('meta[property="og:description"]', 'property', 'og:description', description);
     setMetaTag('meta[property="og:image"]', 'property', 'og:image', image);
     setMetaTag('meta[property="og:url"]', 'property', 'og:url', `${DOMAIN}${canonicalPath}`);
-    setMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', 'Nexus A Liverton Store');
+    setMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', 'Nexus');
 
     // Twitter
     setMetaTag('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image');

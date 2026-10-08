@@ -74,8 +74,6 @@ export default function Login() {
         name: cleanDisplayName,
         uid: userCred.user.uid,
       }));
-      localStorage.setItem("nexus_club_member_v1", "true");
-      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
 
       const isRedirected = await checkAdminAndRedirect(cleanUserEmail, userCred.user.uid, cleanDisplayName);
       if (isRedirected) return;
@@ -130,8 +128,6 @@ export default function Login() {
         name: cleanDisplayName,
         uid: result.user.uid,
       }));
-      localStorage.setItem("nexus_club_member_v1", "true");
-      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
 
       const isRedirected = await checkAdminAndRedirect(cleanUserEmail, result.user.uid, cleanDisplayName);
       if (isRedirected) return;
@@ -187,8 +183,6 @@ export default function Login() {
         name: cleanDisplayName,
         uid: result.user.uid,
       }));
-      localStorage.setItem("nexus_club_member_v1", "true");
-      window.dispatchEvent(new CustomEvent("nexus-member-updated"));
 
       const isRedirected = await checkAdminAndRedirect(cleanUserEmail, result.user.uid, cleanDisplayName);
       if (isRedirected) return;

@@ -29,3 +29,18 @@ export function getFirebaseStatus() {
     firestoreReady: Boolean(app),
   };
 }
+
+export async function getAdminAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
+  const auth = getFirebaseAuth();
+  if (auth && auth.currentUser) {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+        return headers;
+      }
+    } catch {}
+  }
+  return headers;
+}

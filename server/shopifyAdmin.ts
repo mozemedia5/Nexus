@@ -181,30 +181,25 @@ export async function fetchShopifyAdminMetrics(orders: AdminOrder[]): Promise<An
   const totalOrders = orders.length;
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  // Conversion rate computation (orders / estimated sessions)
-  const estimatedVisits = Math.max(totalOrders * 28, 120);
-  const conversionRate = parseFloat(((totalOrders / estimatedVisits) * 100).toFixed(2));
+  const conversionRate = 0;
 
   const topSellingProducts: ProductMetric[] = Object.values(productSales).map((p, idx) => {
-    const views = p.unitsSold * 35 + 42 + idx * 15;
-    const clicks = p.unitsSold * 12 + 18 + idx * 5;
-    const rate = parseFloat(((p.unitsSold / views) * 100).toFixed(2));
     return {
       id: `p-${idx + 1}`,
       title: p.title,
       category: p.category,
       unitsSold: p.unitsSold,
       revenue: p.revenue,
-      views,
-      clicks,
-      conversionRate: rate,
+      views: 0,
+      clicks: 0,
+      conversionRate: 0,
     };
   }).sort((a, b) => b.revenue - a.revenue);
 
   const categoryPerformance = {
     "Smart Home Automation": topSellingProducts.filter(p => p.category === "Smart Home").reduce((acc, p) => acc + p.revenue, 0),
     "Workspace Productivity": topSellingProducts.filter(p => p.category === "Workspace Productivity").reduce((acc, p) => acc + p.revenue, 0),
-    "Tech Accessories": 450,
+    "Tech Accessories": topSellingProducts.filter(p => p.category === "Tech Accessories").reduce((acc, p) => acc + p.revenue, 0),
   };
 
   return {
