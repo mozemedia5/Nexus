@@ -110,7 +110,9 @@ export default function Register() {
         return;
       }
       const { signInWithPopup, GoogleAuthProvider } = await import("firebase/auth");
-      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const result = await signInWithPopup(auth, provider);
 
       try {
         const { getFirestore, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
@@ -160,7 +162,10 @@ export default function Register() {
         return;
       }
       const { signInWithPopup, OAuthProvider } = await import("firebase/auth");
-      const result = await signInWithPopup(auth, new OAuthProvider("apple.com"));
+      const provider = new OAuthProvider("apple.com");
+      provider.addScope("email");
+      provider.addScope("name");
+      const result = await signInWithPopup(auth, provider);
 
       try {
         const { getFirestore, doc, setDoc, serverTimestamp } = await import("firebase/firestore");

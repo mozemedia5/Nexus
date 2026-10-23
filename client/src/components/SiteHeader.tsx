@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Search, ShoppingBag, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility, User, Award } from "lucide-react";
+import { Menu, Search, ShoppingBag, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 const links = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/products", label: "Shop All", icon: Store },
-  { href: "/products?collection=smart-home", label: "Smart Home", icon: Sparkles },
-  { href: "/products?collection=workspace-productivity", label: "Workspace", icon: Cable },
+  { href: "/products", label: "Browse products", icon: Store },
+  { href: "/products?collection=smart-home", label: "Smart home", icon: Sparkles },
+  { href: "/products?collection=workspace-productivity", label: "Work & study", icon: Cable },
   { href: "/products?collection=tech-accessories", label: "Accessories", icon: Accessibility },
-  { href: "/about", label: "Our Story", icon: null },
+  { href: "/about", label: "Our story", icon: null },
 ];
 
 export default function SiteHeader() {
@@ -64,7 +64,7 @@ export default function SiteHeader() {
       </header>
       <div className={`mobile-menu ${menuOpen ? "is-open" : ""}`}>
         <div className="mobile-menu-head">
-          <span className="eyebrow">Nexus A Liverton Store</span>
+          <span className="eyebrow">Explore Nexus</span>
           <button type="button" className="icon-button" onClick={() => setMenuOpen(false)} aria-label="Close menu">
             <X size={20} />
           </button>
@@ -75,15 +75,16 @@ export default function SiteHeader() {
               {link.label}
             </Link>
           ))}
-        </nav>          <div className="mobile-menu-foot flex flex-col gap-3">
+        </nav>
+        <div className="mobile-menu-foot flex flex-col gap-3">
           <Link href="/login" className="text-link">
-            <User size={14} /> Sign In / Register
+            <User size={14} /> Account &amp; sign in
           </Link>
           <Link href="/track-order" className="text-link">
-            <PackageCheck size={14} /> Track Your Order
+            <PackageCheck size={14} /> Track an order
           </Link>
           <button type="button" className="text-link" onClick={openCart}>
-            <ShoppingBag size={14} /> Open your bag
+            <ShoppingBag size={14} /> View shopping bag
           </button>
         </div>
       </div>

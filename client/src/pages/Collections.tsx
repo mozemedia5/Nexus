@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowUpRight, Sparkles, Tag, Megaphone, Camera, Search, X, Loader2 } from "lucide-react";
+import { ArrowUpRight, Sparkles, Camera, Search, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ProductCard, { CategoryPills } from "@/components/ProductCard";
 import SEO from "@/components/SEO";
 import { getCollectionProducts, getCollections, getProducts, type Collection, type Product } from "@/lib/store";
-import { getActiveCampaigns } from "@/pages/Admin";
 
 export default function Collections() {
   const [location] = useLocation();
@@ -119,7 +118,6 @@ export default function Collections() {
   }, [active]);
 
   const selected = collections.find((item) => item.handle === active);
-  const campaigns = useMemo(() => getActiveCampaigns(), []);
 
   return (
     <>
@@ -156,31 +154,9 @@ export default function Collections() {
         }}
       />
 
-      {campaigns.length > 0 && (
-        <div className="section-pad pb-0">
-          <div className="p-6 bg-gradient-to-r from-amber-500/10 via-slate-900 to-amber-500/10 border border-amber-500/20 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-amber-500 text-black rounded-xl font-bold">
-                <Megaphone size={20} />
-              </div>
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                  <Tag size={10} /> Active Store Campaign
-                </span>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{campaigns[0].title}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300">{campaigns[0].subtitle}</p>
-              </div>
-            </div>
-            <span className="px-3 py-1 bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold text-xs rounded-full border border-amber-500/30 shrink-0">
-              {campaigns[0].discountBadge}
-            </span>
-          </div>
-        </div>
-      )}
-
       <section className="page-intro py-8 px-4 max-w-7xl mx-auto">
         <span className="eyebrow text-xs uppercase tracking-wider text-amber-600 font-bold">Nexus Catalogue</span>
-        <h1 className="text-3xl font-extrabold uppercase tracking-tight mt-1 text-slate-900 dark:text-white">Smart Home &amp; Office Electronics</h1>
+        <h1 className="catalogue-title text-2xl sm:text-3xl font-semibold tracking-tight mt-1 text-slate-900 dark:text-white">Smart Home &amp; Office Electronics</h1>
         <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">{selected?.description || "Explore our curated Smart Home devices and Workspace Productivity gadgets."}</p>
       </section>
 

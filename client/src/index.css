@@ -398,9 +398,12 @@ img { display: block; max-width: 100%; }
 }
 
 @media (max-width: 700px) {
-  .announcement-bar { min-height: 26px; font-size: 0.53rem; letter-spacing: 0.08em; }
+  .announcement-bar { min-height: 20px; padding: 0.15rem 0.75rem; font-size: 0.5rem; letter-spacing: 0.05em; }
   .announcement-bar span { display: none; }
-  .header-inner { min-height: 67px; }
+  .header-inner { min-height: 54px; padding-inline: 0.9rem; }
+  .brand-logo-img { height: 1.7rem; }
+  .brand-name { font-size: 0.9rem; }
+  .header-actions { gap: 0.65rem; }
   .desktop-nav { display: none; }
   .cart-label { display: none; }
   .menu-trigger { display: grid; place-items: center; }
@@ -408,9 +411,9 @@ img { display: block; max-width: 100%; }
   .mobile-menu.is-open + .mobile-scrim { opacity: 1; pointer-events: auto; }
   .mobile-menu { position: fixed; z-index: 40; top: 0; right: 0; bottom: 0; width: min(88vw, 390px); display: flex; flex-direction: column; padding: 1.3rem; background: var(--parchment); box-shadow: var(--shadow-deep); transform: translateX(102%); transition: transform 330ms var(--ease-out); }
   .mobile-menu.is-open { transform: translateX(0); }
-  .mobile-menu-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1.4rem; border-bottom: 1px solid rgba(48,43,37,0.16); }
-  .mobile-nav { display: flex; flex-direction: column; margin-top: 3rem; }
-  .mobile-nav-link { display: flex; align-items: center; gap: 1.3rem; padding: 0.8rem 0; border-bottom: 1px solid rgba(48,43,37,0.16); font-family: "Inter", sans-serif; font-size: 1rem; font-weight: 500; letter-spacing: 0.02em; line-height: 1.4; }
+  .mobile-menu-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.9rem; border-bottom: 1px solid rgba(48,43,37,0.16); }
+  .mobile-nav { display: flex; flex-direction: column; margin-top: 1.25rem; }
+  .mobile-nav-link { display: flex; align-items: center; gap: 1rem; padding: 0.72rem 0; border-bottom: 1px solid rgba(48,43,37,0.16); font-family: "Inter", sans-serif; font-size: 0.92rem; font-weight: 500; letter-spacing: 0.01em; line-height: 1.35; }
   .mobile-nav-link span { color: var(--brass); font-family: "Manrope", sans-serif; font-size: 0.65rem; font-weight: 500; letter-spacing: 0.04em; }
   .mobile-menu-foot { margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(48,43,37,0.16); }
   .mobile-menu-foot p { max-width: 220px; margin: 0 0 1rem; color: var(--ink-soft); font-size: 0.78rem; }
@@ -459,9 +462,9 @@ img { display: block; max-width: 100%; }
   .society-banner { grid-template-columns: 1fr; gap: 1.4rem; }
   .society-banner-mark { width: 55px; height: 55px; }
   .society-banner .button { justify-self: start; }
-  .page-intro { padding-top: 4.8rem; padding-bottom: 4rem; }
-  .page-intro h1 { font-size: clamp(4rem, 18vw, 7rem); }
-  .page-intro p { font-size: 0.9rem; }
+  .page-intro { padding-top: 2.4rem; padding-bottom: 2rem; }
+  .page-intro h1 { font-size: clamp(1.65rem, 7vw, 2.25rem); line-height: 1.18; letter-spacing: -0.035em; }
+  .page-intro p { font-size: 0.88rem; line-height: 1.55; }
   .catalogue-toolbar { display: block; margin-bottom: 2.2rem; }
   .category-pills { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.3rem; margin-right: -1.3rem; padding-right: 1.3rem; }
   .category-pills button { flex: 0 0 auto; white-space: nowrap; }

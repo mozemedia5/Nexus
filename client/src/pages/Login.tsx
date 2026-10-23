@@ -106,6 +106,7 @@ export default function Login() {
       }
       const { signInWithPopup, GoogleAuthProvider } = await import("firebase/auth");
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
       const result = await signInWithPopup(auth, provider);
 
       // Store/update user profile in Firestore
@@ -161,6 +162,8 @@ export default function Login() {
       }
       const { signInWithPopup, OAuthProvider } = await import("firebase/auth");
       const provider = new OAuthProvider("apple.com");
+      provider.addScope("email");
+      provider.addScope("name");
       const result = await signInWithPopup(auth, provider);
 
       // Store/update user profile in Firestore
