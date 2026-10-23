@@ -44,7 +44,7 @@ export default function ProductCard({ product, compact = false }: { product: Pro
   const handleAdd = async () => {
     await addItem(product, variant?.id);
     trackInteraction("add_to_cart");
-    toast("Added to your bag", { description: product.name });
+    toast("Added to Cart", { description: product.name });
   };
   const mainImage = product.image ?? product.images[0];
   const secondaryImage = product.images.length > 1 ? product.images[1] : null;
@@ -78,7 +78,7 @@ export default function ProductCard({ product, compact = false }: { product: Pro
           type="button"
           onClick={handleAdd}
           disabled={!product.availableForSale}
-          aria-label={`Add ${product.name} to bag`}
+          aria-label={`Add ${product.name} to Cart`}
         >
           <Plus size={16} strokeWidth={1.75} />
         </button>

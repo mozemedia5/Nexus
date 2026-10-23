@@ -8,6 +8,7 @@ import {
   Award,
   ArrowRight,
   Shield,
+  Camera,
 } from "lucide-react";
 import { Link } from "wouter";
 import { getAdminAuthHeaders } from "@/lib/firebase";
@@ -59,6 +60,18 @@ export default function AdminDashboard() {
           </Link>
         </div>
       </div>
+
+      <section className="admin-visual-search-card">
+        <img src="/cari-mark.jpg" alt="" className="cari-mark-icon" />
+        <div className="min-w-0 flex-1">
+          <span className="admin-visual-search-kicker">Cari · visual product search</span>
+          <h2>Find a product from a photo</h2>
+          <p>Upload a shopper image to match live Nexus products or see the closest available alternatives.</p>
+        </div>
+        <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("nexus-cari-upload-request"))}>
+          <Camera size={16} /> Search by image
+        </button>
+      </section>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

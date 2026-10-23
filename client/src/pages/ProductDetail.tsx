@@ -72,7 +72,7 @@ export default function ProductDetail() {
         }),
       }).catch(() => {});
     } catch {}
-    toast.success("Added to your shopping bag", { description: `${product.name} (x${quantity})` });
+    toast.success("Added to Cart", { description: `${product.name} (x${quantity})` });
   };
 
   const goImage = (dir: number) => {
@@ -255,7 +255,7 @@ export default function ProductDetail() {
               </button>
             </div>
             <button className="button button-brass flex-1 py-3" type="button" onClick={add} disabled={!variant?.availableForSale}>
-              {variant?.availableForSale ? "Add to Shopping Bag" : "Sold Out"}
+              {variant?.availableForSale ? "Add to Cart" : "Sold Out"}
             </button>
           </div>
           <p className="detail-note text-xs text-muted-foreground border-t border-border/50 pt-4">

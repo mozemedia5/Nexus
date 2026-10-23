@@ -1,4 +1,4 @@
-import { Minus, Plus, X, Lock, ArrowUpRight } from "lucide-react";
+import { Minus, Plus, X, Lock, ArrowUpRight, ShoppingCart } from "lucide-react";
 import { formatPrice } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
 
@@ -8,13 +8,13 @@ export default function CartDrawer() {
   return (
     <>
       <div className={`cart-scrim ${isOpen ? "is-open" : ""}`} onClick={closeCart} aria-hidden="true" />
-      <aside className={`cart-drawer ${isOpen ? "is-open" : ""}`} aria-label="Shopping bag" aria-hidden={!isOpen}>
+      <aside className={`cart-drawer ${isOpen ? "is-open" : ""}`} aria-label="Cart" aria-hidden={!isOpen}>
         <div className="cart-drawer-head">
           <div>
             <span className="eyebrow">Nexus</span>
-            <h2>Your Bag</h2>
+            <h2 className="flex items-center gap-2"><ShoppingCart size={20} /> Cart</h2>
           </div>
-          <button type="button" className="icon-button" onClick={closeCart} aria-label="Close bag">
+          <button type="button" className="icon-button" onClick={closeCart} aria-label="Close Cart">
             <X size={21} />
           </button>
         </div>
@@ -23,7 +23,7 @@ export default function CartDrawer() {
           {lines.length === 0 ? (
             <div className="cart-empty">
               <span className="empty-mark">N</span>
-              <h3>Your bag is empty</h3>
+              <h3>Your Cart is empty</h3>
               <p>Explore Smart Home and Workspace finds from Nexus.</p>
               <button type="button" className="button button-dark" onClick={closeCart}>
                 Continue browsing ↗

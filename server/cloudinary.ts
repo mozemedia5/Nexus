@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { v2 as cloudinary } from "cloudinary";
 
 export const CLOUDINARY_RESOURCE_TYPES = ["image", "video", "raw"] as const;
@@ -63,4 +64,39 @@ export function createCloudinaryUploadSignature(input: {
     folder,
     resourceType: input.resourceType,
   };
+}
+
+function validateCariSessionId(sessionId: string) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)) {
+    throw new Error("Invalid Cari session identifier");
+  }
+  return `nexus/cari-sessions/${sessionId.toLowerCase()}`;
+}
+
+function createSessionCleanupToken(sessionId: string, apiSecret: string) {
+  const folder = validateCariSessionId(sessionId);
+  return createHmac("sha256", apiSecret).update(`cari-cleanup:${folder}`).digest("hex");
+}
+
+export function createCariSessionUploadSignature(sessionId: string) {
+  const folder = validateCariSessionId(sessionId);
+  const signature = createCloudinaryUploadSignature({ folder, resourceType: "image" });
+  const config = getCloudinaryConfig();
+  return {
+    ...signature,
+    sessionId: sessionId.toLowerCase(),
+    cleanupToken: createSessionCleanupToken(sessionId, config.apiSecret),
+  };
+}
+
+export async function deleteCariSessionImages(sessionId: string, cleanupToken: string) {
+  const folder = validateCariSessionId(sessionId);
+  const config = ensureConfigured();
+  const expected = Buffer.from(createSessionCleanupToken(sessionId, config.apiSecret), "hex");
+  const supplied = /^[0-9a-f]{64}$/i.test(cleanupToken) ? Buffer.from(cleanupToken, "hex") : Buffer.alloc(0);
+  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+    throw new Error("Invalid Cari session cleanup token");
+  }
+
+  return cloudinary.api.delete_resources_by_prefix(`${folder}/`, { resource_type: "image" });
 }

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
-import { isCloudinaryConfigured, createCloudinaryUploadSignature, CLOUDINARY_RESOURCE_TYPES } from "./cloudinary.js";
+import { isCloudinaryConfigured, createCloudinaryUploadSignature, createCariSessionUploadSignature, deleteCariSessionImages, CLOUDINARY_RESOURCE_TYPES } from "./cloudinary.js";
 import { parseFirebaseServiceAccount } from "./firebaseAdmin.js";
 import { generateCariReply, isHannaConfigured, type ShoppingCatalogContext, type ShoppingMessage } from "./hanna.js";
 import { fetchShopifyOrderTracking } from "../api/order-tracking.js";
@@ -98,6 +98,9 @@ async function startServer() {
       .map((message): ShoppingMessage => ({
         role: message.role as ShoppingMessage["role"],
         content: message.content.slice(0, 4000),
+        imageUrls: Array.isArray((message as unknown as { imageUrls?: unknown }).imageUrls)
+          ? ((message as unknown as { imageUrls: unknown[] }).imageUrls).filter((url): url is string => typeof url === "string").slice(0, 4)
+          : undefined,
       }));
 
     const catalog = (req.body?.catalog && typeof req.body.catalog === "object"
@@ -109,6 +112,7 @@ async function startServer() {
         currentPath: typeof catalog.currentPath === "string" ? catalog.currentPath.slice(0, 300) : "/",
         products: Array.isArray(catalog.products) ? catalog.products.slice(0, 120) : [],
         collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 40) : [],
+        shoppingList: Array.isArray(catalog.shoppingList) ? catalog.shoppingList.slice(0, 100) : [],
       });
       res.json({ reply });
     } catch (error) {
@@ -463,6 +467,15 @@ async function startServer() {
   });
 
   app.post("/api/cloudinary/signature", (req, res) => {
+    if (typeof req.body?.sessionId === "string") {
+      try {
+        res.json(createCariSessionUploadSignature(req.body.sessionId));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to create upload signature";
+        res.status(message.includes("Invalid") ? 400 : 412).json({ error: message });
+      }
+      return;
+    }
     const folder = typeof req.body?.folder === "string" ? req.body.folder : "nexus/media";
     const resourceType = req.body?.resourceType ?? "image";
     if (!CLOUDINARY_RESOURCE_TYPES.includes(resourceType)) {
@@ -475,6 +488,22 @@ async function startServer() {
       const message = error instanceof Error ? error.message : "Unable to create upload signature";
       const status = message.includes("invalid") ? 400 : 412;
       res.status(status).json({ error: message });
+    }
+  });
+
+  app.post("/api/cloudinary/session-cleanup", async (req, res) => {
+    const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : "";
+    const cleanupToken = typeof req.body?.cleanupToken === "string" ? req.body.cleanupToken : "";
+    if (!sessionId || !cleanupToken) {
+      res.status(400).json({ error: "sessionId and cleanupToken are required" });
+      return;
+    }
+    try {
+      const result = await deleteCariSessionImages(sessionId, cleanupToken);
+      res.json({ success: true, result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to clean up Cari session images";
+      res.status(message.includes("Invalid") ? 403 : 502).json({ error: message });
     }
   });
 

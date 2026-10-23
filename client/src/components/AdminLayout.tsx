@@ -23,7 +23,6 @@ import {
   ArrowRight,
   Key,
   Command,
-  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import AiAssistant from "@/components/AiAssistant";
@@ -170,21 +169,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   };
 
   const handleImageUploadClick = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = (e: any) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        toast.success(`Attached image "${file.name}" to quick command bar.`);
-      }
-    };
-    input.click();
+    window.dispatchEvent(new CustomEvent("nexus-cari-upload-request"));
   };
 
   if (!session.authenticated) {
     return (
       <div
+        data-admin-theme={theme}
         className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 font-sans ${
           theme === "dark" ? "bg-[#131314] text-[#E3E3E3]" : "bg-[#F8F9FA] text-[#1F1F1F]"
         }`}
@@ -263,7 +254,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         {/* Desktop Sidebar */}
         <aside
           className={`hidden md:flex flex-col border-r transition-all duration-300 z-30 ${
-            sidebarExpanded ? "w-64" : "w-16"
+            sidebarExpanded ? "w-[300px]" : "w-16"
           } ${
             theme === "dark"
               ? "bg-[#1E1F20] border-slate-800/80"
@@ -334,6 +325,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
           {/* Sidebar Bottom Actions */}
           <div className="p-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${theme === "dark" ? "hover:bg-slate-800 text-[#C4C7C5]" : "hover:bg-slate-200 text-[#5E5E5E]"} ${!sidebarExpanded && "justify-center px-0"}`}
+              title="Open Cari visual product search"
+            >
+              <img src="/cari-mark.jpg" alt="" className="cari-mark-icon shrink-0" />
+              {sidebarExpanded && <span>Cari visual search</span>}
+            </button>
             <button
               type="button"
               onClick={toggleTheme}
@@ -421,6 +421,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
                 <button
                   type="button"
+                  onClick={() => { setMobileDrawerOpen(false); window.dispatchEvent(new CustomEvent("nexus-open-cari")); }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold"
+                >
+                  <img src="/cari-mark.jpg" alt="" className="cari-mark-icon" />
+                  <span>Cari visual search</span>
+                </button>
+                <button
+                  type="button"
                   onClick={toggleTheme}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold"
                 >
@@ -464,7 +472,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))} className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold ${theme === "dark" ? "bg-[#1E1F20] text-[#E3E3E3] hover:bg-slate-800" : "bg-[#F0F4F9] text-[#1F1F1F] hover:bg-slate-200"}`}><MessageCircle size={14} /> Cari</button>
               <Link
                 href="/"
                 target="_blank"
@@ -477,17 +484,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <span>View Storefront</span>
                 <ExternalLink size={12} />
               </Link>
-
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className={`p-2 rounded-xl transition-colors ${
-                  theme === "dark" ? "hover:bg-slate-800 text-amber-400" : "hover:bg-slate-200 text-slate-700"
-                }`}
-                title="Toggle Dark / Light Theme"
-              >
-                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
 
               <div className="flex items-center gap-2 pl-2 border-l border-slate-300 dark:border-slate-800">
                 <div className="text-right hidden sm:block">

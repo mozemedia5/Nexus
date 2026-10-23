@@ -10,7 +10,7 @@ type VercelResponse = {
   json: (body: unknown) => VercelResponse;
 };
 
-function isMessage(value: unknown): value is { role: "user" | "assistant"; content: string } {
+function isMessage(value: unknown): value is { role: "user" | "assistant"; content: string; imageUrls?: string[] } {
   if (!value || typeof value !== "object") return false;
   const candidate = value as { role?: unknown; content?: unknown };
   return (
@@ -39,6 +39,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .map((message) => ({
       role: message.role,
       content: message.content.slice(0, 4000),
+      imageUrls: Array.isArray((message as { imageUrls?: unknown }).imageUrls)
+        ? ((message as { imageUrls: unknown[] }).imageUrls).filter((url): url is string => typeof url === "string").slice(0, 4)
+        : undefined,
     }));
 
   const rawCatalog = body.catalog && typeof body.catalog === "object" ? body.catalog : {};
@@ -49,6 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       currentPath: typeof catalog.currentPath === "string" ? catalog.currentPath.slice(0, 300) : "/",
       products: Array.isArray(catalog.products) ? catalog.products.slice(0, 120) : [],
       collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 40) : [],
+      shoppingList: Array.isArray(catalog.shoppingList) ? catalog.shoppingList.slice(0, 100) : [],
     });
     return res.status(200).json({ reply });
   } catch (error) {

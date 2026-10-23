@@ -1,6 +1,7 @@
 export type ShoppingMessage = {
   role: "user" | "assistant";
   content: string;
+  imageUrls?: string[];
 };
 
 type Money = {
@@ -41,10 +42,11 @@ export type ShoppingCollection = {
 export type ShoppingCatalogContext = {
   products?: ShoppingProduct[];
   collections?: ShoppingCollection[];
+  shoppingList?: Array<{ handle: string; name: string; price?: string }>;
   currentPath?: string;
 };
 
-type GeminiPart = { text?: string };
+type GeminiPart = { text?: string; inlineData?: { mimeType: string; data: string } };
 type GeminiContent = {
   role: "user" | "model";
   parts: GeminiPart[];
@@ -74,7 +76,7 @@ The LIVE NEXUS STORE CONTEXT in each request is the authoritative source for pro
 
 PRODUCT DISCOVERY & INTERACTIVE CARDS
 Recommend no more than three strong matches unless asked for more. Explain key benefits (e.g., smart home compatibility, beauty & wellness advantages) and ask one focused follow-up question when ambiguous.
-Whenever you recommend a product from the live context, in addition to mentioning it in your message, attach a JSON block at the end of your message in the following format so the chat UI can render an interactive card with images and direct "Add to Bag" buttons:
+Whenever you recommend a product from the live context, in addition to mentioning it in your message, attach a JSON block at the end of your message so the chat UI can render an interactive product card. If the shopper also requests a shopping-list change, put both recommendations and shoppingList in this same block:
 
 \`\`\`json
 {
@@ -91,6 +93,12 @@ Whenever you recommend a product from the live context, in addition to mentionin
 
 SHOPPING HANDOFF
 When mentioning a product, use its exact supplied markdown link. The Nexus home page is '/'; catalogue is '/products'; collections are '/products?collection=HANDLE'; Order tracking is '/track-order'.
+
+IMAGE SEARCH
+When a shopper attaches a photo, describe only what is visually evident, then match it against the LIVE NEXUS STORE CONTEXT. Recommend exact in-catalog matches first. If there is no exact product, say so plainly and offer the closest relevant available alternatives from the live catalog; never claim that a non-matching product is identical. Do not invent product records or prices.
+
+SHOPPING LIST ACTIONS
+When the shopper explicitly asks to add, remove, or change discussed items on their shopping list, include one fenced JSON block at the end of the response with both the recommendations array and a shoppingList object. The shoppingList object must use {"add":[{"handle":"exact live product handle or custom note","name":"item name","price":"exact supplied price or empty string","image":"exact supplied URL or empty string"}],"remove":[{"handle":"handle or custom note","name":"item name"}]}. Include only the requested changes. A custom note is not a store product and must not be presented as purchasable.
 
 STYLE
 Be concise, friendly, and specific. Use exact currency values supplied in context. Always refer to the store as Nexus.`;
@@ -167,19 +175,66 @@ export function buildCariCatalogContext(catalog: ShoppingCatalogContext = {}) {
     "",
     "LIVE PRODUCTS",
     products.length ? products.map(formatProduct).join("\n\n") : "- No live products were returned.",
+    "",
+    "CURRENT SHOPPING LIST",
+    catalog.shoppingList?.length ? catalog.shoppingList.map((item) => `- ${compactText(item.name, 180)} | handle: ${compactText(item.handle, 180)} | price: ${compactText(item.price, 80) || "not set"}`).join("\n") : "- The current shopping list is empty.",
   ].join("\n");
 
   return context.slice(0, MAX_CONTEXT_CHARS);
 }
 
-function toGeminiContents(messages: ShoppingMessage[]): GeminiContent[] {
-  return messages
+async function fetchGeminiImagePart(imageUrl: string): Promise<GeminiPart> {
+  let url: URL;
+  try {
+    url = new URL(imageUrl);
+  } catch {
+    throw new Error("Cari image search requires a valid uploaded image URL.");
+  }
+  if (url.protocol !== "https:" || url.hostname !== "res.cloudinary.com" || url.username || url.password) {
+    throw new Error("Cari can only analyze images uploaded to the Nexus Cloudinary session.");
+  }
+  if (!url.pathname.includes("/image/upload/")) throw new Error("Cari can only analyze uploaded Cloudinary images.");
+  url.pathname = url.pathname.replace("/image/upload/", "/image/upload/c_limit,w_1280,h_1280,q_auto,f_jpg/");
+  const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+  if (!response.ok) throw new Error("Cari could not retrieve the uploaded image. Please upload it again.");
+  const mimeType = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (!/^image\/(jpeg|png|webp|gif)$/.test(mimeType)) throw new Error("Only JPEG, PNG, WEBP, or GIF images can be searched.");
+  const declaredLength = Number(response.headers.get("content-length") || 0);
+  if (declaredLength > 6_000_000) throw new Error("The uploaded image is too large to analyze.");
+  if (!response.body) throw new Error("Cari could not retrieve the uploaded image. Please upload it again.");
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > 6_000_000) {
+      await reader.cancel();
+      throw new Error("The uploaded image is too large to analyze.");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return { inlineData: { mimeType, data: Buffer.from(bytes).toString("base64") } };
+}
+
+async function toGeminiContents(messages: ShoppingMessage[]): Promise<GeminiContent[]> {
+  const selected = messages
     .filter((message) => message.content.trim())
-    .slice(-MAX_MESSAGES)
-    .map((message) => ({
+    .slice(-MAX_MESSAGES);
+  const mostRecentImageMessage = [...selected].reverse().find((message) => message.role === "user" && message.imageUrls?.length);
+  return Promise.all(selected.map(async (message) => ({
       role: message.role === "assistant" ? "model" : "user",
-      parts: [{ text: message.content.trim().slice(0, MAX_MESSAGE_CHARS) }],
-    }));
+      parts: [
+        { text: message.content.trim().slice(0, MAX_MESSAGE_CHARS) },
+        ...(message === mostRecentImageMessage
+          ? await Promise.all((message.imageUrls ?? []).slice(0, 4).map(fetchGeminiImagePart))
+          : []),
+      ],
+    })));
 }
 
 export async function generateCariReply(
@@ -191,7 +246,7 @@ export async function generateCariReply(
     throw new Error("Cari is not configured. Add GEMINI_API_KEY to environment.");
   }
 
-  const contents = toGeminiContents(messages);
+  const contents = await toGeminiContents(messages);
   if (!contents.length) {
     throw new Error("Cari needs a shopper message before it can respond.");
   }

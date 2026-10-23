@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Search, ShoppingBag, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility, User } from "lucide-react";
+import { Menu, ShoppingCart, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 const links = [
@@ -42,18 +42,9 @@ export default function SiteHeader() {
             ))}
           </nav>
           <div className="header-actions">
-            <Link href="/login" className="header-icon" aria-label="Sign in to your account">
-              <User size={16} />
-            </Link>
-            <Link href="/products" className="header-icon" aria-label="Search products">
-              <Search size={16} />
-            </Link>
-            <Link href="/track-order" className="header-icon" aria-label="Track order">
-              <PackageCheck size={16} />
-            </Link>
-            <button className="cart-trigger" type="button" onClick={openCart} aria-label={`Open shopping bag with ${itemCount} items`}>
-              <ShoppingBag size={17} />
-              <span className="cart-label">Bag</span>
+            <button className="cart-trigger" type="button" onClick={openCart} aria-label={`Open Cart with ${itemCount} items`}>
+              <ShoppingCart size={17} />
+              <span className="cart-label">Cart</span>
               <span className="cart-count">{itemCount}</span>
             </button>
             <button className="menu-trigger" type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu">
@@ -84,7 +75,7 @@ export default function SiteHeader() {
             <PackageCheck size={14} /> Track an order
           </Link>
           <button type="button" className="text-link" onClick={openCart}>
-            <ShoppingBag size={14} /> View shopping bag
+            <ShoppingCart size={14} /> View Cart
           </button>
         </div>
       </div>
