@@ -30,7 +30,7 @@ async function startServer() {
       cloudinaryConfigured: isCloudinaryConfigured(),
       cloudinaryUploadPresetConfigured: Boolean(process.env.CLOUDINARY_UPLOAD_PRESET),
       shoppingAssistantConfigured: isHannaConfigured(),
-      shoppingAssistantModelConfigured: Boolean(process.env.GEMINI_MODEL?.trim()),
+      shoppingAssistantModelConfigured: Boolean(process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash"),
       shopifyAdminConfigured: Boolean(process.env.SHOPIFY_ADMIN_ACCESS_TOKEN),
     });
   });
@@ -162,6 +162,26 @@ async function startServer() {
       res.status(401).json({ error: `Unauthorized: ${message}` });
     }
   };
+
+  // Cari may read Firebase account emails only after this request passes Firebase admin auth.
+  app.get("/api/admin/cari/user-emails", verifyAdminAuth, async (_req, res) => {
+    try {
+      const { auth } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+      const users: Array<{ uid: string; email: string; displayName: string }> = [];
+      let pageToken: string | undefined;
+      do {
+        const page = await auth.listUsers(1000, pageToken);
+        users.push(...page.users.filter((user) => user.email).map((user) => ({
+          uid: user.uid, email: user.email!, displayName: user.displayName || "",
+        })));
+        pageToken = page.pageToken;
+      } while (pageToken);
+      res.json({ users });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to read Firebase account emails";
+      res.status(500).json({ error: message });
+    }
+  });
 
   // Admin Orders received endpoint using Shopify Admin Access Token
   app.get("/api/admin/orders", verifyAdminAuth, async (_req, res) => {

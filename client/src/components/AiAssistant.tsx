@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2, ShoppingBag, ArrowUpRight, Bookmark, ListChecks, Trash2, CheckCircle2 } from "lucide-react";
+import { X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2, ShoppingBag, ArrowUpRight, Bookmark, ListChecks, Trash2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { useCart } from "@/contexts/CartContext";
+import { getAdminAuthHeaders } from "@/lib/firebase";
 import {
   getCollections,
   getProducts,
@@ -19,6 +20,8 @@ interface Message {
   content: string;
   timestamp: Date;
 }
+
+interface SavedCariChat { id: string; title: string; savedAt: string; messages: Message[]; }
 
 interface ShoppingListItem {
   id: string;
@@ -81,10 +84,18 @@ export default function AiAssistant() {
   const [location] = useLocation();
   const { addItem } = useCart();
   const [isOpen, setIsOpen] = useState(false);
+  const [adminEmails, setAdminEmails] = useState<string[] | null>(null);
+  const isAdminRoute = location.startsWith("/admin");
+  useEffect(() => {
+    const openCari = () => setIsOpen(true);
+    window.addEventListener("nexus-open-cari", openCari);
+    return () => window.removeEventListener("nexus-open-cari", openCari);
+  }, []);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "list">("chat");
-  const [reserving, setReserving] = useState(false);
-  const [reservedSuccess, setReservedSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"chat" | "list" | "chats">("chat");
+  const [savedChats, setSavedChats] = useState<SavedCariChat[]>(() => {
+    try { return JSON.parse(localStorage.getItem("nexus_cari_saved_chats_v1") || "[]"); } catch { return []; }
+  });
 
   // Draggable button state
   const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(null);
@@ -189,6 +200,10 @@ export default function AiAssistant() {
     } catch {}
   }, [messages]);
 
+  useEffect(() => {
+    try { localStorage.setItem("nexus_cari_saved_chats_v1", JSON.stringify(savedChats)); } catch {}
+  }, [savedChats]);
+
   const addToShoppingList = (item: { handle: string; name: string; price: string; image?: string }) => {
     setShoppingList((prev) => {
       if (prev.some((p) => p.handle === item.handle)) {
@@ -215,37 +230,34 @@ export default function AiAssistant() {
     toast.success("Removed item from Shopping List");
   };
 
-  const handleReserveConversation = async () => {
-    if (reserving) return;
-    setReserving(true);
+  const loadCustomerEmails = async () => {
     try {
-      const payload = {
-        title: `Cari Assistant Session - ${new Date().toLocaleDateString()}`,
-        messages: messages.map((m) => ({ role: m.role, content: m.content, timestamp: m.timestamp.toISOString() })),
-        shoppingList,
-      };
-
-      const res = await fetch("/api/chat/reserve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const reservationInfo = `nexus_reserved_${data.reservationId || Date.now()}`;
-        localStorage.setItem(reservationInfo, JSON.stringify(payload));
-        setReservedSuccess(data.reservationId);
-        toast.success("Conversation and Shopping List successfully reserved!");
-        setTimeout(() => setReservedSuccess(null), 4000);
-      } else {
-        throw new Error(data.error || "Reservation failed");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to reserve conversation");
-    } finally {
-      setReserving(false);
+      const headers = await getAdminAuthHeaders();
+      if (!headers.Authorization) throw new Error("Sign in with an authorized Firebase admin account to access customer emails.");
+      const response = await fetch("/api/admin/cari/user-emails", { headers });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Customer email access was denied.");
+      const emailList = (result.users as Array<{ email: string; displayName: string }>).map((user) =>
+        user.displayName ? `${user.displayName} — ${user.email}` : user.email,
+      );
+      setAdminEmails(emailList);
+      setActiveTab("chat");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load customer emails.");
     }
+  };
+
+  const saveCurrentChat = () => {
+    if (messages.filter((message) => message.role === "user").length === 0) { toast.info("Start a conversation before saving it."); return; }
+    const title = messages.find((message) => message.role === "user")?.content.slice(0, 48) || "Shopping chat";
+    setSavedChats((previous) => [{ id: Date.now().toString(), title, savedAt: new Date().toISOString(), messages }, ...previous]);
+    setActiveTab("chats");
+    toast.success("Chat saved.");
+  };
+  const startNewChat = () => {
+    const welcome: Message = { id: `welcome-${Date.now()}`, role: "assistant", content: "Hi, I'm Cari. Tell me what you're shopping for, and I'll help you find a good match from the live Nexus catalogue.", timestamp: new Date() };
+    setMessages([welcome]);
+    setActiveTab("chat");
   };
 
   const parseRecommendations = (content: string) => {
@@ -345,11 +357,6 @@ export default function AiAssistant() {
     if (!textToSend) setInput("");
     setLoading(true);
 
-    const lowerInput = text.toLowerCase();
-    if (lowerInput.includes("reserve") && (lowerInput.includes("conversation") || lowerInput.includes("chat") || lowerInput.includes("session"))) {
-      handleReserveConversation();
-    }
-
     try {
       const history = [...messages, userMessage].map((m) => ({
         role: m.role,
@@ -391,7 +398,7 @@ export default function AiAssistant() {
 
   return (
     <div className="ai-assistant-wrapper">
-      {!isOpen && (
+      {!isOpen && !isAdminRoute && (
         <button
           ref={dragRef}
           onClick={(e) => {
@@ -428,15 +435,15 @@ export default function AiAssistant() {
               </div>
             </div>
             <div className="ai-header-controls flex items-center gap-1">
+              {isAdminRoute && <button type="button" onClick={loadCustomerEmails} className="ai-icon-btn text-xs" title="View Firebase customer emails (admin only)" aria-label="View Firebase customer emails">Emails</button>}
               <button
                 type="button"
-                onClick={handleReserveConversation}
-                disabled={reserving}
+                onClick={saveCurrentChat}
                 className="ai-icon-btn text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                title="Reserve Conversation & Shopping List"
-                aria-label="Reserve conversation"
+                title="Save this chat"
+                aria-label="Save this chat"
               >
-                {reservedSuccess ? <CheckCircle2 size={16} className="text-emerald-500 animate-bounce" /> : <Bookmark size={16} />}
+                <Bookmark size={16} />
               </button>
               <button
                 type="button"
@@ -485,17 +492,23 @@ export default function AiAssistant() {
                     <ListChecks size={13} />
                     Shopping List ({shoppingList.length})
                   </button>
+                  <button type="button" onClick={() => setActiveTab("chats")} className={`px-2.5 py-1 rounded-md text-xs ${activeTab === "chats" ? "bg-amber-500 text-white" : "text-slate-600"}`}>Chats ({savedChats.length})</button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleReserveConversation}
-                  className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold hover:underline flex items-center gap-1"
-                >
-                  <Bookmark size={12} /> Reserve
-                </button>
+                <button type="button" onClick={saveCurrentChat} className="text-[11px] text-amber-700 font-semibold hover:underline flex items-center gap-1"><Bookmark size={12} /> Save</button>
               </div>
 
-              {activeTab === "list" ? (
+              {isAdminRoute && adminEmails !== null && (
+                <div className="max-h-36 overflow-y-auto border-b border-slate-200 bg-amber-50 p-2 text-[11px] text-slate-800">
+                  <div className="mb-1 flex items-center justify-between font-semibold"><span>Firebase emails ({adminEmails.length})</span><button type="button" onClick={() => setAdminEmails(null)} aria-label="Hide customer emails">Hide</button></div>
+                  {adminEmails.length ? adminEmails.map((email) => <div key={email}>{email}</div>) : <div>No Firebase customer accounts found.</div>}
+                </div>
+              )}
+              {activeTab === "chats" ? (
+                <div className="ai-assistant-messages flex flex-col gap-2 p-3">
+                  <div className="flex items-center justify-between"><strong className="text-sm">Recent chats</strong><button type="button" onClick={startNewChat} className="text-xs text-amber-700">New chat</button></div>
+                  {savedChats.length === 0 ? <p className="py-8 text-center text-xs text-slate-500">Saved chats will appear here.</p> : savedChats.map((chat) => <div key={chat.id} className="flex items-center gap-2 rounded border border-slate-200 p-2"><button type="button" className="flex-1 truncate text-left text-xs" onClick={() => { setMessages(chat.messages.map((message) => ({ ...message, timestamp: new Date(message.timestamp) }))); setActiveTab("chat"); }}><strong className="block truncate">{chat.title}</strong><span className="text-slate-500">{new Date(chat.savedAt).toLocaleString()}</span></button><button type="button" onClick={() => setSavedChats((previous) => previous.filter((item) => item.id !== chat.id))} className="text-rose-500" aria-label="Delete saved chat"><Trash2 size={14} /></button></div>)}
+                </div>
+              ) : activeTab === "list" ? (
                 /* Shopping List View */
                 <div className="ai-assistant-messages flex flex-col gap-3 p-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">

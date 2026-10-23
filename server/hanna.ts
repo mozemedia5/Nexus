@@ -100,7 +100,7 @@ function getGeminiApiKey() {
 }
 
 export function isHannaConfigured() {
-  return Boolean(getGeminiApiKey() && process.env.GEMINI_MODEL?.trim());
+  return Boolean(getGeminiApiKey());
 }
 
 function productPath(handle: string) {

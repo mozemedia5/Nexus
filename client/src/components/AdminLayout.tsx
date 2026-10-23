@@ -23,6 +23,7 @@ import {
   ArrowRight,
   Key,
   Command,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import AiAssistant from "@/components/AiAssistant";
@@ -204,7 +205,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               theme === "dark" ? "text-[#C4C7C5]" : "text-[#5E5E5E]"
             }`}
           >
-            Google Gemini Web Interface — Store Management Portal
+            Nexus Store Management Portal
           </p>
 
           <form onSubmit={handlePasskeySubmit} className="space-y-4">
@@ -253,8 +254,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div
+      data-admin-theme={theme}
       className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${
-        theme === "dark" ? "dark bg-[#131314] text-[#E3E3E3]" : "bg-[#FFFFFF] text-[#1F1F1F]"
+        theme === "dark" ? "dark bg-[#131314] text-[#E3E3E3]" : "bg-[#F8F9FA] text-[#1F1F1F]"
       }`}
     >
       <div className="flex flex-1 relative overflow-hidden">
@@ -462,6 +464,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-3">
+              <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))} className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold ${theme === "dark" ? "bg-[#1E1F20] text-[#E3E3E3] hover:bg-slate-800" : "bg-[#F0F4F9] text-[#1F1F1F] hover:bg-slate-200"}`}><MessageCircle size={14} /> Cari</button>
               <Link
                 href="/"
                 target="_blank"

@@ -1079,3 +1079,20 @@ img { display: block; max-width: 100%; }
   text-align: center;
   margin-top: 1.5rem;
 }
+
+/* Admin light theme: prevent dark utility surfaces from leaving isolated dark cards. */
+[data-admin-theme="light"] [class*="bg-slate-950"],
+[data-admin-theme="light"] [class*="bg-slate-900"],
+[data-admin-theme="light"] [class*="bg-slate-800"],
+[data-admin-theme="light"] [class*="bg-[#131314]"],
+[data-admin-theme="light"] [class*="bg-[#1E1F20]"] {
+  background-color: #ffffff !important;
+  color: #1f1f1f;
+}
+[data-admin-theme="light"] [class*="border-slate-800"] { border-color: #e5e7eb !important; }
+[data-admin-theme="light"] [class*="text-white"] { color: #1f1f1f !important; }
+
+[data-admin-theme="light"] .ai-assistant-header { background: #ffffff; color: #1f1f1f; border-bottom-color: #e5e7eb; }
+[data-admin-theme="light"] .ai-assistant-header .ai-icon-btn { color: #52525b; }
+[data-admin-theme="light"] .ai-assistant-header .ai-byline,
+[data-admin-theme="light"] .ai-assistant-header .ai-subtitle { color: #71717a; }

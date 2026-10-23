@@ -185,7 +185,7 @@ function normalizeProduct(raw: any): Product {
 
   const rawImages: ShopifyImage[] = raw.images?.nodes ?? [];
   const featured = raw.featuredImage ?? rawImages[0] ?? null;
-  const enrichedImages = enrichProductImages(featured, rawImages, categoryTag);
+  const actualImages = rawImages.filter((image) => Boolean(image?.url));
 
   let label = "Smart Home Automation";
   if (categoryTag === "workspace-productivity") label = "Workspace Productivity";
@@ -198,8 +198,8 @@ function normalizeProduct(raw: any): Product {
     description: raw.description,
     categoryLabel: label,
     tags: tagList,
-    image: featured || enrichedImages[0] || null,
-    images: enrichedImages,
+    image: featured,
+    images: actualImages,
     price: min,
     compareAtPrice: compare,
     availableForSale: raw.availableForSale,
@@ -220,9 +220,9 @@ export function formatPrice(price: { amount: string; currencyCode: string } | nu
 export const FALLBACK_COLLECTIONS: Collection[] = [];
 export const FALLBACK_PRODUCTS: Product[] = [];
 
-export async function getProducts(options: { first?: number; query?: string; sortKey?: string } = {}): Promise<Product[]> {
+export async function getProducts(options: { first?: number; query?: string; sortKey?: string; fresh?: boolean } = {}): Promise<Product[]> {
   const cacheKey = `products_${options.first ?? 24}_${options.query || ""}_${options.sortKey || "BEST_SELLING"}`;
-  const cached = getCached<Product[]>(cacheKey);
+  const cached = options.fresh ? null : getCached<Product[]>(cacheKey);
   if (cached) return cached;
 
   if (!shopifyConfigured) {
@@ -234,7 +234,7 @@ export async function getProducts(options: { first?: number; query?: string; sor
       { first: options.first ?? 24, query: options.query || null, sortKey: options.sortKey || "BEST_SELLING" }
     );
     const items = data.products.nodes.map(normalizeProduct);
-    setCached(cacheKey, items);
+    if (!options.fresh) setCached(cacheKey, items);
     return items;
   } catch (err) {
     console.error("Shopify fetch failed:", err);

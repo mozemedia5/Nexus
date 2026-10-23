@@ -64,13 +64,19 @@ function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[]
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [newestProducts, setNewestProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getProducts({ first: 12, sortKey: "BEST_SELLING" }), getCollections(8)])
-      .then(([items, groups]) => {
+    Promise.all([
+      getProducts({ first: 12, sortKey: "BEST_SELLING", fresh: true }),
+      getProducts({ first: 8, sortKey: "CREATED_AT", fresh: true }),
+      getCollections(8),
+    ])
+      .then(([items, newest, groups]) => {
         setProducts(items);
+        setNewestProducts(newest);
         setCollections(groups);
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load catalogue."));
@@ -81,20 +87,15 @@ export default function Home() {
   }, [products]);
 
   const newArrivalProducts = useMemo(() => {
-    return products.slice(4, 8);
-  }, [products]);
+    return newestProducts.slice(0, 4);
+  }, [newestProducts]);
 
   const activeCampaigns = useMemo(() => getActiveCampaigns(), []);
 
   const carouselImages = useMemo(() => {
-    if (products.length === 0) return [
-      { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1200&q=80", alt: "Smart workspace setup" },
-      { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1200&q=80", alt: "Smart home automation" },
-      { url: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=1200&q=80", alt: "Tech accessories" },
-    ];
-    return products.slice(0, 6).map((p) => ({
-      url: p.image?.url || "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1200&q=80",
-      alt: p.name,
+    return products.filter((product) => product.image?.url).slice(0, 6).map((product) => ({
+      url: product.image!.url,
+      alt: product.name,
     }));
   }, [products]);
 
@@ -160,7 +161,9 @@ export default function Home() {
             </h2>
           </div>
         </div>
-        <AutoScrollCarousel images={carouselImages} />
+        {carouselImages.length > 0 ? <AutoScrollCarousel images={carouselImages} /> : (
+          <p className="text-sm text-slate-500">Shopify product images will appear here when available.</p>
+        )}
       </section>
 
       {/* Featured Collection Grid (4-Column) */}
@@ -183,12 +186,14 @@ export default function Home() {
           <div className="text-center py-10 text-slate-500">
             <p>{error}</p>
           </div>
-        ) : (
+        ) : featuredOfficeProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {featuredOfficeProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
+        ) : (
+          <p className="py-8 text-sm text-slate-500">No Shopify products are available yet.</p>
         )}
       </section>
 
