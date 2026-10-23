@@ -30,7 +30,7 @@ async function startServer() {
       cloudinaryConfigured: isCloudinaryConfigured(),
       cloudinaryUploadPresetConfigured: Boolean(process.env.CLOUDINARY_UPLOAD_PRESET),
       shoppingAssistantConfigured: isHannaConfigured(),
-      shoppingAssistantModelConfigured: Boolean(process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash"),
+      shoppingAssistantModelConfigured: Boolean(process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash"),
       shopifyAdminConfigured: Boolean(process.env.SHOPIFY_ADMIN_ACCESS_TOKEN),
     });
   });

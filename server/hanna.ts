@@ -59,7 +59,7 @@ type GeminiResponse = {
   error?: { message?: string };
 };
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-3.5-flash";
 const MAX_CONTEXT_CHARS = 180_000;
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_CHARS = 4_000;
@@ -197,14 +197,14 @@ export async function generateCariReply(
   }
 
   const configuredModel = process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL;
-  const model = configuredModel.replace(/^models\//, "");
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  let model = configuredModel.replace(/^models\//, "");
 
   // Implement retry for transient errors like 503 (service unavailable / overloaded)
   let response: Response | null = null;
   let lastError = "";
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
       response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -230,16 +230,22 @@ export async function generateCariReply(
       lastError = payload.error?.message ?? `Status ${response.status}`;
       console.warn(`[Cari] Gemini request attempt ${attempt} failed (${response.status}): ${lastError}`);
 
+      if (response.status === 404 && model !== DEFAULT_MODEL) {
+        console.warn(`[Cari] Configured model ${model} is unavailable; retrying with ${DEFAULT_MODEL}.`);
+        model = DEFAULT_MODEL;
+        continue;
+      }
+
       // If transient status (503 / 429), wait 1s before retry
       if (response.status === 503 || response.status === 429) {
-        if (attempt < 2) await new Promise((res) => setTimeout(res, 1000));
+        if (attempt < 3) await new Promise((res) => setTimeout(res, 1000));
       } else {
         break;
       }
     } catch (err: any) {
       lastError = err.message || "Network timeout or fetch error";
       console.warn(`[Cari] Gemini fetch attempt ${attempt} threw: ${lastError}`);
-      if (attempt < 2) await new Promise((res) => setTimeout(res, 1000));
+      if (attempt < 3) await new Promise((res) => setTimeout(res, 1000));
     }
   }
 
