@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Shield, Mail, Eye, EyeOff, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
-import { getFirebaseAuth, getFirebaseStatus } from "@/lib/firebase";
+import { getFirebaseAuth, getFirebaseStatus, verifyAdminSession } from "@/lib/firebase";
 import SEO from "@/components/SEO";
 
 export default function Login() {
@@ -13,42 +13,16 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const firebaseStatus = getFirebaseStatus();
 
-  const checkAdminAndRedirect = async (userEmail: string, uid: string, displayName?: string) => {
-    const cleanEmail = userEmail.toLowerCase().trim();
-    let isAdmin = false;
-    let role = "customer";
-
-    if (cleanEmail.includes("admin") || cleanEmail.includes("superadmin")) {
-      isAdmin = true;
-      role = cleanEmail.includes("superadmin") ? "superadmin" : "admin";
-    }
-
+  const checkAdminAndRedirect = async (user: import("firebase/auth").User) => {
     try {
-      const { getFirestore, doc, getDoc } = await import("firebase/firestore");
-      const db = getFirestore();
-      if (db) {
-        const adminDoc = await getDoc(doc(db, "nexus_admins", uid));
-        if (adminDoc.exists() && adminDoc.data()?.isAdmin) {
-          isAdmin = true;
-          role = adminDoc.data()?.role || "admin";
-        }
-      }
-    } catch {}
-
-    if (isAdmin) {
-      const session = {
-        authenticated: true,
-        role,
-        email: cleanEmail,
-        name: displayName || "Admin User",
-        uid,
-      };
-      localStorage.setItem("nexus_admin_session", JSON.stringify(session));
-      toast.success(`Welcome, Administrator (${role})!`, { description: "Redirecting to Admin Console..." });
+      const admin = await verifyAdminSession(user);
+      if (!admin) return false;
+      toast.success(`Welcome, ${admin.role === "superadmin" ? "Superadministrator" : "Administrator"}.`, { description: "Opening the Admin Console…" });
       setLocation("/admin");
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -75,7 +49,7 @@ export default function Login() {
         uid: userCred.user.uid,
       }));
 
-      const isRedirected = await checkAdminAndRedirect(cleanUserEmail, userCred.user.uid, cleanDisplayName);
+      const isRedirected = await checkAdminAndRedirect(userCred.user);
       if (isRedirected) return;
 
       toast.success("Welcome back!", { description: "You are now signed in to Nexus." });
@@ -130,7 +104,7 @@ export default function Login() {
         uid: result.user.uid,
       }));
 
-      const isRedirected = await checkAdminAndRedirect(cleanUserEmail, result.user.uid, cleanDisplayName);
+      const isRedirected = await checkAdminAndRedirect(result.user);
       if (isRedirected) return;
 
       toast.success("Welcome!", { description: "Signed in with Google." });
@@ -187,7 +161,7 @@ export default function Login() {
         uid: result.user.uid,
       }));
 
-      const isRedirected = await checkAdminAndRedirect(cleanUserEmail, result.user.uid, cleanDisplayName);
+      const isRedirected = await checkAdminAndRedirect(result.user);
       if (isRedirected) return;
 
       toast.success("Welcome!", { description: "Signed in with Apple." });

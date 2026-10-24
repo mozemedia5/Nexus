@@ -28,6 +28,7 @@ export interface AdminUser {
   role: "superadmin" | "admin";
   isAdmin: boolean;
   createdAt: string;
+  isBootstrap?: boolean;
 }
 
 export const DEFAULT_CAMPAIGNS: Campaign[] = [

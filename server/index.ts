@@ -1,8 +1,10 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
-import { isCloudinaryConfigured, createCloudinaryUploadSignature, createCariSessionUploadSignature, deleteCariSessionImages, CLOUDINARY_RESOURCE_TYPES } from "./cloudinary.js";
+import { isCloudinaryConfigured, createCloudinaryUploadSignature, createCariUploadSession, createCariSessionUploadSignature, deleteCariSessionImages, CLOUDINARY_RESOURCE_TYPES } from "./cloudinary.js";
 import { parseFirebaseServiceAccount } from "./firebaseAdmin.js";
+import { AdminAccountError, AdminAuthError, authenticateAdminAuthorization, requireSuperAdmin, type AdminPrincipal } from "./adminAuth.js";
+import { listAdminAccounts, promoteVerifiedFirebaseUser, revokeAdminAccount } from "./adminAccounts.js";
 import { generateCariReply, isHannaConfigured, type ShoppingCatalogContext, type ShoppingMessage } from "./hanna.js";
 import { fetchShopifyOrderTracking } from "../api/order-tracking.js";
 import { fetchShopifyAdminOrders, fetchShopifyAdminMetrics } from "./shopifyAdmin.js";
@@ -122,50 +124,74 @@ async function startServer() {
     }
   });
 
-  // Middleware to authenticate and authorize admin users using Firebase ID Tokens
-  const verifyAdminAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ error: "Unauthorized: Missing or invalid Authorization header" });
-      return;
-    }
+  const verifyAdminAuth: express.RequestHandler = (req, res, next) => {
+    void authenticateAdminAuthorization(req.headers.authorization)
+      .then((admin) => { res.locals.admin = admin; next(); })
+      .catch((error) => {
+        const status = error instanceof AdminAuthError ? error.status : 500;
+        res.status(status).json({ error: error instanceof AdminAuthError ? error.message : "Administrator authentication failed." });
+      });
+  };
 
-    const idToken = authHeader.split("Bearer ")[1]?.trim();
-    if (!idToken) {
-      res.status(401).json({ error: "Unauthorized: Token missing" });
-      return;
-    }
-
+  const verifySuperAdminAuth: express.RequestHandler = (_req, res, next) => {
     try {
-      const admin = parseFirebaseServiceAccount();
-      if (!admin) {
-        res.status(500).json({ error: "Server Configuration Error: Firebase Admin service account is not configured." });
-        return;
-      }
-
-      const { auth, firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
-      const decodedToken = await auth.verifyIdToken(idToken);
-      const uid = decodedToken.uid;
-
-      // Check if user has admin claim or is listed in nexus_admins collection
-      const adminDoc = await firestore.collection("nexus_admins").doc(uid).get();
-      const adminData = adminDoc.data();
-
-      const isAdmin = decodedToken.admin === true || decodedToken.role === "admin" || decodedToken.role === "superadmin" || (adminDoc.exists && adminData?.isAdmin === true);
-
-      if (!isAdmin) {
-        res.status(403).json({ error: "Forbidden: Admin privileges required" });
-        return;
-      }
-
-      (req as any).user = decodedToken;
-      (req as any).adminData = adminData;
+      requireSuperAdmin(res.locals.admin as AdminPrincipal);
       next();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Authentication failed";
-      res.status(401).json({ error: `Unauthorized: ${message}` });
+      const status = error instanceof AdminAuthError ? error.status : 403;
+      res.status(status).json({ error: error instanceof AdminAuthError ? error.message : "Superadministrator access is required." });
     }
   };
+
+  app.get("/api/admin/session", verifyAdminAuth, (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ admin: res.locals.admin });
+  });
+
+  app.post("/api/admin/logout", verifyAdminAuth, async (_req, res) => {
+    try {
+      const { auth } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+      await auth.revokeRefreshTokens((res.locals.admin as AdminPrincipal).uid);
+      res.status(204).end();
+    } catch {
+      res.status(503).json({ error: "Could not revoke the administrator session." });
+    }
+  });
+
+  app.get("/api/admin/admins", verifyAdminAuth, verifySuperAdminAuth, async (_req, res) => {
+    try {
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ admins: await listAdminAccounts() });
+    } catch (error) {
+      const status = error instanceof AdminAccountError ? error.status : 500;
+      res.status(status).json({ error: error instanceof AdminAccountError ? error.message : "Unable to list administrator accounts." });
+    }
+  });
+
+  app.post("/api/admin/create-admin", verifyAdminAuth, verifySuperAdminAuth, async (req, res) => {
+    const body = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
+    try {
+      const admin = await promoteVerifiedFirebaseUser({
+        email: typeof body.email === "string" ? body.email : "",
+        fullName: typeof body.fullName === "string" ? body.fullName : undefined,
+        actor: res.locals.admin as AdminPrincipal,
+      });
+      res.status(201).json({ success: true, admin, message: "Verified Firebase account promoted. The user must sign in again to receive admin access." });
+    } catch (error) {
+      const status = error instanceof AdminAccountError ? error.status : 500;
+      res.status(status).json({ error: error instanceof AdminAccountError ? error.message : "Could not promote this Firebase account." });
+    }
+  });
+
+  app.delete("/api/admin/admins/:uid", verifyAdminAuth, verifySuperAdminAuth, async (req, res) => {
+    try {
+      await revokeAdminAccount(req.params.uid, res.locals.admin as AdminPrincipal);
+      res.status(204).end();
+    } catch (error) {
+      const status = error instanceof AdminAccountError ? error.status : 500;
+      res.status(status).json({ error: error instanceof AdminAccountError ? error.message : "Could not revoke administrator access." });
+    }
+  });
 
   // Cari may read Firebase account emails only after this request passes Firebase admin auth.
   app.get("/api/admin/cari/user-emails", verifyAdminAuth, async (_req, res) => {
@@ -428,51 +454,30 @@ async function startServer() {
     }
   });
 
-  // Superadmin endpoint: Create / Add New Admin with Assigned Role
-  app.post("/api/admin/create-admin", verifyAdminAuth, async (req, res) => {
-    const { email, fullName, role, adminAccessToken } = req.body || {};
-
-    if (!email || !email.includes("@")) {
-      res.status(400).json({ error: "Valid email address is required" });
-      return;
-    }
-
-    const assignedRole = role === "superadmin" ? "superadmin" : "admin";
-    const name = typeof fullName === "string" && fullName.trim() ? fullName.trim() : "Nexus Store Admin";
-    const token = typeof adminAccessToken === "string" && adminAccessToken.trim() ? adminAccessToken.trim() : "nexus-admin-2026";
-
-    const newAdmin = {
-      uid: `admin-${Date.now()}`,
-      fullName: name,
-      email: email.toLowerCase().trim(),
-      role: assignedRole,
-      isAdmin: true,
-      adminAccessToken: token,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
+  app.post("/api/cloudinary/session", (_req, res) => {
     try {
-      const admin = parseFirebaseServiceAccount();
-      if (admin) {
-        const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
-        await firestore.collection("nexus_admins").doc(newAdmin.uid).set(newAdmin, { merge: true });
-      }
-
-      res.json({ success: true, admin: newAdmin, message: `Created new ${assignedRole} successfully.` });
+      res.setHeader("Cache-Control", "no-store");
+      res.status(201).json(createCariUploadSession());
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create admin";
-      res.status(500).json({ error: message });
+      const message = error instanceof Error ? error.message : "Unable to create a temporary image session";
+      res.status(412).json({ error: message });
     }
   });
 
-  app.post("/api/cloudinary/signature", (req, res) => {
+  app.post("/api/cloudinary/signature", (req, res, next) => {
+    if (typeof req.body?.sessionId === "string") return next();
+    return verifyAdminAuth(req, res, next);
+  }, (req, res) => {
     if (typeof req.body?.sessionId === "string") {
       try {
-        res.json(createCariSessionUploadSignature(req.body.sessionId));
+        if (typeof req.body?.cleanupToken !== "string") {
+          res.status(400).json({ error: "A valid Cari session capability is required." });
+          return;
+        }
+        res.json(createCariSessionUploadSignature(req.body.sessionId, req.body.cleanupToken));
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unable to create upload signature";
-        res.status(message.includes("Invalid") ? 400 : 412).json({ error: message });
+        res.status(message.includes("Invalid") ? 403 : 412).json({ error: message });
       }
       return;
     }

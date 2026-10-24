@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { useCart } from "@/contexts/CartContext";
 import { getAdminAuthHeaders } from "@/lib/firebase";
-import { cleanupCloudinarySessionImages, uploadToCloudinary } from "@/lib/cloudinary";
+import { cleanupCloudinarySessionImages, createCariUploadSession, uploadToCloudinary } from "@/lib/cloudinary";
 import {
   getCollections,
   getProducts,
@@ -107,15 +107,6 @@ function parseAssistantPayload(content: string): AssistantPayload {
   return { cleanText: content, recommendations: [] };
 }
 
-function newCariSessionId() {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (letter) => {
-        const random = Math.random() * 16 | 0;
-        return (letter === "x" ? random : (random & 0x3 | 0x8)).toString(16);
-      });
-}
-
 function SpeechPlayer({ text }: { text: string }) {
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -185,13 +176,7 @@ export default function AiAssistant() {
     try { return JSON.parse(localStorage.getItem("nexus_cari_saved_chats_v1") || "[]"); } catch { return []; }
   });
 
-  const [sessionId, setSessionId] = useState(() => {
-    const saved = sessionStorage.getItem("nexus_cari_session_id");
-    if (saved) return saved;
-    const created = newCariSessionId();
-    sessionStorage.setItem("nexus_cari_session_id", created);
-    return created;
-  });
+  const [sessionId, setSessionId] = useState(() => sessionStorage.getItem("nexus_cari_session_id") || "");
   const [cleanupToken, setCleanupToken] = useState(() => sessionStorage.getItem("nexus_cari_cleanup_token") || "");
   const [attachedImages, setAttachedImages] = useState<Array<{ url: string; name: string }>>([]);
   const [imageUploading, setImageUploading] = useState(false);
@@ -381,16 +366,24 @@ export default function AiAssistant() {
     }
     setImageUploading(true);
     try {
+      let activeSessionId = sessionId;
+      let activeCleanupToken = cleanupToken;
+      if (!activeSessionId || !activeCleanupToken) {
+        const uploadSession = await createCariUploadSession();
+        activeSessionId = uploadSession.sessionId;
+        activeCleanupToken = uploadSession.cleanupToken;
+        sessionStorage.setItem("nexus_cari_session_id", activeSessionId);
+        sessionStorage.setItem("nexus_cari_cleanup_token", activeCleanupToken);
+        setSessionId(activeSessionId);
+        setCleanupToken(activeCleanupToken);
+      }
       const uploaded: Array<{ url: string; name: string }> = [];
       for (const file of selectedFiles) {
         const result = await uploadToCloudinary(file, {
-          folder: `nexus/cari-sessions/${sessionId}`,
-          sessionId,
+          folder: `nexus/cari-sessions/${activeSessionId}`,
+          sessionId: activeSessionId,
+          cleanupToken: activeCleanupToken,
         });
-        if (typeof result.cleanupToken === "string") {
-          sessionStorage.setItem("nexus_cari_cleanup_token", result.cleanupToken);
-          setCleanupToken(result.cleanupToken);
-        }
         uploaded.push({ url: result.secure_url, name: file.name });
       }
       setAttachedImages((previous) => [...previous, ...uploaded].slice(0, 4));
@@ -403,12 +396,12 @@ export default function AiAssistant() {
   };
 
   const completeSession = async () => {
+    const completedSessionId = sessionId;
     try {
-      if (cleanupToken) await cleanupCloudinarySessionImages(sessionId, cleanupToken);
+      if (completedSessionId && cleanupToken) await cleanupCloudinarySessionImages(completedSessionId, cleanupToken);
+      sessionStorage.removeItem("nexus_cari_session_id");
       sessionStorage.removeItem("nexus_cari_cleanup_token");
-      const nextSessionId = newCariSessionId();
-      sessionStorage.setItem("nexus_cari_session_id", nextSessionId);
-      setSessionId(nextSessionId);
+      setSessionId("");
       setCleanupToken("");
       setAttachedImages([]);
       window.speechSynthesis?.cancel();
@@ -416,7 +409,7 @@ export default function AiAssistant() {
         const cleaned = previous.map((chat) => ({
           ...chat,
           messages: chat.messages.map((message) => {
-            const keepIndexes = (message.imageUrls ?? []).map((url, index) => url.includes(sessionId) ? -1 : index).filter((index) => index >= 0);
+            const keepIndexes = (message.imageUrls ?? []).map((url, index) => completedSessionId && url.includes(completedSessionId) ? -1 : index).filter((index) => index >= 0);
             return {
               ...message,
               imageUrls: keepIndexes.length ? keepIndexes.map((index) => message.imageUrls![index]) : undefined,

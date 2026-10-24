@@ -4,6 +4,7 @@ import { ArrowUpRight, Plus, Camera, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice, type Product } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 export default function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
   const { addItem } = useCart();
@@ -11,11 +12,7 @@ export default function ProductCard({ product, compact = false }: { product: Pro
   const variant = product.variants.find((item) => item.availableForSale) ?? product.variants[0];
   const trackInteraction = (action: "click" | "like" | "add_to_cart") => {
     try {
-      const userSession = localStorage.getItem("nexus_admin_session");
-      let userEmail = "";
-      if (userSession) {
-        try { userEmail = JSON.parse(userSession).email || ""; } catch {}
-      }
+      const userEmail = getFirebaseAuth()?.currentUser?.email || "";
 
       fetch("/api/user/interactions", {
         method: "POST",

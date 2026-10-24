@@ -1,34 +1,30 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if requesting user is an administrator
     function isAdmin() {
-      return request.auth != null &&
-        exists(/databases/$(database)/documents/nexus_admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/nexus_admins/$(request.auth.uid)).data.isAdmin == true;
+      return request.auth != null && request.auth.token.admin == true;
     }
 
-    // Admins Collection: Read & write restricted to admin self or superadmin
+    // The server uses Firebase Admin SDK for this collection. Clients must never read or write roles.
     match /nexus_admins/{adminId} {
-      allow read, write: if request.auth != null && (request.auth.uid == adminId || isAdmin());
+      allow read, write: if false;
     }
 
-    // Users Collection (Registered customers for exclusive discounts)
+    // Customer profiles remain private to their owner and server-authorized admins.
     match /nexus_users/{userId} {
-      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create: if true; // Allow new customer registrations
+      allow read, update, delete: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Campaigns Collection (Store promotions)
+    // Campaigns are readable publicly; only trusted custom-claim admins can change them.
     match /nexus_campaigns/{campaignId} {
-      allow read: if true; // Public catalogue access to campaigns
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Reserved Cari AI Conversations
+    // Reserved Cari conversations are accessed by server endpoints using Firebase Admin SDK.
     match /nexus_cari_conversations/{conversationId} {
-      allow create, read, update: if true;
+      allow read, write: if false;
     }
   }
 }

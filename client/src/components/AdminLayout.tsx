@@ -1,5 +1,6 @@
 import React, { useState, useEffect, type ReactNode } from "react";
 import { useLocation, Link } from "wouter";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import {
   Menu,
   X,
@@ -21,35 +22,59 @@ import {
   Image as ImageIcon,
   Mic,
   ArrowRight,
-  Key,
+  Mail,
+  KeyRound,
   Command,
 } from "lucide-react";
 import { toast } from "sonner";
 import AiAssistant from "@/components/AiAssistant";
+import { getAdminAuthHeaders, getFirebaseAuth, getFirebaseStatus, verifyAdminSession } from "@/lib/firebase";
 
 export interface AdminSession {
   authenticated: boolean;
   role: "superadmin" | "admin";
   email: string;
   name: string;
+  uid: string;
 }
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
 
-  // Admin session authentication
-  const [session, setSession] = useState<AdminSession>(() => {
-    try {
-      const saved = localStorage.getItem("nexus_admin_session");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.authenticated) return parsed;
-      }
-    } catch {}
-    return { authenticated: false, role: "admin", email: "", name: "" };
-  });
+  const [session, setSession] = useState<AdminSession | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const firebaseStatus = getFirebaseStatus();
 
-  const [passkeyInput, setPasskeyInput] = useState("");
+  useEffect(() => {
+    // Remove values created by the former client-side passkey and admin-list implementation.
+    try {
+      localStorage.removeItem("nexus_admin_session");
+      localStorage.removeItem("nexus_admins_v1");
+    } catch {}
+    const auth = getFirebaseAuth();
+    if (!auth) {
+      setAuthChecking(false);
+      return;
+    }
+    return onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setSession(null);
+        setAuthChecking(false);
+        return;
+      }
+      setAuthChecking(true);
+      void verifyAdminSession(user)
+        .then((verified) => {
+          if (auth.currentUser?.uid === user.uid) setSession(verified);
+        })
+        .catch(() => {
+          if (auth.currentUser?.uid === user.uid) setSession(null);
+        })
+        .finally(() => setAuthChecking(false));
+    });
+  }, []);
 
   // Theme state: dark (#131314) vs light (#FFFFFF)
   const [theme, setTheme] = useState<"dark" | "light">( () => {
@@ -79,42 +104,51 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  const handleLogout = () => {
-    setSession({ authenticated: false, role: "admin", email: "", name: "" });
-    localStorage.removeItem("nexus_admin_session");
+  const handleLogout = async () => {
+    try {
+      const headers = await getAdminAuthHeaders();
+      await fetch("/api/admin/logout", { method: "POST", headers });
+    } catch {}
+    const auth = getFirebaseAuth();
+    if (auth) await signOut(auth).catch(() => {});
+    setSession(null);
     toast.info("Signed out of Admin Console");
   };
 
-  const handlePasskeySubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const passkey = passkeyInput.trim();
-
-    if (passkey === "superadmin" || passkey === "superadmin2026") {
-      const newSess: AdminSession = {
-        authenticated: true,
-        role: "superadmin",
-        email: "superadmin@nexus.com",
-        name: "Super Administrator",
-      };
-      setSession(newSess);
-      localStorage.setItem("nexus_admin_session", JSON.stringify(newSess));
-      toast.success("Welcome, Super Administrator!");
-    } else if (
-      passkey === "nexus-admin-2026" ||
-      passkey === "admin123" ||
-      passkey === "nexus2026"
-    ) {
-      const newSess: AdminSession = {
-        authenticated: true,
-        role: "admin",
-        email: "admin@nexus.com",
-        name: "Store Admin",
-      };
-      setSession(newSess);
-      localStorage.setItem("nexus_admin_session", JSON.stringify(newSess));
-      toast.success("Welcome, Administrator!");
-    } else {
-      toast.error("Invalid passkey. Access denied.");
+    if (!emailInput.trim() || !passwordInput) {
+      toast.error("Enter your administrator email and password.");
+      return;
+    }
+    const auth = getFirebaseAuth();
+    if (!auth) {
+      toast.error("Firebase Authentication is not configured for this site.");
+      return;
+    }
+    setAuthChecking(true);
+    try {
+      const credential = await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
+      const verified = await verifyAdminSession(credential.user);
+      if (!verified) {
+        await signOut(auth);
+        setSession(null);
+        toast.error("This verified Firebase account has not been granted administrator access.");
+        return;
+      }
+      setSession(verified);
+      setPasswordInput("");
+      toast.success(`Welcome, ${verified.role === "superadmin" ? "Superadministrator" : "Administrator"}.`);
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      const message = code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found"
+        ? "Invalid email or password."
+        : code === "auth/too-many-requests"
+          ? "Too many sign-in attempts. Try again later."
+          : error instanceof Error ? error.message : "Administrator sign-in failed.";
+      toast.error(message);
+    } finally {
+      setAuthChecking(false);
     }
   };
 
@@ -126,7 +160,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: "/admin/campaigns", label: "Campaigns", icon: Megaphone },
     { href: "/admin/sales", label: "Sales Report", icon: TrendingUp },
     { href: "/admin/users", label: "Customer Interests", icon: Users },
-    ...(session.role === "superadmin"
+    ...(session?.role === "superadmin"
       ? [{ href: "/admin/admins", label: "Manage Admins", icon: UserPlus }]
       : []),
   ];
@@ -172,7 +206,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     window.dispatchEvent(new CustomEvent("nexus-cari-upload-request"));
   };
 
-  if (!session.authenticated) {
+  if (authChecking && !session) {
+    return (
+      <div data-admin-theme={theme} className={`min-h-screen flex items-center justify-center font-sans ${theme === "dark" ? "bg-[#131314] text-[#E3E3E3]" : "bg-[#F8F9FA] text-[#1F1F1F]"}`}>
+        <div className="text-center"><div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" /><p className="text-sm">Verifying administrator session…</p></div>
+      </div>
+    );
+  }
+
+  if (!session) {
     return (
       <div
         data-admin-theme={theme}
@@ -199,32 +241,49 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             Nexus Store Management Portal
           </p>
 
-          <form onSubmit={handlePasskeySubmit} className="space-y-4">
+          <form onSubmit={handleLoginSubmit} className="space-y-4 text-left">
             <div className="relative">
-              <Key
+              <Mail
                 size={16}
                 className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${
                   theme === "dark" ? "text-[#C4C7C5]" : "text-[#5E5E5E]"
                 }`}
               />
               <input
-                type="password"
-                value={passkeyInput}
-                onChange={(e) => setPasskeyInput(e.target.value)}
-                placeholder="Enter Admin Passkey (e.g. nexus-admin-2026)"
+                type="email"
+                autoComplete="username"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="Administrator email"
+                aria-label="Administrator email"
                 className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-2xl focus:ring-2 focus:ring-amber-500 focus:outline-none transition-colors ${
                   theme === "dark"
                     ? "bg-[#131314] border-slate-800 text-white placeholder-slate-500"
                     : "bg-[#F0F4F9] border-slate-300 text-slate-900 placeholder-slate-400"
                 }`}
                 autoFocus
+                required
+              />
+            </div>
+            <div className="relative">
+              <KeyRound size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${theme === "dark" ? "text-[#C4C7C5]" : "text-[#5E5E5E]"}`} />
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Password"
+                aria-label="Password"
+                className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-2xl focus:ring-2 focus:ring-amber-500 focus:outline-none transition-colors ${theme === "dark" ? "bg-[#131314] border-slate-800 text-white placeholder-slate-500" : "bg-[#F0F4F9] border-slate-300 text-slate-900 placeholder-slate-400"}`}
+                required
               />
             </div>
             <button
               type="submit"
-              className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm rounded-2xl shadow-lg transition-colors flex items-center justify-center gap-2"
+              disabled={authChecking || !firebaseStatus.configured}
+              className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm rounded-2xl shadow-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span>Access Admin Console</span>
+              <span>{authChecking ? "Verifying…" : "Sign in securely"}</span>
               <ArrowRight size={16} />
             </button>
           </form>
@@ -234,9 +293,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               theme === "dark" ? "border-slate-800 text-[#C4C7C5]" : "border-slate-200 text-[#5E5E5E]"
             }`}
           >
-            <p className="font-semibold">Available Passkeys:</p>
-            <p>• Superadmin: <code className="text-amber-500 font-mono">superadmin2026</code></p>
-            <p>• Store Admin: <code className="text-amber-500 font-mono">nexus-admin-2026</code></p>
+            <p className="font-semibold">Authorized Firebase accounts only.</p>
+            <p>Administrator access requires a verified email and server-issued role.</p>
+            {!firebaseStatus.configured && <p className="text-rose-500">Firebase Authentication is not configured.</p>}
           </div>
         </div>
       </div>

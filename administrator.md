@@ -1,180 +1,33 @@
-# Firebase Administrator Setup Guide — Nexus A Liverton Store
+# Secure administrator access — Nexus A Liverton Store
 
-This document explains how to set up administrator access, customer accounts, and Firebase Firestore security rules for **Nexus A Liverton Store**.
+Administrator sign-in uses Firebase Authentication. The browser never decides that someone is an administrator: every admin session and privileged API request is checked on the server against a verified Firebase ID token and a server-issued custom claim.
 
----
+## Configure the first administrator
 
-## 1. Firebase Project Setup
+1. In Firebase Console, enable **Authentication → Email/Password** and email verification. Create the owner’s Firebase Auth account and verify its email. Do not use an account that is also used by untrusted people.
+2. Configure the existing public Firebase web-app settings as `VITE_FIREBASE_CONFIG_JSON`. These values identify the Firebase project; they are not administrator credentials.
+3. Configure these **server-only** environment variables in the production runtime (and local `.env` when needed):
+   - `FIREBASE_SERVICE_ACCOUNT_JSON`: a Firebase service-account JSON with Firebase Authentication and Firestore administrative access. Never prefix this with `VITE_` or commit it.
+   - `NEXUS_INITIAL_ADMIN_EMAIL`: the exact, already-verified email of the initial owner account.
+4. Deploy the application. Sign in to `/admin` with the Firebase account. The server verifies the token and verified email, assigns the owner’s protected `admin: true` and `role: "superadmin"` custom claims, and returns the session. The client refreshes its Firebase ID token so subsequent requests carry those claims.
+5. After the bootstrap owner has successfully accessed the console and custom claims are in place, remove `NEXUS_INITIAL_ADMIN_EMAIL` from the runtime configuration and redeploy. The server-issued claims continue to authorize the owner.
 
-### Prerequisites
-- A Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-- Firebase Authentication enabled (Email/Password, Google, and Apple providers)
-- Firestore Database created
+If no bootstrap variable is configured, an initial administrator can instead be granted Firebase custom claims through a trusted one-off Firebase Admin SDK operation. Never grant claims from browser code or from a user-editable Firestore document.
 
-### Enable Authentication Providers
-1. Go to **Firebase Console → Authentication → Sign-in method**
-2. Enable **Email/Password** provider
-3. Enable **Google** provider (requires a project-level support email)
-4. Enable **Apple** provider (requires an Apple Developer account with Sign in with Apple capability)
+## Sign in and administer accounts
 
-### Get Your Firebase Config
-1. Go to **Firebase Console → Project Settings → General**
-2. Scroll to "Your apps" → click the web app icon (`</>`) if you haven't added one
-3. Copy the `firebaseConfig` object values
-4. Add them to your Freebuff/Freebuff Environment **Settings → Keys** tab:
+Go to `/admin` and sign in with the authorized Firebase email and password. The account must have a verified email and must be enabled in Firebase Authentication. Firebase ID tokens are sent in the `Authorization: Bearer …` header; the server verifies their signature, expiry, revocation status, email verification, and admin custom claims on every privileged request. Admin state is not persisted in localStorage.
 
-| Environment Variable | Value |
-| :--- | :--- |
-| `VITE_FIREBASE_API_KEY` | Your Firebase API Key |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Your project.firebaseapp.com |
-| `VITE_FIREBASE_PROJECT_ID` | Your Firebase project ID |
-| `VITE_FIREBASE_STORAGE_BUCKET` | Your project.appspot.com |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Your sender ID |
-| `VITE_FIREBASE_APP_ID` | Your app ID |
+Only a superadministrator can manage administrators. The Admin Accounts page can promote an **existing, active, email-verified Firebase user** to store admin. That user must sign in again after promotion so Firebase issues a token containing the new claim. Revoking an admin removes the server-issued claims, revokes refresh tokens, and disables the registry entry. The bootstrap superadministrator and the currently signed-in superadministrator cannot be removed from that page.
 
----
+Use Firebase’s password policy and account-protection controls. For stronger assurance, enable multi-factor authentication for administrator accounts in Firebase Authentication.
 
-## 2. Firebase Administrator Collection Setup (`nexus_admins`)
+## Firestore security rules
 
-To grant administrative access for managing store promotional campaigns, discounts, and order configurations in Firebase Firestore:
+Deploy the repository’s `firestore.rules` in **Firebase Console → Firestore Database → Rules**, or with the Firebase CLI after selecting the intended project. The rules deny all direct client reads and writes to `nexus_admins`; the Admin SDK remains able to manage it. Admin-only campaign/profile access uses the server-issued `request.auth.token.admin` custom claim. Reserved Cari conversations are server-only.
 
-### Collection Name
-`nexus_admins`
+Verify the Firebase project before publishing rules: Firestore rules affect the selected project immediately. The source file is the intended rule set; the Firebase Console does not automatically adopt repository changes.
 
-### Required Fields for Administrator Documents
+## Removed legacy behavior
 
-Each document in `nexus_admins` should use the admin's unique Firebase Auth `uid` as the Document ID.
-
-| Field Name | Type | Description |
-| :--- | :--- | :--- |
-| `uid` | `string` | The Firebase Authentication User ID. |
-| `fullName` | `string` | Administrator's full name (e.g. `System Administrator`). |
-| `email` | `string` | Administrator's registered email address. |
-| `role` | `string` | Role name, set to `"superadmin"` or `"admin"`. |
-| `isAdmin` | `boolean` | Must be set to `true`. |
-| `adminAccessToken` | `string` | Admin security passkey (default: `nexus-admin-2026`). |
-| `createdAt` | `timestamp` | Firestore server timestamp when created (`request.time`). |
-| `updatedAt` | `timestamp` | Firestore server timestamp when modified. |
-
-### Step-by-Step Admin Setup
-
-1. **Create the admin user in Firebase Authentication first:**
-   - Go to **Firebase Console → Authentication → Users**
-   - Click **Add user**
-   - Enter the admin's email and a strong password
-   - Note the **User UID** that Firebase assigns
-
-2. **Create the admin document in Firestore:**
-   - Go to **Firebase Console → Firestore Database**
-   - Create a collection named `nexus_admins`
-   - Add a new document with the **Document ID** set to the admin's Firebase Auth UID
-   - Fill in the fields from the table above
-
-### Sample Document JSON
-
-```json
-{
-  "uid": "aB1cD2eF3gH4iJ5kL6mN",
-  "fullName": "Nexus Store Admin",
-  "email": "admin@nexus.com",
-  "role": "superadmin",
-  "isAdmin": true,
-  "adminAccessToken": "nexus-admin-2026",
-  "createdAt": "2026-03-30T10:00:00Z",
-  "updatedAt": "2026-03-30T10:00:00Z"
-}
-```
-
----
-
-## 3. Customer User Collection Setup (`nexus_users`)
-
-When users sign in or register on the site to unlock exclusive promotional discounts, their profiles are stored in the `nexus_users` collection:
-
-### Collection Name
-`nexus_users`
-
-| Field Name | Type | Description |
-| :--- | :--- | :--- |
-| `uid` | `string` | Unique user ID. |
-| `fullName` | `string` | Customer's full name. |
-| `email` | `string` | Customer's email. |
-| `hasDiscountEligible` | `boolean` | Set to `true` when customer signs in to receive exclusive deals. |
-| `registeredAt` | `timestamp` | Date registered. |
-
-**Note:** The `nexus_users` collection documents are created automatically when a customer registers through the login/register page. No manual setup is required for standard customer accounts.
-
----
-
-## 4. Firebase Security Rules (`firestore.rules`)
-
-Deploy these rules to your Firebase Firestore console to protect customer data and reserve campaign management exclusively to authenticated administrators:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    // Helper function to check if user is an admin
-    function isAdmin() {
-      return request.auth != null &&
-        exists(/databases/$(database)/documents/nexus_admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/nexus_admins/$(request.auth.uid)).data.isAdmin == true;
-    }
-
-    // Admins Collection
-    match /nexus_admins/{adminId} {
-      allow read, write: if request.auth != null && (request.auth.uid == adminId || isAdmin());
-    }
-
-    // Users Collection (Customers)
-    match /nexus_users/{userId} {
-      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create: if true;
-    }
-
-    // Campaigns Collection
-    match /nexus_campaigns/{campaignId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Reserved Cari AI Conversations
-    match /nexus_cari_conversations/{conversationId} {
-      allow create, read, update: if true;
-    }
-  }
-}
-```
-
-### How to Deploy Rules
-1. Go to **Firebase Console → Firestore Database → Rules**
-2. Paste the rules above
-3. Click **Publish**
-
----
-
-## 5. Default Admin Credentials
-
-- **Admin Passkey / Access Token:** `nexus-admin-2026`
-- **OAuth Options:** Google Sign-In & Apple Sign-In supported via the Login page
-
----
-
-## 6. Admin Access via the Application
-
-1. Navigate to `/admin` in the browser
-2. Click **Sign In** and enter the admin passkey: `nexus-admin-2026`
-3. Once authenticated, you can manage campaigns and view customer activity
-
----
-
-## 7. How Customer Login Works
-
-1. Navigate to `/login` in the browser
-2. Customers can sign in using:
-   - **Google** — one-click OAuth
-   - **Apple** — one-click OAuth
-   - **Email/Password** — traditional email + password
-3. New customers can register at `/register`
-4. Upon registration, a customer profile is automatically created in the `nexus_users` collection with `hasDiscountEligible: true`
+Embedded passkeys, passkey hints, email-substring promotion (for example, addresses containing “admin”), and browser-editable admin-session records are no longer accepted. Old passkey strings remain in Git history from earlier commits, but the new application does not recognize them; do not reuse them as Firebase passwords or other secrets.
