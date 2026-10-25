@@ -1578,3 +1578,160 @@ html, body { background: var(--store-paper); }
   .product-interest-dialog { padding: 1.35rem; }
   .ai-thread-label { display: none; }
 }
+
+
+/* Nexus cream image-led homepage hero. */
+.nexus-home-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: clamp(540px, 70vh, 760px);
+  overflow: hidden;
+  color: #29271f;
+  background: #f5f0e7;
+}
+.nexus-hero-background {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 78% 45%, #e8ddc9 0%, #f5f0e7 58%);
+}
+.nexus-hero-backdrop-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 54%;
+  opacity: 0;
+  transform: scale(1.055);
+  animation: nexus-hero-crossfade 21s cubic-bezier(.22,.61,.36,1) infinite;
+  will-change: opacity, transform;
+}
+.nexus-hero-backdrop-image:nth-of-type(1) { animation-delay: -14s; }
+.nexus-hero-backdrop-image:nth-of-type(2) { animation-delay: -7s; }
+.nexus-hero-backdrop-image:nth-of-type(3) { animation-delay: 0s; }
+.nexus-hero-image-wash {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(249, 247, 241, .99) 0%, rgba(249, 247, 241, .96) 26%, rgba(249, 247, 241, .84) 45%, rgba(249, 247, 241, .35) 68%, rgba(249, 247, 241, .08) 100%),
+    linear-gradient(0deg, rgba(249, 247, 241, .22) 0%, transparent 48%, rgba(249, 247, 241, .12) 100%);
+}
+.nexus-hero-inner {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: clamp(4rem, 9vw, 7.75rem) clamp(1.35rem, 6vw, 6.5rem);
+}
+.nexus-hero-copy { max-width: 720px; }
+.nexus-hero-copy h1 {
+  max-width: 760px;
+  margin: 0;
+  color: #29271f;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: clamp(3rem, 6.15vw, 6.45rem);
+  font-weight: 730;
+  letter-spacing: -.075em;
+  line-height: .99;
+  text-wrap: balance;
+}
+.nexus-hero-copy h1 span {
+  color: #9b7544;
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: 1.02em;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -.055em;
+}
+.nexus-hero-copy p {
+  max-width: 530px;
+  margin: 1.55rem 0 0;
+  color: #686258;
+  font-size: clamp(.98rem, 1.2vw, 1.12rem);
+  line-height: 1.75;
+}
+.nexus-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .85rem;
+  margin-top: 2rem;
+}
+.nexus-hero-shop-button,
+.nexus-hero-cari-button {
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  padding: .85rem 1.4rem;
+  border: 1px solid rgba(255, 255, 255, .8);
+  border-radius: 15px;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 680;
+  letter-spacing: -.01em;
+  text-decoration: none;
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  box-shadow: 0 10px 28px rgba(64, 50, 31, .11), inset 0 1px 0 rgba(255, 255, 255, .74);
+  transition: transform 240ms var(--ease-out), background-color 240ms var(--ease-out), box-shadow 240ms var(--ease-out), border-color 240ms var(--ease-out);
+}
+.nexus-hero-shop-button {
+  color: #352d21;
+  background: rgba(255, 250, 239, .78);
+}
+.nexus-hero-cari-button {
+  color: #423b31;
+  background: rgba(255, 250, 239, .38);
+  border-color: rgba(119, 95, 59, .24);
+  cursor: pointer;
+}
+.nexus-hero-shop-button:hover,
+.nexus-hero-cari-button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 250, 239, .95);
+  border-color: rgba(255, 255, 255, .96);
+  box-shadow: 0 15px 36px rgba(64, 50, 31, .16), inset 0 1px 0 rgba(255, 255, 255, .85);
+}
+.nexus-hero-shop-button:focus-visible,
+.nexus-hero-cari-button:focus-visible {
+  outline: 2px solid #85643a;
+  outline-offset: 4px;
+}
+@keyframes nexus-hero-crossfade {
+  0% { opacity: 0; transform: scale(1.055) translateX(1%); }
+  7% { opacity: .84; transform: scale(1.04) translateX(0); }
+  29% { opacity: .84; transform: scale(1.01) translateX(-.4%); }
+  37%, 100% { opacity: 0; transform: scale(1) translateX(-.8%); }
+}
+@media (max-width: 700px) {
+  .nexus-home-hero { min-height: min(650px, calc(100svh - 110px)); }
+  .nexus-hero-backdrop-image { object-position: 63% center; }
+  .nexus-hero-image-wash {
+    background:
+      linear-gradient(90deg, rgba(249, 247, 241, .97) 0%, rgba(249, 247, 241, .91) 38%, rgba(249, 247, 241, .69) 72%, rgba(249, 247, 241, .44) 100%),
+      linear-gradient(0deg, rgba(249, 247, 241, .32), rgba(249, 247, 241, .1));
+  }
+  .nexus-hero-inner { padding: 4.5rem 1.35rem; }
+  .nexus-hero-copy h1 { max-width: 550px; font-size: clamp(2.7rem, 10vw, 4.6rem); letter-spacing: -.07em; }
+  .nexus-hero-copy p { max-width: 470px; margin-top: 1.2rem; font-size: .98rem; }
+  .nexus-hero-actions { gap: .7rem; margin-top: 1.6rem; }
+  .nexus-hero-shop-button, .nexus-hero-cari-button { min-height: 51px; padding: .8rem 1.1rem; border-radius: 14px; }
+}
+@media (max-width: 390px) {
+  .nexus-hero-inner { padding-right: 1.15rem; padding-left: 1.15rem; }
+  .nexus-hero-copy h1 { font-size: clamp(2.25rem, 9.4vw, 3rem); }
+  .nexus-hero-actions { align-items: stretch; }
+  .nexus-hero-shop-button, .nexus-hero-cari-button { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nexus-hero-backdrop-image { animation: none; opacity: 0; transform: none; }
+  .nexus-hero-backdrop-image:first-of-type { opacity: .84; }
+  .nexus-hero-shop-button, .nexus-hero-cari-button { transition: none; }
+}

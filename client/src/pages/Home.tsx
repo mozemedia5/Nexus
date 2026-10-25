@@ -1,11 +1,17 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { ArrowUpRight, Sparkles, Cpu, Heart, PackageCheck, ShieldCheck, Zap, Megaphone, Tag, ChevronLeft, ChevronRight, Camera } from "lucide-react";
+import { ArrowUpRight, Cpu, Heart, PackageCheck, ShieldCheck, Zap, Megaphone, Tag, ChevronLeft, ChevronRight, Camera } from "lucide-react";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
 import SEO from "@/components/SEO";
 import { getCollections, getProducts, type Collection, type Product } from "@/lib/store";
 import { usePersonalization } from "@/hooks/usePersonalization";
 import { getActiveCampaigns } from "@/pages/Admin";
+
+const heroBackgrounds = [
+  "/nexus-hero-workspace-web.jpg",
+  "/nexus-hero-home-web.jpg",
+  "/nexus-hero-everyday-web.jpg",
+];
 
 function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[] }) {
   const [current, setCurrent] = useState(0);
@@ -102,37 +108,43 @@ export default function Home() {
   return (
     <>
       <SEO
-        title="Nexus — Discover Useful Finds for Everyday Life"
-        description="Browse the live Nexus product catalog for useful finds for home, work, and everyday life."
+        title="Nexus — Thoughtful Products for Home & Work"
+        description="Browse the live Nexus catalogue for thoughtful products across home, work, and everyday life."
         keywords="Nexus, product catalog, home, work, everyday products"
         canonicalPath="/"
       />
 
       {/* Hero Section */}
-      <section className="relative w-full bg-slate-950 text-white min-h-[380px] md:min-h-[440px] flex items-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          {products[0]?.image?.url && <img src={products[0].image.url} alt={products[0].image.altText || products[0].name} className="w-full h-full object-cover object-center opacity-35 mix-blend-luminosity" />}
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
+      <section className="nexus-home-hero">
+        <div className="nexus-hero-background" aria-hidden="true">
+          {heroBackgrounds.map((image, index) => (
+            <img
+              key={image}
+              src={image}
+              className="nexus-hero-backdrop-image"
+              alt=""
+              loading={index === 0 ? "eager" : "lazy"}
+              fetchPriority={index === 0 ? "high" : "auto"}
+            />
+          ))}
+          <div className="nexus-hero-image-wash" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-8 space-y-5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white/10 backdrop-blur border border-white/20 rounded-full text-[10px] font-semibold tracking-wide text-slate-200">
-              <Sparkles size={12} className="text-amber-400" /> Finds for everyday life
-            </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-[1.1]">
-              Discover something <br />
-              <span className="text-amber-400">useful for your day.</span>
+        <div className="nexus-hero-inner">
+          <div className="nexus-hero-copy">
+            <h1>
+              Discover something <br className="nexus-hero-break" />
+              <span>useful for your day.</span>
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed font-normal">
+            <p>
               Explore the live Nexus catalogue for thoughtful products across home, work, and the categories you care about.
             </p>
-            <div className="flex flex-wrap gap-3 pt-1">
-              <Link href="/products" className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-transform hover:-translate-y-0.5 shadow-md">
-                Shop all products <ArrowUpRight size={14} />
+            <div className="nexus-hero-actions">
+              <Link href="/products" className="nexus-hero-shop-button">
+                Shop Now <ArrowUpRight size={17} aria-hidden="true" />
               </Link>
-              <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))} className="px-5 py-3 bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors">
-                Ask Cari <Sparkles size={14} />
+              <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))} className="nexus-hero-cari-button">
+                Ask Cari
               </button>
             </div>
           </div>
@@ -140,21 +152,21 @@ export default function Home() {
       </section>
 
       {/* Auto-scrolling Product Carousel */}
-      <section className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-          <div>
-            <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
-              Nexus catalogue
-            </span>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Products from the Nexus catalogue
-            </h2>
+      {carouselImages.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 py-10">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+            <div>
+              <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
+                Nexus catalogue
+              </span>
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Products from the Nexus catalogue
+              </h2>
+            </div>
           </div>
-        </div>
-        {carouselImages.length > 0 ? <AutoScrollCarousel images={carouselImages} /> : (
-          <p className="text-sm text-slate-500">Product images will appear here when available.</p>
-        )}
-      </section>
+          <AutoScrollCarousel images={carouselImages} />
+        </section>
+      )}
 
       {/* Featured Collection Grid (4-Column) */}
       <section className="max-w-7xl mx-auto px-6 py-8">
