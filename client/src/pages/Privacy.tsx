@@ -28,7 +28,7 @@ export default function Privacy() {
         <section>
           <h2 className="text-base font-semibold text-foreground mb-2">3. Data Sharing & Third Parties</h2>
           <p>
-            We share your Personal Information with trusted service providers like Shopify to power our storefront and handle secure payment and order fulfillment. We do not sell or rent your personal data to third parties.
+            We share your Personal Information with trusted service providers that support our storefront, secure payment, and order fulfillment. We do not sell or rent your personal data to third parties.
           </p>
         </section>
 

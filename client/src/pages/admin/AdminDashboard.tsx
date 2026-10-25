@@ -96,7 +96,7 @@ export default function AdminDashboard() {
           <div className="text-2xl font-black text-slate-900 dark:text-white">
             {metrics?.totalOrders ?? orders.length ?? 0}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Directly synced via Shopify Admin API</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Directly synced from store records</p>
         </div>
 
         <div className="bg-white dark:bg-[#1E1F20] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm transition-colors">

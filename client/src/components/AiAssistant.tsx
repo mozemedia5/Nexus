@@ -112,6 +112,10 @@ export default function AiAssistant() {
   const [adminEmails, setAdminEmails] = useState<string[] | null>(null);
   const isAdminRoute = location.startsWith("/admin");
   useEffect(() => {
+    if (location === "/cari") { setIsOpen(true); setIsMinimized(false); }
+  }, [location]);
+
+  useEffect(() => {
     const openCari = () => setIsOpen(true);
     const requestImageUpload = () => {
       setIsOpen(true);
@@ -226,7 +230,7 @@ export default function AiAssistant() {
       {
         id: "welcome",
         role: "assistant",
-        content: "Hello! I'm Cari, your shopping assistant at Nexus. I can help you explore the live Shopify catalogue, compare products, and narrow down options using your preferences. What are you looking for today?",
+        content: "Hello! I'm Cari, your shopping assistant at Nexus. I can help you explore our live product selection, compare options, and narrow down choices using your preferences. What are you looking for today?",
         timestamp: new Date(),
       },
     ];
@@ -673,9 +677,11 @@ export default function AiAssistant() {
                                         if (!matchedProd) return null;
                                         const imgUrl = matchedProd.image?.url || matchedProd.images[0]?.url;
                                         return (
-                                          <div key={matchedProd.handle} className="flex items-center gap-3 p-2 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                                            {imgUrl ? <img src={imgUrl} alt={matchedProd.name} className="w-12 h-12 object-cover rounded-md" /> : <div className="w-12 h-12 rounded-md bg-stone-100" aria-hidden="true" />}
-                                            <div className="flex-1 min-w-0">
+                                          <div key={matchedProd.handle} className="cari-recommendation-card">
+                                            <Link href={`/products/${matchedProd.handle}`} className="cari-recommendation-image" aria-label={`View ${matchedProd.name}`}>
+                                              {imgUrl ? <img src={imgUrl} alt={matchedProd.name} loading="lazy" /> : <span aria-hidden="true">Nexus</span>}
+                                            </Link>
+                                            <div className="cari-recommendation-details">
                                               <strong className="block text-xs font-semibold truncate text-slate-900 dark:text-slate-100">{matchedProd.name}</strong>
                                               <span className="text-xs text-amber-600 font-bold">{formatPrice(matchedProd.price)}</span>
                                             </div>

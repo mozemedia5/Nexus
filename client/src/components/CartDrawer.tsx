@@ -73,7 +73,7 @@ export default function CartDrawer() {
               <span>Subtotal</span>
               <strong>{formatPrice(subtotal)}</strong>
             </div>
-            <p className="text-xs text-slate-500 my-2">Taxes and shipping calculated at checkout via Shopify.</p>
+            <p className="text-xs text-slate-500 my-2">Taxes and shipping are calculated at checkout.</p>
             <button
               type="button"
               className="button button-brass button-wide py-3 font-medium text-sm flex items-center justify-center gap-2"

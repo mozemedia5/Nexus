@@ -42,8 +42,8 @@ export default function OrderTracking() {
     <>
       <SEO
         title="Track Your Order — Nexus A Liverton Store"
-        description="Track your Nexus A Liverton Store order in real time. Enter your Shopify Order ID and email to view live shipping status and courier tracking."
-        keywords="Nexus order tracking, track order, Shopify order status, Liverton Store tracking"
+        description="Track your Nexus A Liverton Store order in real time. Enter your order number and email to view live shipping status and courier tracking."
+        keywords="Nexus order tracking, track order, order status, Liverton Store tracking"
         canonicalPath="/track-order"
       />
       <section className="page-intro section-pad">
@@ -196,11 +196,11 @@ export default function OrderTracking() {
               </div>
             </div>
 
-            {/* External Shopify Link */}
+            {/* External order status link */}
             {order.statusUrl && (
-              <div className="shopify-status-action">
+              <div className="external-status-action">
                 <a href={order.statusUrl} target="_blank" rel="noreferrer" className="button button-dark">
-                  View Official Shopify Status Page <ExternalLink size={15} />
+                  View order status page <ExternalLink size={15} />
                 </a>
               </div>
             )}

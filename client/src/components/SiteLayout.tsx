@@ -8,7 +8,7 @@ import AiAssistant from "@/components/AiAssistant";
 export default function SiteLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const normalizedPath = location.split("?")[0].split("#")[0];
-  const isProductDetail = /^\/products\/[^/]+\/?$/.test(normalizedPath);
+  const isProductsRoute = normalizedPath === "/products" || normalizedPath.startsWith("/products/");
   const isAdmin = normalizedPath.startsWith("/admin");
 
   return (
@@ -19,7 +19,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           <span>Nexus A Liverton Store</span><i aria-hidden="true">·</i><span>Useful finds for home and work</span>
         </div>
         <main>{children}</main>
-        {!isProductDetail && !isAdmin && <SiteFooter />}
+        {!isProductsRoute && !isAdmin && <SiteFooter />}
       </div>
       <CartDrawer />
       <AiAssistant />

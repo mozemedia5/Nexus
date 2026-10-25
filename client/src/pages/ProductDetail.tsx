@@ -180,7 +180,7 @@ export default function ProductDetail() {
                 Overview
               </h4>
               <p className="leading-relaxed">
-                {product.description?.split(/(?<=\.)\s+/)[0] || product.description || "No description has been provided for this Shopify listing yet."}
+                {product.description?.split(/(?<=\.)\s+/)[0] || product.description || "No description has been provided for this product yet."}
               </p>
             </div>
 
@@ -197,7 +197,7 @@ export default function ProductDetail() {
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-xs text-muted-foreground">The Shopify listing has no additional highlights.</p>}
+              ) : <p className="text-xs text-muted-foreground">This product has no additional highlights.</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-1">
@@ -250,7 +250,7 @@ export default function ProductDetail() {
             </button>
           </div>
           <p className="detail-note text-xs text-muted-foreground border-t border-border/50 pt-4">
-            Worldwide global delivery. Fast dispatch and direct secure checkout powered by Shopify Storefront API.
+            Worldwide global delivery. Fast dispatch and direct secure secure checkout.
           </p>
         </div>
       </div>

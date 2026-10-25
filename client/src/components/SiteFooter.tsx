@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import { ArrowUpRight, Check } from "lucide-react";
+import { useStoreAccount } from "@/hooks/useStoreAccount";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function SiteFooter() {
   const currentYear = new Date().getFullYear();
+  const { signedIn } = useStoreAccount();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -65,7 +67,7 @@ export default function SiteFooter() {
           <Link href="/terms">Terms</Link>
           <Link href="/privacy">Privacy</Link>
         </div>
-        <div className="footer-newsletter">
+        {!signedIn && <div className="footer-newsletter">
           <span className="eyebrow">Nexus notes</span>
           <h3>Good ideas for home and work.</h3>
           <p>Occasional product launches and useful updates. No noise.</p>
@@ -90,11 +92,11 @@ export default function SiteFooter() {
           <p id="footer-newsletter-status" className={`footer-newsletter-status ${status === "error" ? "is-error" : ""}`} aria-live="polite">
             {status === "submitting" ? "Subscribing…" : message}
           </p>
-        </div>
+        </div>}
       </div>
       <div className="footer-bottom">
         <span>© {currentYear} Nexus A Liverton Store</span>
-        <span>Shop with confidence. Product details and availability come from our Shopify catalogue.</span>
+        <span>Shop with confidence. Product details and availability are kept up to date.</span>
       </div>
     </footer>
   );

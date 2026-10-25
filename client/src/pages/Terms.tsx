@@ -35,7 +35,7 @@ export default function Terms() {
         <section>
           <h2 className="text-base font-semibold text-foreground mb-2">4. Payments & Security</h2>
           <p>
-            All checkout transactions are processed through encrypted, secure Shopify Storefront payment processing channels. Your payment details are protected using industry-standard security protocols.
+            All checkout transactions are processed through encrypted, secure payment processing channels. Your payment details are protected using industry-standard security protocols.
           </p>
         </section>
 

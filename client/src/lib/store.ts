@@ -111,15 +111,15 @@ function setCached<T>(key: string, data: T): void {
 }
 
 async function shopifyFetch<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
-  if (!shopifyConfigured) throw new Error("Shopify is not configured. Add Storefront API variables in Vercel.");
+  if (!shopifyConfigured) throw new Error("Product catalog service is not configured.");
   const response = await fetch(shopifyEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json", "X-Shopify-Storefront-Access-Token": token },
     body: JSON.stringify({ query, variables }),
   });
-  if (!response.ok) throw new Error(`Shopify request failed (${response.status})`);
+  if (!response.ok) throw new Error(`Store catalog request failed (${response.status})`);
   const payload = await response.json();
-  if (payload.errors?.length) throw new Error(payload.errors[0].message ?? "Shopify request failed");
+  if (payload.errors?.length) throw new Error(payload.errors[0].message ?? "Store catalog request failed");
   return payload.data as T;
 }
 

@@ -49,6 +49,7 @@ function Router() {
     <Switch>
       <Route path="/" component={HomeRoute} />
       <Route path="/products" component={CollectionsRoute} />
+      <Route path="/cari" component={() => <SiteLayout><section className="page-pad section-pad cari-entry-page"><span className="eyebrow">Nexus shopping assistant</span><h1>Ask Cari</h1><p>Get help finding products, comparing options, or identifying an item from a photo.</p><button type="button" className="button button-brass" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))}>Open Cari chat</button></section></SiteLayout>} />
       <Route path="/products/:handle" component={() => <SiteLayout><ProductDetail /></SiteLayout>} />
       <Route path="/products.html" component={CollectionsRoute} />
       <Route path="/new-arrivals" component={CollectionsRoute} />

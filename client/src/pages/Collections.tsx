@@ -60,7 +60,7 @@ export default function Collections() {
           collection.handle.toLowerCase() === detected || collection.title.toLowerCase() === detected
         );
         setActive(matchingCollection?.handle || "all");
-        toast.success(matchingCollection ? `Showing the ${matchingCollection.title} Shopify collection.` : "Visual search completed. Showing the live Shopify catalogue.");
+        toast.success(matchingCollection ? `Showing the ${matchingCollection.title} product collection.` : "Visual search completed. Showing the live product catalog.");
       } else {
         throw new Error("Image upload failed");
       }
@@ -123,14 +123,14 @@ export default function Collections() {
     <>
       <SEO
         title={`${selected ? selected.title : "All Products"} — Nexus`}
-        description={selected?.description || "Browse the live Nexus Shopify catalogue and current product collections."}
-        keywords="Nexus, live Shopify catalogue, products, collections"
+        description={selected?.description || "Browse the live Nexus product catalog and current product collections."}
+        keywords="Nexus, live product catalog, products, collections"
         canonicalPath={`/products${active !== "all" ? `?collection=${active}` : ""}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           "name": selected ? selected.title : "Store Catalogue",
-          "description": selected?.description || "All products currently published in the Nexus Shopify catalogue.",
+          "description": selected?.description || "All products currently published in the Nexus product catalog.",
           "url": `https://liverton-nexus.vercel.app/products${active !== "all" ? `?collection=${active}` : ""}`,
           "mainEntity": {
             "@type": "ItemList",
@@ -245,7 +245,7 @@ export default function Collections() {
         ) : (
           <div className="empty-state">
             <h3>No products in this collection yet</h3>
-            <p>Try another Shopify collection or return to all products.</p>
+            <p>Try another product collection or return to all products.</p>
           </div>
         )}
       </section>

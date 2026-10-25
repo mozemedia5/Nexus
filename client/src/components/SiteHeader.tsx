@@ -14,11 +14,13 @@ import {
   X,
   LogOut,
   Mail,
+  LayoutDashboard,
+  MessageCircle,
 } from "lucide-react";
-import { signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useCart } from "@/contexts/CartContext";
 import { clearStoreProfile, useStoreAccount } from "@/hooks/useStoreAccount";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { getFirebaseAuth, verifyAdminSession } from "@/lib/firebase";
 import { getCollections, type Collection } from "@/lib/store";
 
 const links = [
@@ -34,11 +36,23 @@ export default function SiteHeader() {
     try { return localStorage.getItem("nexus_store_sidebar_collapsed") === "true"; } catch { return false; }
   });
   const [storeCollections, setStoreCollections] = useState<Collection[]>([]);
+  const [adminDashboardAllowed, setAdminDashboardAllowed] = useState(false);
   const { itemCount, openCart } = useCart();
   const { profile, loading } = useStoreAccount();
   const currentSearch = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
 
   useEffect(() => setMenuOpen(false), [location]);
+
+  useEffect(() => {
+    const auth = getFirebaseAuth();
+    if (!auth) { setAdminDashboardAllowed(false); return; }
+    return onAuthStateChanged(auth, (user) => {
+      if (!user) { setAdminDashboardAllowed(false); return; }
+      void verifyAdminSession(user)
+        .then((verified) => setAdminDashboardAllowed(Boolean(verified?.authenticated && (verified.role === "admin" || verified.role === "superadmin"))))
+        .catch(() => setAdminDashboardAllowed(false));
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,11 +91,11 @@ export default function SiteHeader() {
             <button type="button" className="shop-sidebar-collapse" onClick={toggleCollapsed} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"} title={collapsed ? "Expand navigation" : "Collapse navigation"}>
               {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
             </button>
-            <button type="button" className="shop-mobile-menu-trigger" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen}>
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
             <button type="button" className="shop-mobile-cart" onClick={openCart} aria-label={`Open cart with ${itemCount} items`}>
               <ShoppingCart size={18} /><span>{itemCount}</span>
+            </button>
+            <button type="button" className="shop-mobile-menu-trigger" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen}>
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
@@ -89,7 +103,7 @@ export default function SiteHeader() {
         <div className="shop-sidebar-content">
           <span className="shop-sidebar-section-label">Shop</span>
           <nav className="shop-sidebar-nav" aria-label="Main navigation">
-            {[...links, ...storeCollections.map((collection) => ({ href: `/products?collection=${encodeURIComponent(collection.handle)}`, label: collection.title, icon: Tags }))].map(({ href, label, icon: Icon }) => {
+            {[...links, ...storeCollections.map((collection) => ({ href: `/products?collection=${encodeURIComponent(collection.handle)}`, label: collection.title, icon: Tags })), { href: "/cari", label: "Ask Cari", icon: MessageCircle }].map(({ href, label, icon: Icon }) => {
               const targetSearch = href.includes("?") ? new URLSearchParams(href.split("?")[1]) : null;
               const isActive = href === "/"
                 ? location === "/"
@@ -121,9 +135,12 @@ export default function SiteHeader() {
             <Link href="/track-order" className="shop-sidebar-link" title={collapsed ? "Track an order" : undefined}>
               <PackageCheck size={18} strokeWidth={1.8} /><span>Track an order</span>
             </Link>
-            <button type="button" className="shop-sidebar-link shop-newsletter-link" onClick={openNewsletter} title={collapsed ? "Newsletter" : undefined}>
+            {adminDashboardAllowed && <Link href="/admin/dashboard" className="shop-sidebar-link" title={collapsed ? "Admin dashboard" : undefined}>
+              <LayoutDashboard size={18} strokeWidth={1.8} /><span>Admin dashboard</span>
+            </Link>}
+            {!profile && <button type="button" className="shop-sidebar-link shop-newsletter-link" onClick={openNewsletter} title={collapsed ? "Newsletter" : undefined}>
               <Mail size={18} strokeWidth={1.8} /><span>Newsletter</span>
-            </button>
+            </button>}
           </div>
 
           <div className="shop-sidebar-bottom">

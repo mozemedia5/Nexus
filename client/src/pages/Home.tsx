@@ -103,8 +103,8 @@ export default function Home() {
     <>
       <SEO
         title="Nexus — Discover Useful Finds for Everyday Life"
-        description="Browse the live Nexus Shopify catalogue for useful finds for home, work, and everyday life."
-        keywords="Nexus, Shopify catalogue, home, work, everyday products"
+        description="Browse the live Nexus product catalog for useful finds for home, work, and everyday life."
+        keywords="Nexus, product catalog, home, work, everyday products"
         canonicalPath="/"
       />
 
@@ -152,7 +152,7 @@ export default function Home() {
           </div>
         </div>
         {carouselImages.length > 0 ? <AutoScrollCarousel images={carouselImages} /> : (
-          <p className="text-sm text-slate-500">Shopify product images will appear here when available.</p>
+          <p className="text-sm text-slate-500">Product images will appear here when available.</p>
         )}
       </section>
 
@@ -183,7 +183,7 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <p className="py-8 text-sm text-slate-500">No Shopify products are available yet.</p>
+          <p className="py-8 text-sm text-slate-500">No products are available yet.</p>
         )}
       </section>
 
@@ -211,11 +211,11 @@ export default function Home() {
         </section>
       )}
 
-      {/* Live Shopify Collections */}
+      {/* Live product collections */}
       <section id="collections" className="bg-slate-100 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-800 py-10 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-8">
-            <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">Shopify collections</span>
+            <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">Product collections</span>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">Browse by collection</h2>
           </div>
           {collections.length ? (
@@ -232,7 +232,7 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-          ) : <p className="text-center text-sm text-slate-500">Live Shopify collections will appear here when available.</p>}
+          ) : <p className="text-center text-sm text-slate-500">Live Product collections will appear here when available.</p>}
         </div>
       </section>
 
@@ -284,7 +284,7 @@ export default function Home() {
               <ArrowUpRight size={14} className="transition-transform group-open:rotate-90" />
             </summary>
             <p className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-Our catalogue is powered by products and collections currently published in the Nexus Shopify store. Browse the live catalogue to see what is available today.
+Our catalog features products and collections currently available from Nexus. Browse the live catalogue to see what is available today.
             </p>
           </details>
         </div>

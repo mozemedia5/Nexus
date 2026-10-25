@@ -64,7 +64,7 @@ export default function AdminSales() {
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="text-xs font-bold uppercase text-slate-400 mb-1">Total Completed Transactions</div>
           <div className="text-2xl font-black text-white">{totalOrders} Orders</div>
-          <p className="text-[11px] text-slate-400 mt-1">Verified via Shopify API</p>
+          <p className="text-[11px] text-slate-400 mt-1">Verified from store records</p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
