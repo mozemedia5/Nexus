@@ -1,63 +1,33 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { ArrowUpRight, Sparkles, Cpu, Heart, PackageCheck, ShieldCheck, Zap, Megaphone, Tag, ChevronLeft, ChevronRight, Camera } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
+  ChevronRight,
+  Headphones,
+  HeartHandshake,
+  PackageCheck,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+} from "lucide-react";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
 import SEO from "@/components/SEO";
 import { getCollections, getProducts, type Collection, type Product } from "@/lib/store";
-import { usePersonalization } from "@/hooks/usePersonalization";
-import { getActiveCampaigns } from "@/pages/Admin";
 
-function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[] }) {
-  const [current, setCurrent] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+const visualStories = [
+  { image: "/nexus-editorial-fashion.jpg", alt: "Everyday pieces in warm, natural tones", name: "Everyday style", link: "/products", note: "Considered essentials, made to be lived in." },
+  { image: "/nexus-editorial-audio.jpg", alt: "Sculptural wireless headphones on a stone display", name: "Sound, softened", link: "/products", note: "Beautifully useful tech for every day." },
+  { image: "/nexus-editorial-home.jpg", alt: "Calm home objects in cream linen and ceramic", name: "A softer home", link: "/products", note: "Small details that make a room feel yours." },
+  { image: "/nexus-editorial-desk.jpg", alt: "A refined desk setup in cream and sage", name: "The good-work edit", link: "/smart-office", note: "An easier rhythm for your working day." },
+];
 
-  const startTimer = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % images.length);
-    }, 3500);
-  }, [images.length]);
-
-  useEffect(() => {
-    if (images.length <= 1) return;
-    startTimer();
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [images.length, startTimer]);
-
-  const go = (dir: number) => {
-    setCurrent((prev) => (prev + dir + images.length) % images.length);
-    startTimer();
-  };
-
-  if (images.length === 0) return null;
-
+function SectionHeading({ label, title, href = "/products", linkText = "Shop the edit" }: { label: string; title: string; href?: string; linkText?: string }) {
   return (
-    <div className="relative w-full h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden group">
-      {images.map((img, idx) => (
-        <img
-          key={img.url}
-          src={img.url}
-          alt={img.alt}
-          className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out"
-          style={{ opacity: idx === current ? 1 : 0, transform: idx === current ? "scale(1)" : "scale(1.05)" }}
-        />
-      ))}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
-      {images.length > 1 && (
-        <>
-          <button type="button" onClick={() => go(-1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 dark:bg-slate-800/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md" aria-label="Previous image">
-            <ChevronLeft size={16} />
-          </button>
-          <button type="button" onClick={() => go(1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 dark:bg-slate-800/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md" aria-label="Next image">
-            <ChevronRight size={16} />
-          </button>
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {images.map((_, idx) => (
-              <button key={idx} type="button" onClick={() => { setCurrent(idx); startTimer(); }} className={`w-2 h-2 rounded-full transition-all ${idx === current ? "bg-white w-5" : "bg-white/50"}`} aria-label={`Go to image ${idx + 1}`} />
-            ))}
-          </div>
-        </>
-      )}
+    <div className="nexus-section-heading">
+      <div><span className="nexus-eyebrow">{label}</span><h2>{title}</h2></div>
+      <Link href={href} className="nexus-text-link">{linkText}<ArrowUpRight size={15} /></Link>
     </div>
   );
 }
@@ -69,226 +39,119 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
     Promise.all([
       getProducts({ first: 12, sortKey: "BEST_SELLING", fresh: true }),
       getProducts({ first: 8, sortKey: "CREATED_AT", fresh: true }),
       getCollections(250),
     ])
-      .then(([items, newest, groups]) => {
-        setProducts(items);
-        setNewestProducts(newest);
+      .then(([bestSellers, arrivals, groups]) => {
+        if (cancelled) return;
+        setProducts(bestSellers);
+        setNewestProducts(arrivals);
         setCollections(groups);
       })
-      .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load catalogue."));
+      .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to load catalogue."); });
+    return () => { cancelled = true; };
   }, []);
 
-  const featuredOfficeProducts = useMemo(() => {
-    return products.slice(0, 4);
-  }, [products]);
-
-  const newArrivalProducts = useMemo(() => {
-    return newestProducts.slice(0, 4);
-  }, [newestProducts]);
-
-  const activeCampaigns = useMemo(() => getActiveCampaigns(), []);
-
-  const carouselImages = useMemo(() => {
-    return products.filter((product) => product.image?.url).slice(0, 6).map((product) => ({
-      url: product.image!.url,
-      alt: product.name,
-    }));
-  }, [products]);
+  const storyCollections = useMemo(() => collections.slice(0, 4), [collections]);
+  const bestSellers = useMemo(() => products.slice(0, 4), [products]);
+  const arrivals = useMemo(() => newestProducts.slice(0, 4), [newestProducts]);
+  const shopMore = useMemo(() => products.slice(4, 8), [products]);
+  const storyProducts = useMemo(() => products.slice(8, 11), [products]);
 
   return (
     <>
-      <SEO
-        title="Nexus — Discover Useful Finds for Everyday Life"
-        description="Browse the live Nexus product catalog for useful finds for home, work, and everyday life."
-        keywords="Nexus, product catalog, home, work, everyday products"
-        canonicalPath="/"
-      />
-
-      {/* Hero Section */}
-      <section className="relative w-full bg-slate-950 text-white min-h-[380px] md:min-h-[440px] flex items-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          {products[0]?.image?.url && <img src={products[0].image.url} alt={products[0].image.altText || products[0].name} className="w-full h-full object-cover object-center opacity-35 mix-blend-luminosity" />}
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-8 space-y-5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white/10 backdrop-blur border border-white/20 rounded-full text-[10px] font-semibold tracking-wide text-slate-200">
-              <Sparkles size={12} className="text-amber-400" /> Finds for everyday life
+      <SEO title="Nexus — Thoughtful Finds for Everyday Living" description="Discover useful finds for home, work and all the moments in between. Shop the latest from Nexus." keywords="Nexus, curated home, workspace, everyday essentials, thoughtful finds" canonicalPath="/" />
+      <div className="nexus-home">
+        {/* 1 — Signature campaign hero */}
+        <section className="nexus-hero" aria-labelledby="nexus-hero-title">
+          <img className="nexus-hero-photo" src="/nexus-hero.jpg" alt="Nexus everyday essentials in a sunlit cream studio" fetchPriority="high" />
+          <div className="nexus-hero-shade" />
+          <div className="nexus-hero-copy">
+            <span className="nexus-eyebrow"><Sparkles size={13} /> THE EVERYDAY, ELEVATED</span>
+            <h1 id="nexus-hero-title">Good things<br />for <em>good living.</em></h1>
+            <p>Thoughtful finds for the home, your workspace, and all the little rituals in between.</p>
+            <div className="nexus-hero-actions">
+              <Link href="/products" className="nexus-button nexus-button-dark">Shop now <ArrowRight size={16} /></Link>
+              <button type="button" className="nexus-button nexus-button-glass" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))}>Ask Cari <Sparkles size={15} /></button>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-[1.1]">
-              Discover something <br />
-              <span className="text-amber-400">useful for your day.</span>
-            </h1>
-            <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed font-normal">
-              Explore the live Nexus catalogue for thoughtful products across home, work, and the categories you care about.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-1">
-              <Link href="/products" className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-transform hover:-translate-y-0.5 shadow-md">
-                Shop all products <ArrowUpRight size={14} />
-              </Link>
-              <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))} className="px-5 py-3 bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors">
-                Ask Cari <Sparkles size={14} />
-              </button>
-            </div>
+            <div className="nexus-social-proof"><span className="nexus-proof-dots"><i>N</i><i>L</i><i>+</i></span><span>Useful finds. Happier everyday.</span></div>
           </div>
-        </div>
-      </section>
+          <div className="nexus-hero-note"><span>THE NEXUS EDIT</span><strong>Little upgrades.<br />Lovely big difference.</strong></div>
+          <div className="nexus-hero-pagination"><span>01</span><i /> 04</div>
+        </section>
 
-      {/* Auto-scrolling Product Carousel */}
-      <section className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-          <div>
-            <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
-              Nexus catalogue
-            </span>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Products from the Nexus catalogue
-            </h2>
-          </div>
-        </div>
-        {carouselImages.length > 0 ? <AutoScrollCarousel images={carouselImages} /> : (
-          <p className="text-sm text-slate-500">Product images will appear here when available.</p>
-        )}
-      </section>
+        {/* 2 — Four shopping promises */}
+        <section className="nexus-benefits" aria-label="Shopping benefits">
+          <div><Truck /><span><strong>Thoughtfully chosen</strong><small>Useful things, lovely details</small></span></div>
+          <div><ShieldCheck /><span><strong>Secure checkout</strong><small>Shop with peace of mind</small></span></div>
+          <div><PackageCheck /><span><strong>Order tracking</strong><small>Every parcel, in the know</small></span></div>
+          <div><HeartHandshake /><span><strong>A little help, always</strong><small>Cari is here when you need her</small></span></div>
+        </section>
 
-      {/* Featured Collection Grid (4-Column) */}
-      <section className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-8">
-          <div>
-            <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
-              Best Sellers
-            </span>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Featured Products
-            </h2>
-          </div>
-          <Link href="/products" className="text-xs font-semibold tracking-wide text-slate-900 dark:text-white hover:text-amber-600 flex items-center gap-1 transition-colors">
-            View All Catalogue <ArrowUpRight size={14} />
-          </Link>
-        </div>
+        {/* 3 — Live shopping collections */}
+        <section className="nexus-section nexus-collections" id="collections">
+          <SectionHeading label="A place for everything" title="Find your kind of lovely." linkText="All collections" />
+          {storyCollections.length ? <div className="nexus-collection-grid">
+            {storyCollections.map((collection, index) => <Link key={collection.id} href={`/products?collection=${encodeURIComponent(collection.handle)}`} className={`nexus-collection-card collection-${index}`}>
+              <img src={collection.image?.url || visualStories[index].image} alt={collection.image?.altText || collection.title} loading="lazy" />
+              <span className="nexus-collection-overlay" /><span className="nexus-collection-copy"><small>EXPLORE THE EDIT</small><strong>{collection.title}</strong><i>Shop now <ArrowRight size={14} /></i></span>
+            </Link>)}
+          </div> : <div className="nexus-category-fallback">{visualStories.map((story) => <Link key={story.name} href={story.link} className="nexus-category-card"><img src={story.image} alt={story.alt} loading="lazy" /><span>{story.name}<ArrowUpRight size={14} /></span></Link>)}</div>}
+        </section>
 
-        {error ? (
-          <div className="text-center py-10 text-slate-500">
-            <p>{error}</p>
-          </div>
-        ) : featuredOfficeProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {featuredOfficeProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <p className="py-8 text-sm text-slate-500">No products are available yet.</p>
-        )}
-      </section>
+        {/* 4 — Curated best sellers */}
+        <section className="nexus-section nexus-product-section" id="bestsellers">
+          <SectionHeading label="The ones you love" title="Good finds, loved often." />
+          {error ? <p className="nexus-empty-state">{error}</p> : bestSellers.length ? <div className="nexus-product-grid">{bestSellers.map((product) => <ProductCard key={product.id} product={product} />)}</div> : <p className="nexus-empty-state">Our latest finds are on their way. Check back soon.</p>}
+        </section>
 
-      {/* New Arrivals */}
-      {newArrivalProducts.length > 0 && (
-        <section className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-8">
-            <div>
-              <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
-                Just Arrived
-              </span>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-              New Arrivals
-            </h2>
-            </div>
-            <Link href="/products" className="text-xs font-semibold tracking-wide text-slate-900 dark:text-white hover:text-amber-600 flex items-center gap-1 transition-colors">
-              View All <ArrowUpRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {newArrivalProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+        {/* 5 — Image-led story: everyday style */}
+        <section className="nexus-story nexus-story-first">
+          <div className="nexus-story-image"><img src={visualStories[0].image} alt={visualStories[0].alt} loading="lazy" /><span className="nexus-image-caption">THE EVERYDAY EDIT · 01</span></div>
+          <div className="nexus-story-copy"><span className="nexus-eyebrow">MADE FOR YOUR EVERY DAY</span><h2>Useful can be<br /><em>a beautiful thing.</em></h2><p>From the first coffee to the final to-do, we believe the things you reach for every day should feel a little more special.</p><Link href="/products" className="nexus-button nexus-button-outline">Find your next favourite <ArrowRight size={15} /></Link><div className="nexus-handwritten">A little lovely goes a long way.</div></div>
+        </section>
+
+        {/* 6 — New arrivals */}
+        <section className="nexus-section nexus-new-arrivals" id="new-arrivals">
+          <SectionHeading label="Freshly found" title="Just landed at Nexus." href="/new-arrivals" linkText="See what's new" />
+          {arrivals.length ? <div className="nexus-product-grid">{arrivals.map((product) => <ProductCard key={product.id} product={product} />)}</div> : <div className="nexus-arrival-empty"><span>COMING IN SOON</span><p>New favourites are on their way.</p><Link href="/products">Browse all finds <ArrowRight size={14} /></Link></div>}
+        </section>
+
+        {/* 7 — Shop by mood, four image-led edits */}
+        <section className="nexus-editorial-section">
+          <div className="nexus-editorial-head"><span className="nexus-eyebrow">A FEW THINGS WE LOVE</span><h2>Little worlds of <em>lovely.</em></h2><p>Pick a mood. Find something that feels just right.</p></div>
+          <div className="nexus-editorial-grid">{visualStories.map((story, index) => <Link key={story.name} href={story.link} className="nexus-editorial-card"><div className="nexus-editorial-photo"><img src={story.image} alt={story.alt} loading="lazy" /><span>0{index + 1}</span></div><div className="nexus-editorial-copy"><h3>{story.name}</h3><p>{story.note}</p><span>Get yours <ArrowUpRight size={14} /></span></div></Link>)}</div>
+        </section>
+
+        {/* 8 — Another live-product edit */}
+        {shopMore.length > 0 && <section className="nexus-section nexus-product-section nexus-second-product-edit">
+          <SectionHeading label="A little more to love" title="Everyday favourites." />
+          <div className="nexus-product-grid">{shopMore.map((product) => <ProductCard key={product.id} product={product} />)}</div>
+        </section>}
+
+        {/* 9 — Cari shopping assistant feature */}
+        <section className="nexus-cari-feature">
+          <div className="nexus-cari-orbit orbit-one" /><div className="nexus-cari-orbit orbit-two" />
+          <div className="nexus-cari-stamp"><Sparkles size={24} /><span>N</span></div>
+          <div className="nexus-cari-copy"><span className="nexus-eyebrow">YOUR LITTLE SHOPPING SIDEKICK</span><h2>Meet Cari.<br /><em>She gets your style.</em></h2><p>Not sure where to start? Ask Cari to discover a new favourite, compare a couple of finds, or help you pick the perfect gift.</p><button type="button" className="nexus-button nexus-button-dark" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))}>Ask Cari <Sparkles size={15} /></button></div>
+          {storyProducts.length > 0 && <div className="nexus-cari-products">{storyProducts.map((product) => <div className="nexus-cari-product" key={product.id}><img src={product.image?.url || product.images[0]?.url || "/logo.png"} alt={product.image?.altText || product.name} loading="lazy" /><span>{product.name}</span></div>)}</div>}
+          <span className="nexus-cari-side-note">YOUR CART, CONSIDERED.</span>
+        </section>
+
+        {/* 10 — Support and final shop call to action */}
+        <section className="nexus-faq-section">
+          <div className="nexus-faq-intro"><span className="nexus-eyebrow">HERE IF YOU NEED US</span><h2>Good to<br />know.</h2><p>Little questions, helpful answers. If you need more, Cari is only a tap away.</p><button type="button" className="nexus-text-link" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))}>Ask Cari anything <ArrowRight size={15} /></button></div>
+          <div className="nexus-faq-list">
+            <details><summary>Where is my order? <ChevronRight size={16} /></summary><p>Follow your parcel from checkout to doorstep on our <Link href="/track-order">order tracking page</Link>. You’ll need your order ID and verification contact.</p></details>
+            <details><summary>How do I find my next favourite? <ChevronRight size={16} /></summary><p>Browse our curated collections, explore the newest finds, or ask Cari for a personal recommendation.</p></details>
+            <details><summary>Is it safe to shop with Nexus? <ChevronRight size={16} /></summary><p>Our checkout is designed with your security in mind. Your account details stay private and protected.</p></details>
           </div>
         </section>
-      )}
-
-      {/* Live product collections */}
-      <section id="collections" className="bg-slate-100 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-800 py-10 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-8">
-            <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">Product collections</span>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">Browse by collection</h2>
-          </div>
-          {collections.length ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {collections.slice(0, 9).map((collection) => (
-                <Link key={collection.id} href={`/products?collection=${encodeURIComponent(collection.handle)}`} className="group relative h-48 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-end p-5">
-                  {collection.image?.url && <img src={collection.image.url} alt={collection.image.altText || collection.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />}
-                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/25 to-transparent" />
-                  <div className="relative z-10 space-y-1">
-                    <h3 className="text-sm font-bold tracking-wide text-white">{collection.title}</h3>
-                    {collection.description && <p className="line-clamp-2 text-xs text-stone-200">{collection.description}</p>}
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-300">Explore <ArrowUpRight size={13} /></span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : <p className="text-center text-sm text-slate-500">Live Product collections will appear here when available.</p>}
-        </div>
-      </section>
-
-      {/* Smart Office Section */}
-      <section className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-8">
-          <div>
-            <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
-              More from Nexus
-            </span>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Keep exploring
-            </h2>
-          </div>
-          <Link href="/products" className="text-xs font-semibold tracking-wide text-slate-900 dark:text-white hover:text-amber-600 flex items-center gap-1 transition-colors">
-            View catalogue <ArrowUpRight size={14} />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {products.slice(4, 7).map((product) => (
-            <ProductCard key={`office-${product.id}`} product={product} />
-          ))}
-        </div>
-      </section>
-
-      {/* Support & Fulfillment FAQ */}
-      <section className="max-w-4xl mx-auto px-6 py-10">
-        <div className="text-center mb-8">
-          <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">
-            Support &amp; Fulfillment
-          </span>
-          <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Frequently Asked Questions
-          </h2>
-        </div>
-        <div className="space-y-3">
-          <details className="group bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 transition-all">
-            <summary className="font-semibold text-slate-900 dark:text-white cursor-pointer list-none flex justify-between items-center text-sm tracking-wide">
-              How do I track my order?
-              <ArrowUpRight size={14} className="transition-transform group-open:rotate-90" />
-            </summary>
-            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Track your order status in real time by visiting our <Link href="/track-order" className="underline font-bold text-slate-900 dark:text-white">Order Tracking page</Link> using your order ID and verification contact.
-            </p>
-          </details>
-          <details className="group bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 transition-all">
-            <summary className="font-semibold text-slate-900 dark:text-white cursor-pointer list-none flex justify-between items-center text-sm tracking-wide">
-              What products does Nexus specialize in?
-              <ArrowUpRight size={14} className="transition-transform group-open:rotate-90" />
-            </summary>
-            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-Our catalog features products and collections currently available from Nexus. Browse the live catalogue to see what is available today.
-            </p>
-          </details>
-        </div>
-      </section>
+        <section className="nexus-final-cta"><BadgeCheck size={18} /><span>Find something lovely for your every day.</span><Link href="/products">Get yours <ArrowRight size={15} /></Link></section>
+      </div>
     </>
   );
 }
