@@ -45,7 +45,8 @@ export async function requestCloudinaryUploadSignature(
     : { folder, resourceType };
   if (!session) Object.assign(headers, await getAdminAuthHeaders());
 
-  const response = await fetch("/api/cloudinary/signature", {
+  const endpoint = session ? "/api/cloudinary/cari-signature" : "/api/cloudinary/signature";
+  const response = await fetch(endpoint, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
