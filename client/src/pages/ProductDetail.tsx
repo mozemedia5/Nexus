@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Minus, Plus, ChevronLeft, ChevronRight, Camera, Sparkles } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ChevronLeft, ChevronRight, Camera, Sparkles, Copy, Share2 } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import { toast } from "sonner";
 import { getProduct, formatPrice, shopifyConfigured, type Product } from "@/lib/store";
@@ -16,6 +16,7 @@ export default function ProductDetail() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [error, setError] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
   const { addItem } = useCart();
   const { profile } = useStoreAccount();
 
@@ -49,6 +50,23 @@ export default function ProductDetail() {
   const currentImage = images[activeImageIndex] ?? product.image;
   const variant = product.variants.find((item) => item.id === selected) ?? product.variants[0];
 
+  const productShareUrl = `${window.location.origin}/products/${encodeURIComponent(product.handle)}`;
+  const copyProductLink = async () => {
+    try {
+      await navigator.clipboard.writeText(productShareUrl);
+      setCopiedLink(true);
+      window.setTimeout(() => setCopiedLink(false), 2200);
+      toast.success("Product link copied", { description: "This link uses the matching Shopify product handle." });
+    } catch {
+      toast.error("Unable to copy the product link. Please copy it from your browser address bar.");
+    }
+  };
+  const shareProduct = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: product.name, text: `View ${product.name} at Nexus`, url: productShareUrl }); }
+      catch (cause) { if (!(cause instanceof DOMException && cause.name === "AbortError")) await copyProductLink(); }
+    } else await copyProductLink();
+  };
   const add = async () => {
     await addItem(product, variant?.id, quantity);
     try {
@@ -110,7 +128,7 @@ export default function ProductDetail() {
             <img
               src={currentImage?.url ?? "/logo.png"}
               alt={currentImage?.altText ?? product.name}
-              className="w-full h-full object-cover transition-all duration-300"
+              className="w-full h-full object-contain transition-all duration-300"
             />
             {images.length > 1 && (
               <>
@@ -158,7 +176,7 @@ export default function ProductDetail() {
                     activeImageIndex === idx ? "border-foreground scale-105" : "border-border/40 opacity-70 hover:opacity-100"
                   }`}
                 >
-                  <img src={item.url} alt="" className="w-full h-full object-cover" />
+                  <img src={item.url} alt="" className="w-full h-full object-contain" />
                 </button>
               ))}
             </div>
@@ -168,6 +186,14 @@ export default function ProductDetail() {
           <div>
             <span className="eyebrow text-xs tracking-wide text-muted-foreground">{product.categoryLabel || "Nexus Collection"}</span>
             <h1 className="text-2xl font-serif font-medium mt-1 text-foreground">{product.name}</h1>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <button type="button" onClick={copyProductLink} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted" aria-label="Copy product link">
+              <Copy size={14} /> {copiedLink ? "Link copied" : "Copy product link"}
+            </button>
+            <button type="button" onClick={shareProduct} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted" aria-label="Share product">
+              <Share2 size={14} /> Share
+            </button>
+          </div>
           </div>
           <div className="detail-price flex items-baseline gap-3 text-xl font-medium">
             <strong>{formatPrice(variant?.price ?? product.price)}</strong>

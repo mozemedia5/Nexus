@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { X, Send, User, Sparkles, Loader2, Minus, Maximize2, ShoppingCart, ArrowUpRight, Bookmark, ListChecks, Trash2, Plus, FileText, Download, Maximize } from "lucide-react";
+import { X, Send, User, Sparkles, Loader2, Minus, Maximize2, ShoppingCart, ArrowUpRight, Bookmark, ListChecks, Trash2, Plus, FileText, Download, Maximize, Check, Ban } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
@@ -23,6 +23,7 @@ interface Message {
   imageNames?: string[];
   attachments?: CariAttachment[];
   timestamp: Date;
+  proposedListChanges?: AssistantPayload["shoppingList"];
 }
 
 interface CariAttachment {
@@ -66,6 +67,7 @@ function getMessageAttachments(message: Message): CariAttachment[] {
   }));
 }
 
+type CariActionCandidate = { kind: "cart" | "list"; product: Product; messageId: string };
 interface ShoppingListItem {
   id: string;
   handle: string;
@@ -151,6 +153,7 @@ export default function AiAssistant() {
   const [location] = useLocation();
   const { addItem, addItems } = useCart();
   const [isOpen, setIsOpen] = useState(false);
+  const [actionCandidate, setActionCandidate] = useState<CariActionCandidate | null>(null);
   const [adminEmails, setAdminEmails] = useState<string[] | null>(null);
   const isAdminRoute = location.startsWith("/admin");
   useEffect(() => {
@@ -412,9 +415,26 @@ export default function AiAssistant() {
   };
 
 
+  const requestProductAction = (product: Product, kind: "cart" | "list", messageId = `action-${Date.now()}`) => {
+    setActionCandidate({ kind, product, messageId });
+    setIsOpen(true);
+    setIsMinimized(false);
+    setActiveTab("chat");
+  };
+  const confirmProductAction = async () => {
+    if (!actionCandidate) return;
+    const { product, kind } = actionCandidate;
+    setActionCandidate(null);
+    if (kind === "list") addToShoppingList({ handle: product.handle, name: product.name, price: formatPrice(product.price), image: product.image?.url || product.images[0]?.url });
+    else {
+      if (!product.availableForSale) { toast.error(`${product.name} is not available in the current store catalog.`); return; }
+      await addItem(product);
+      toast.success(`${product.name} added to cart.`);
+    }
+  };
   const handleAddToCart = async (rec: { handle: string; name: string }) => {
     const liveProd = products.find((p) => p.handle === rec.handle && p.availableForSale);
-    if (liveProd) await addItem(liveProd);
+    if (liveProd) requestProductAction(liveProd, "cart");
     else toast.error(`${rec.name} is not available in the current store catalog.`);
   };
 
@@ -767,22 +787,42 @@ export default function AiAssistant() {
                                             <div className="flex items-center gap-1">
                                               <button
                                                 type="button"
-                                                onClick={() => addToShoppingList({ handle: matchedProd.handle, name: matchedProd.name, price: formatPrice(matchedProd.price), image: imgUrl })}
+                                                onClick={() => requestProductAction(matchedProd, "list", msg.id)}
                                                 className="p-1.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-950 text-amber-600 dark:text-amber-400"
-                                                title="Save to Cari Shopping List"
+                                                title="Request adding to Cari Shopping List"
                                               >
                                                 <Bookmark size={14} />
                                               </button>
                                               <Link href={`/products/${matchedProd.handle}`} className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300" title="View details">
                                                 <ArrowUpRight size={14} />
                                               </Link>
-                                              <button type="button" onClick={() => handleAddToCart({ handle: matchedProd.handle, name: matchedProd.name })} className="p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-xs flex items-center gap-1" title="Add to Cart">
+                                              <button type="button" onClick={() => requestProductAction(matchedProd, "cart", msg.id)} className="p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-xs flex items-center gap-1" title="Request adding to cart">
                                                 <ShoppingCart size={13} />
                                               </button>
                                             </div>
                                           </div>
                                         );
                                       })}
+                                    </div>
+                                  )}
+                                  {msg.proposedListChanges && (
+                                    <div className="cari-approval-card" role="group" aria-label="Approve Cari shopping list changes">
+                                      <strong>Cari would like to update your shopping list</strong>
+                                      <p>{(msg.proposedListChanges.add?.length || 0)} item(s) to add{(msg.proposedListChanges.remove?.length || 0) ? ` · ${msg.proposedListChanges.remove?.length} item(s) to remove` : ""}</p>
+                                      <div className="cari-approval-actions">
+                                        <button type="button" onClick={() => { applyShoppingListChanges(msg.proposedListChanges); setMessages((items) => items.map((item) => item.id === msg.id ? { ...item, proposedListChanges: undefined } : item)); }}><Check size={14} /> Approve changes</button>
+                                        <button type="button" className="secondary" onClick={() => setMessages((items) => items.map((item) => item.id === msg.id ? { ...item, proposedListChanges: undefined } : item))}><Ban size={14} /> Not now</button>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {actionCandidate?.messageId === msg.id && (
+                                    <div className="cari-approval-card" role="dialog" aria-label="Confirm product action">
+                                      <strong>Confirm {actionCandidate.kind === "cart" ? "adding to cart" : "adding to your shopping list"}</strong>
+                                      <p>{actionCandidate.product.name}</p>
+                                      <div className="cari-approval-actions">
+                                        <button type="button" onClick={confirmProductAction}><Check size={14} /> Yes, {actionCandidate.kind === "cart" ? "add to cart" : "save to list"}</button>
+                                        <button type="button" className="secondary" onClick={() => setActionCandidate(null)}><Ban size={14} /> Cancel</button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -810,6 +850,13 @@ export default function AiAssistant() {
                           <span>{(messages.at(-1)?.attachments?.length || messages.at(-1)?.imageUrls?.length) ? "Cari is reviewing your attachment…" : "Cari is thinking…"}</span>
                           <div className="ai-shimmer-lines" aria-hidden="true"><i /><i /><i /></div>
                         </div>
+                      </div>
+                    )}
+                    {actionCandidate && !messages.some((message) => message.id === actionCandidate.messageId) && (
+                      <div className="cari-approval-card cari-floating-approval" role="dialog" aria-label="Confirm product action">
+                        <strong>Confirm {actionCandidate.kind === "cart" ? "adding to cart" : "adding to your shopping list"}</strong>
+                        <p>{actionCandidate.product.name}</p>
+                        <div className="cari-approval-actions"><button type="button" onClick={confirmProductAction}><Check size={14} /> Confirm</button><button type="button" className="secondary" onClick={() => setActionCandidate(null)}><Ban size={14} /> Cancel</button></div>
                       </div>
                     )}
                     <div ref={messagesEndRef} />

@@ -1859,3 +1859,20 @@ html, body { background: var(--store-paper); }
   .footer-social-link { transition: none; }
   .footer-social-link:hover { transform: none; }
 }
+
+/* Cari action approvals stay visible, compact, and explicit before any cart/list mutation. */
+.cari-approval-card { margin-top: .7rem; padding: .8rem; border: 1px solid #d8c9ad; border-radius: 14px; background: #fffdf8; box-shadow: 0 5px 18px rgba(47,39,28,.08); }
+.cari-approval-card strong { display: block; color: #443a2d; font-size: .78rem; }
+.cari-approval-card p { margin: .25rem 0 .65rem; color: #716858; font-size: .72rem; }
+.cari-approval-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+.cari-approval-actions button { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; min-height: 36px; padding: .45rem .7rem; color: #fff; background: #715836; border: 1px solid #715836; border-radius: 9px; font: inherit; font-size: .7rem; font-weight: 650; cursor: pointer; }
+.cari-approval-actions button.secondary { color: #5e574b; background: #fff; border-color: #ded6c9; }
+.cari-approval-actions button:hover { filter: brightness(1.08); }
+.cari-floating-approval { margin: .5rem .9rem; }
+@media (max-width: 767px) {
+  .site-frame.storefront-shell .ai-assistant-wrapper { right: 0; bottom: 0; }
+  .ai-assistant-trigger-btn { right: 12px !important; bottom: 12px !important; max-width: 152px; min-height: 48px; padding: .5rem .75rem; border-radius: 999px; }
+  .ai-assistant-trigger-btn .ai-trigger-text { font-size: .78rem; }
+  .ai-assistant-card { width: min(440px, calc(100vw - 20px)); height: min(690px, calc(100dvh - 96px)); max-height: calc(100dvh - 96px); margin: 0 10px 10px; border-radius: 18px; }
+  .cari-recommendation-image img { object-fit: contain; }
+}

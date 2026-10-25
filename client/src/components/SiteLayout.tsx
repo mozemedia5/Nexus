@@ -16,9 +16,6 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     <div className="site-frame storefront-shell">
       <SiteHeader />
       <div className="site-content">
-        <div className="announcement-bar storefront-announcement">
-          <span>Nexus A Liverton Store</span><i aria-hidden="true">·</i><span>Useful finds for home and work</span>
-        </div>
         <main>{children}</main>
         {!isProductsRoute && !isAdmin && <SiteFooter />}
       </div>
