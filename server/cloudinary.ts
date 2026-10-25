@@ -41,7 +41,6 @@ export function createCloudinaryUploadSignature(input: { folder: string; resourc
   const timestamp = Math.floor(Date.now() / 1000);
   const signableParams = {
     folder,
-    resource_type: input.resourceType,
     timestamp,
     ...(config.uploadPreset ? { upload_preset: config.uploadPreset } : {}),
   };
