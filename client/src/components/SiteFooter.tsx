@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "wouter";
-import { ArrowUpRight, Check, Facebook, Instagram, MessageCircle, Youtube } from "lucide-react";
+import { ArrowUpRight, Check } from "lucide-react";
 import { useStoreAccount } from "@/hooks/useStoreAccount";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -54,14 +54,6 @@ export default function SiteFooter() {
             </div>
           </Link>
           <p>Useful finds for connected homes, more comfortable workspaces, and everyday life.</p>
-          <nav className="footer-social-links" aria-label="Nexus social media">
-            <a href="https://tiktok.com" target="_blank" rel="noreferrer" aria-label="TikTok" title="TikTok"><span className="footer-social-letter">♪</span></a>
-            <a href="https://wa.me" target="_blank" rel="noreferrer" aria-label="WhatsApp" title="WhatsApp"><MessageCircle size={17} /></a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram" title="Instagram"><Instagram size={17} /></a>
-            <a href="https://x.com" target="_blank" rel="noreferrer" aria-label="X" title="X"><span className="footer-social-letter">𝕏</span></a>
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook" title="Facebook"><Facebook size={17} /></a>
-            <a href="https://youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube" title="YouTube"><Youtube size={17} /></a>
-          </nav>
         </div>
         <div className="footer-column">
           <span className="eyebrow">Shop</span>
@@ -104,6 +96,7 @@ export default function SiteFooter() {
       </div>
       <div className="footer-bottom">
         <span>© {currentYear} Nexus A Liverton Store</span>
+        <span>Shop with confidence. Product details and availability are kept up to date.</span>
       </div>
     </footer>
   );
