@@ -1483,7 +1483,8 @@ html, body { background: var(--store-paper); }
 @keyframes interestLiftIn { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 /* Cari is a calm, purpose-built store assistant, not a Google-branded general chat. */
-.ai-assistant-wrapper { right: 1.1rem; bottom: 1.1rem; }
+.ai-assistant-wrapper { right: calc(252px + 1.1rem); bottom: 1.1rem; }
+.site-frame.storefront-shell:has(.shop-sidebar.is-collapsed) .ai-assistant-wrapper { right: calc(76px + 1.1rem); }
 .ai-assistant-trigger-btn { color: #fff !important; background: #443a2d !important; border: 1px solid #a88a5c !important; box-shadow: 0 12px 36px rgba(51,42,29,.2) !important; }
 .ai-assistant-trigger-btn:hover { background: #625039 !important; border-color: #c4a574 !important; }
 .ai-assistant-card { width: min(470px, calc(100vw - 2rem)); height: min(720px, calc(100dvh - 2rem)); color: #332f28; background: #fbf9f4; border: 1px solid #e5dfd4; border-radius: 22px; box-shadow: 0 20px 65px rgba(37,32,24,.22); }
@@ -1567,7 +1568,7 @@ html, body { background: var(--store-paper); }
   .product-interest-dialog { border-radius: 19px; }
   .product-interest-input-row { flex-direction: column; }
   .product-interest-input-row > button { width: 100%; }
-  .ai-assistant-wrapper { right: 0; bottom: 0; }
+  .site-frame.storefront-shell .ai-assistant-wrapper { right: 0; bottom: 0; }
   .ai-assistant-card { width: calc(100vw - 18px); height: calc(100dvh - 18px); max-height: calc(100dvh - 18px); border-radius: 20px; }
   .cari-recommendation-image { flex-basis: 84px; width: 84px; min-height: 88px; }
   .cari-recommendation-image img { min-height: 88px; }
