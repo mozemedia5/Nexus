@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { X, Send, User, Sparkles, Loader2, Minus, Maximize2, ShoppingCart, ArrowUpRight, Bookmark, ListChecks, Trash2, ImagePlus, Download, Maximize } from "lucide-react";
+import { X, Send, User, Sparkles, Loader2, Minus, Maximize2, ShoppingCart, ArrowUpRight, Bookmark, ListChecks, Trash2, Plus, FileText, Download, Maximize } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
@@ -21,7 +21,49 @@ interface Message {
   content: string;
   imageUrls?: string[];
   imageNames?: string[];
+  attachments?: CariAttachment[];
   timestamp: Date;
+}
+
+interface CariAttachment {
+  url: string;
+  name: string;
+  mimeType: string;
+  resourceType: "image" | "raw";
+  size: number;
+}
+
+const MAX_CARI_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_CARI_ATTACHMENTS = 4;
+const CARI_IMAGE_MIME_TYPES = new Set([
+  "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif",
+]);
+const CARI_EXTENSION_MIME_TYPES: Record<string, string> = {
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
+  gif: "image/gif", heic: "image/heic", heif: "image/heif", pdf: "application/pdf",
+};
+
+function getCariFileType(file: File) {
+  const extension = file.name.toLowerCase().split(".").pop() || "";
+  const mimeType = file.type.toLowerCase() || CARI_EXTENSION_MIME_TYPES[extension] || "";
+  if (mimeType === "application/pdf" || extension === "pdf") {
+    return { mimeType: "application/pdf", resourceType: "raw" as const };
+  }
+  if (CARI_IMAGE_MIME_TYPES.has(mimeType)) {
+    return { mimeType, resourceType: "image" as const };
+  }
+  return null;
+}
+
+function getMessageAttachments(message: Message): CariAttachment[] {
+  if (message.attachments?.length) return message.attachments;
+  return (message.imageUrls ?? []).map((url, index) => ({
+    url,
+    name: message.imageNames?.[index] || "Uploaded image",
+    mimeType: "image/jpeg",
+    resourceType: "image",
+    size: 0,
+  }));
 }
 
 interface ShoppingListItem {
@@ -43,7 +85,7 @@ const DEFAULT_SUGGESTIONS = [
   "Find a useful product for my home",
   "Help me choose something for work",
   "How do I track my order?",
-  "Compare a couple of products for me"
+  "Can you answer a general question?"
 ];
 
 const SHOPPING_SUGGESTIONS = [
@@ -119,7 +161,7 @@ export default function AiAssistant() {
     const openCari = () => setIsOpen(true);
     const requestImageUpload = () => {
       setIsOpen(true);
-      window.setTimeout(() => imageInputRef.current?.click(), 120);
+      window.setTimeout(() => attachmentInputRef.current?.click(), 120);
     };
     window.addEventListener("nexus-open-cari", openCari);
     window.addEventListener("nexus-cari-upload-request", requestImageUpload);
@@ -133,11 +175,11 @@ export default function AiAssistant() {
 
   const [sessionId, setSessionId] = useState(() => sessionStorage.getItem("nexus_cari_session_id") || "");
   const [cleanupToken, setCleanupToken] = useState(() => sessionStorage.getItem("nexus_cari_cleanup_token") || "");
-  const [attachedImages, setAttachedImages] = useState<Array<{ url: string; name: string }>>([]);
-  const [imageUploading, setImageUploading] = useState(false);
+  const [attachedAttachments, setAttachedAttachments] = useState<CariAttachment[]>([]);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [newListItem, setNewListItem] = useState("");
   const [expandedImage, setExpandedImage] = useState("");
-  const imageInputRef = useRef<HTMLInputElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   // Draggable button state
   const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(null);
@@ -230,7 +272,7 @@ export default function AiAssistant() {
       {
         id: "welcome",
         role: "assistant",
-        content: "Hello! I'm Cari, your shopping assistant at Nexus. I can help you explore our live product selection, compare options, and narrow down choices using your preferences. What are you looking for today?",
+        content: "Hello! I'm Cari, Nexus's shopping assistant. I can help you find and compare products, and I'm also happy to answer general questions. What can I help with?",
         timestamp: new Date(),
       },
     ];
@@ -301,15 +343,37 @@ export default function AiAssistant() {
     }
   };
 
-  const handleImageFiles = async (files: FileList | File[]) => {
-    const selectedFiles = Array.from(files).slice(0, Math.max(0, 4 - attachedImages.length));
-    if (!selectedFiles.length) return;
-    const invalid = selectedFiles.find((file) => !file.type.startsWith("image/") || file.size > 6_000_000);
-    if (invalid) {
-      toast.error(invalid.size > 6_000_000 ? "Each search image must be 6 MB or smaller." : "Choose an image file to search.");
+  const handleAttachmentFiles = async (files: FileList | File[]) => {
+    const allFiles = Array.from(files);
+    const remainingSlots = MAX_CARI_ATTACHMENTS - attachedAttachments.length;
+    if (remainingSlots <= 0) {
+      toast.error("Cari accepts up to 4 attachments at a time.");
       return;
     }
-    setImageUploading(true);
+    if (allFiles.length > remainingSlots) toast.error("Cari accepts up to 4 attachments at a time.");
+
+    const selectedFiles: Array<{ file: File; mimeType: string; resourceType: "image" | "raw" }> = [];
+    let totalBytes = attachedAttachments.reduce((sum, attachment) => sum + attachment.size, 0);
+    for (const file of allFiles.slice(0, remainingSlots)) {
+      const type = getCariFileType(file);
+      if (!type) {
+        toast.error("Choose an image or PDF file for Cari.");
+        continue;
+      }
+      if (file.size > MAX_CARI_ATTACHMENT_BYTES) {
+        toast.error("Please upload files no larger than 10 MB.");
+        continue;
+      }
+      if (totalBytes + file.size > MAX_CARI_ATTACHMENT_BYTES) {
+        toast.error("Please keep the combined attachment size to 10 MB or less.");
+        continue;
+      }
+      totalBytes += file.size;
+      selectedFiles.push({ file, ...type });
+    }
+    if (!selectedFiles.length) return;
+
+    setAttachmentUploading(true);
     try {
       let activeSessionId = sessionId;
       let activeCleanupToken = cleanupToken;
@@ -322,21 +386,28 @@ export default function AiAssistant() {
         setSessionId(activeSessionId);
         setCleanupToken(activeCleanupToken);
       }
-      const uploaded: Array<{ url: string; name: string }> = [];
-      for (const file of selectedFiles) {
-        const result = await uploadToCloudinary(file, {
+      const uploaded: CariAttachment[] = [];
+      for (const item of selectedFiles) {
+        const result = await uploadToCloudinary(item.file, {
           folder: `nexus/cari-sessions/${activeSessionId}`,
+          resourceType: item.resourceType,
           sessionId: activeSessionId,
           cleanupToken: activeCleanupToken,
         });
-        uploaded.push({ url: result.secure_url, name: file.name });
+        uploaded.push({
+          url: result.secure_url,
+          name: item.file.name,
+          mimeType: item.mimeType,
+          resourceType: item.resourceType,
+          size: item.file.size,
+        });
       }
-      setAttachedImages((previous) => [...previous, ...uploaded].slice(0, 4));
-      toast.success(`${uploaded.length} image${uploaded.length === 1 ? "" : "s"} ready for visual search.`);
+      setAttachedAttachments((previous) => [...previous, ...uploaded].slice(0, MAX_CARI_ATTACHMENTS));
+      toast.success(`${uploaded.length} attachment${uploaded.length === 1 ? "" : "s"} ready for Cari.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to upload the search image.");
+      toast.error(error instanceof Error ? error.message : "Unable to upload the attachment.");
     } finally {
-      setImageUploading(false);
+      setAttachmentUploading(false);
     }
   };
 
@@ -421,28 +492,33 @@ export default function AiAssistant() {
   }, [messages, isOpen, isMinimized, activeTab]);
 
   const handleSend = async (textToSend?: string) => {
-    const images = attachedImages;
-    const text = textToSend || input.trim() || (images.length ? "Please identify the item in this image and find the closest Nexus products." : "");
-    if ((!text && images.length === 0) || loading || imageUploading) return;
+    const attachments = attachedAttachments;
+    const defaultAttachmentRequest = attachments.some((attachment) => attachment.resourceType === "image")
+      ? "Please identify the item in my image and find the closest relevant Nexus products."
+      : "Please review the attached PDF and help me understand it.";
+    const text = textToSend || input.trim() || (attachments.length ? defaultAttachmentRequest : "");
+    if ((!text && attachments.length === 0) || loading || attachmentUploading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content: text,
-      ...(images.length ? { imageUrls: images.map((image) => image.url), imageNames: images.map((image) => image.name) } : {}),
+      ...(attachments.length ? { attachments } : {}),
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     if (!textToSend) setInput("");
-    setAttachedImages([]);
+    setAttachedAttachments([]);
     setLoading(true);
 
     try {
-      const history = [...messages, userMessage].slice(-100).map((m) => ({
-        role: m.role,
-        content: m.content,
-        ...(m.imageUrls?.length ? { imageUrls: m.imageUrls } : {}),
+      const history = [...messages, userMessage].slice(-100).map((message) => ({
+        role: message.role,
+        content: message.content,
+        ...(getMessageAttachments(message).length ? {
+          attachments: getMessageAttachments(message).map(({ url, mimeType, resourceType }) => ({ url, mimeType, resourceType })),
+        } : {}),
       }));
 
       const res = await fetch("/api/chat", {
@@ -505,7 +581,7 @@ export default function AiAssistant() {
 
       {isOpen && (
         <div className={`ai-assistant-card ${isMinimized ? "is-minimized" : ""}`}>
-          <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="sr-only" onChange={(event) => { if (event.target.files?.length) void handleImageFiles(event.target.files); event.target.value = ""; }} />
+          <input ref={attachmentInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,application/pdf,.pdf" multiple className="sr-only" onChange={(event) => { if (event.target.files?.length) void handleAttachmentFiles(event.target.files); event.target.value = ""; }} />
           {/* Header */}
           <div className="ai-assistant-header">
             <div className="ai-assistant-title">
@@ -645,21 +721,24 @@ export default function AiAssistant() {
                           <div className="ai-msg-avatar"><img src="/cari-mark.jpg" alt="" className="cari-mark-icon" /></div>
                         )}
                         <div className={`ai-message-bubble ${msg.role === "user" ? "user-bubble" : "assistant-bubble"}`}>
-                          {msg.imageUrls?.length ? (
-                            <div className={`gemini-image-grid gemini-image-count-${Math.min(msg.imageUrls.length, 4)}`}>
-                              {msg.imageUrls.map((url, imageIndex) => (
-                                <figure key={`${msg.id}-${imageIndex}`} className="gemini-image-wrapper">
-                                  <img src={url} alt={msg.imageNames?.[imageIndex] || "Uploaded product search"} />
-                                  <figcaption>{msg.imageNames?.[imageIndex] || "Product search image"}</figcaption>
+                          {getMessageAttachments(msg).length > 0 && (
+                            <div className="ai-message-attachments">
+                              {getMessageAttachments(msg).map((attachment, attachmentIndex) => attachment.resourceType === "image" ? (
+                                <figure key={`${msg.id}-${attachmentIndex}`} className="ai-message-attachment-image" aria-label={`Attached image ${attachmentIndex + 1}`}>
+                                  <img src={attachment.url} alt="" />
                                   <div className="gemini-image-tools">
-                                    <button type="button" onClick={async () => { try { const response = await fetch(url); if (!response.ok) throw new Error("Download failed"); const objectUrl = URL.createObjectURL(await response.blob()); const link = document.createElement("a"); link.href = objectUrl; link.download = msg.imageNames?.[imageIndex] || `cari-search-${imageIndex + 1}.jpg`; link.click(); window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000); } catch { window.open(url, "_blank", "noopener,noreferrer"); } }} aria-label="Download image"><Download size={15} /></button>
-                                    <button type="button" onClick={() => setExpandedImage(url)} aria-label="Expand image"><Maximize size={15} /></button>
-                                    <button type="button" onClick={() => setMessages((previous) => previous.map((message) => message.id === msg.id ? { ...message, imageUrls: message.imageUrls?.filter((_, index) => index !== imageIndex), imageNames: message.imageNames?.filter((_, index) => index !== imageIndex) } : message))} aria-label="Remove image from this message"><X size={15} /></button>
+                                    <button type="button" onClick={async () => { try { const response = await fetch(attachment.url); if (!response.ok) throw new Error("Download failed"); const objectUrl = URL.createObjectURL(await response.blob()); const link = document.createElement("a"); link.href = objectUrl; link.download = attachment.name || `cari-image-${attachmentIndex + 1}.jpg`; link.click(); window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000); } catch { window.open(attachment.url, "_blank", "noopener,noreferrer"); } }} aria-label={`Download image ${attachmentIndex + 1}`}><Download size={14} /></button>
+                                    <button type="button" onClick={() => setExpandedImage(attachment.url)} aria-label={`Expand image ${attachmentIndex + 1}`}><Maximize size={14} /></button>
+                                    <button type="button" onClick={() => setMessages((previous) => previous.map((message) => message.id === msg.id ? { ...message, attachments: getMessageAttachments(message).filter((_, index) => index !== attachmentIndex), imageUrls: undefined, imageNames: undefined } : message))} aria-label={`Remove image ${attachmentIndex + 1}`}><X size={14} /></button>
                                   </div>
                                 </figure>
+                              ) : (
+                                <a key={`${msg.id}-${attachmentIndex}`} className="ai-message-attachment-file" href={attachment.url} target="_blank" rel="noopener noreferrer" aria-label={`Open PDF attachment ${attachmentIndex + 1}`}>
+                                  <FileText size={16} aria-hidden="true" /><span>PDF</span><ArrowUpRight size={14} aria-hidden="true" />
+                                </a>
                               ))}
                             </div>
-                          ) : null}
+                          )}
                           {msg.role === "assistant" ? (
                             (() => {
                               const { cleanText, recommendations } = parseAssistantPayload(msg.content);
@@ -728,7 +807,7 @@ export default function AiAssistant() {
                       <div className="ai-message-row assistant-row">
                         <div className="ai-msg-avatar"><img src="/cari-mark.jpg" alt="" className="cari-mark-icon gemini-sparkle-loader" /></div>
                         <div className="ai-message-bubble assistant-bubble ai-loading-bubble">
-                          <span>{messages.at(-1)?.imageUrls?.length ? "Cari is comparing your photo with the catalog…" : "Cari is thinking…"}</span>
+                          <span>{(messages.at(-1)?.attachments?.length || messages.at(-1)?.imageUrls?.length) ? "Cari is reviewing your attachment…" : "Cari is thinking…"}</span>
                           <div className="ai-shimmer-lines" aria-hidden="true"><i /><i /><i /></div>
                         </div>
                       </div>
@@ -763,30 +842,45 @@ export default function AiAssistant() {
                     }}
                     className="ai-assistant-input-form"
                   >
-                    {attachedImages.length > 0 && <div className="ai-pending-images">{attachedImages.map((image, index) => <div key={`${image.url}-${index}`} className="ai-pending-image"><img src={image.url} alt={image.name} /><span>{image.name}</span><button type="button" onClick={() => setAttachedImages((previous) => previous.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${image.name}`}><X size={13} /></button></div>)}</div>}
-                    <div className="ai-composer-row">
-                      <button type="button" className="ai-attach-btn" onClick={() => imageInputRef.current?.click()} disabled={imageUploading || attachedImages.length >= 4} aria-label="Upload an image for visual product search" title="Search products by image">
-                        {imageUploading ? <Loader2 size={17} className="animate-spin" /> : <ImagePlus size={17} />}
+                    {attachedAttachments.length > 0 && (
+                      <div className="ai-pending-images" aria-label="Files attached to this message">
+                        {attachedAttachments.map((attachment, index) => (
+                          <div key={`${attachment.url}-${index}`} className="ai-pending-image">
+                            {attachment.resourceType === "image" ? (
+                              <img src={attachment.url} alt="" />
+                            ) : (
+                              <div className="ai-pending-file" aria-label="PDF attachment"><FileText size={19} /><span>PDF</span></div>
+                            )}
+                            <button type="button" onClick={() => setAttachedAttachments((previous) => previous.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove attachment ${index + 1}`}>
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <textarea
+                      ref={textInputRef}
+                      value={input}
+                      onChange={(e) => { setInput(e.target.value); e.currentTarget.style.height = "auto"; e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 160)}px`; }}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); handleSend(); } }}
+                      placeholder={attachmentUploading ? "Uploading securely…" : "Message Cari…"}
+                      className="ai-assistant-input"
+                      rows={1}
+                      disabled={loading || attachmentUploading}
+                    />
+                    <div className="ai-composer-toolbar">
+                      <button type="button" className="ai-attach-btn" onClick={() => attachmentInputRef.current?.click()} disabled={attachmentUploading || attachedAttachments.length >= MAX_CARI_ATTACHMENTS} aria-label="Add an image or file" title="Add an image or PDF file">
+                        {attachmentUploading ? <Loader2 size={19} className="animate-spin" /> : <Plus size={21} />}
                       </button>
-                      <textarea
-                        ref={textInputRef}
-                        value={input}
-                        onChange={(e) => { setInput(e.target.value); e.currentTarget.style.height = "auto"; e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 200)}px`; }}
-                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); handleSend(); } }}
-                        placeholder={imageUploading ? "Uploading image securely…" : "Ask Cari or attach a product photo…"}
-                        className="ai-assistant-input"
-                        rows={1}
-                        disabled={loading || imageUploading}
-                      />
+                      <button
+                        type="submit"
+                        disabled={(!input.trim() && attachedAttachments.length === 0) || loading || attachmentUploading}
+                        className="ai-assistant-send-btn"
+                        aria-label="Send message"
+                      >
+                        <Send size={17} />
+                      </button>
                     </div>
-                    <button
-                      type="submit"
-                      disabled={(!input.trim() && attachedImages.length === 0) || loading || imageUploading}
-                      className="ai-assistant-send-btn"
-                      aria-label="Send message"
-                    >
-                      <Send size={16} />
-                    </button>
                   </form>
                 </>
               )}

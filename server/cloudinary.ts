@@ -82,16 +82,21 @@ export function createCariUploadSession() {
   return { sessionId, cleanupToken: createSessionCleanupToken(sessionId, config.apiSecret) };
 }
 
-export function createCariSessionUploadSignature(sessionId: string, cleanupToken: string) {
+export function createCariSessionUploadSignature(sessionId: string, cleanupToken: string, resourceType: "image" | "raw" = "image") {
   const config = ensureConfigured();
   const folder = validateCariSessionId(sessionId);
   verifyCariSessionCapability(sessionId, cleanupToken, config.apiSecret);
-  return { ...createCloudinaryUploadSignature({ folder, resourceType: "image" }), sessionId: sessionId.toLowerCase() };
+  if (resourceType !== "image" && resourceType !== "raw") throw new Error("Cari uploads support only images and PDF files.");
+  return { ...createCloudinaryUploadSignature({ folder, resourceType }), sessionId: sessionId.toLowerCase() };
 }
 
 export async function deleteCariSessionImages(sessionId: string, cleanupToken: string) {
   const folder = validateCariSessionId(sessionId);
   const config = ensureConfigured();
   verifyCariSessionCapability(sessionId, cleanupToken, config.apiSecret);
-  return cloudinary.api.delete_resources_by_prefix(`${folder}/`, { resource_type: "image" });
+  const resourceTypes = ["image", "raw"] as const;
+  const results = await Promise.all(resourceTypes.map((resourceType) =>
+    cloudinary.api.delete_resources_by_prefix(`${folder}/`, { resource_type: resourceType }),
+  ));
+  return { image: results[0], raw: results[1] };
 }

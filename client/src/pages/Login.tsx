@@ -93,7 +93,6 @@ export default function Login() {
           uid: result.user.uid,
           fullName: result.user.displayName || "",
           email: result.user.email || "",
-          hasDiscountEligible: true,
           lastLoginAt: serverTimestamp(),
         }, { merge: true });
       } catch {}
@@ -151,7 +150,6 @@ export default function Login() {
           uid: result.user.uid,
           fullName: result.user.displayName || "",
           email: result.user.email || "",
-          hasDiscountEligible: true,
           lastLoginAt: serverTimestamp(),
         }, { merge: true });
       } catch {}

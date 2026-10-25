@@ -97,13 +97,29 @@ async function startServer() {
         );
       })
       .slice(-80)
-      .map((message): ShoppingMessage => ({
-        role: message.role as ShoppingMessage["role"],
-        content: message.content.slice(0, 4000),
-        imageUrls: Array.isArray((message as unknown as { imageUrls?: unknown }).imageUrls)
-          ? ((message as unknown as { imageUrls: unknown[] }).imageUrls).filter((url): url is string => typeof url === "string").slice(0, 4)
-          : undefined,
-      }));
+      .map((message): ShoppingMessage => {
+        const candidate = message as typeof message & { attachments?: unknown; imageUrls?: unknown };
+        const attachments = Array.isArray(candidate.attachments)
+          ? candidate.attachments.slice(0, 4).flatMap((attachment: unknown) => {
+              if (!attachment || typeof attachment !== "object") return [];
+              const item = attachment as { url?: unknown; mimeType?: unknown; resourceType?: unknown };
+              if (
+                typeof item.url !== "string" || item.url.length > 2048 ||
+                typeof item.mimeType !== "string" || item.mimeType.length > 100 ||
+                (item.resourceType !== "image" && item.resourceType !== "raw")
+              ) return [];
+              return [{ url: item.url, mimeType: item.mimeType, resourceType: item.resourceType as "image" | "raw" }];
+            })
+          : undefined;
+        return {
+          role: message.role as ShoppingMessage["role"],
+          content: message.content.slice(0, 4000),
+          attachments,
+          imageUrls: Array.isArray(candidate.imageUrls)
+            ? candidate.imageUrls.filter((url): url is string => typeof url === "string" && url.length <= 2048).slice(0, 4)
+            : undefined,
+        };
+      });
 
     const catalog = (req.body?.catalog && typeof req.body.catalog === "object"
       ? req.body.catalog
@@ -119,7 +135,7 @@ async function startServer() {
       res.json({ reply });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Shopping assistant unavailable";
-      const status = message.includes("not configured") || message.includes("needs a shopper") ? 412 : 502;
+      const status = message.includes("no larger than 10 MB") ? 413 : message.includes("not configured") || message.includes("needs a shopper") ? 412 : 502;
       res.status(status).json({ error: message });
     }
   });
@@ -539,7 +555,12 @@ async function startServer() {
           res.status(400).json({ error: "A valid Cari session capability is required." });
           return;
         }
-        res.json(createCariSessionUploadSignature(req.body.sessionId, req.body.cleanupToken));
+        const resourceType = req.body?.resourceType ?? "image";
+        if (resourceType !== "image" && resourceType !== "raw") {
+          res.status(400).json({ error: "Cari uploads support only images and PDF files." });
+          return;
+        }
+        res.json(createCariSessionUploadSignature(req.body.sessionId, req.body.cleanupToken, resourceType));
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unable to create upload signature";
         res.status(message.includes("Invalid") ? 403 : 412).json({ error: message });

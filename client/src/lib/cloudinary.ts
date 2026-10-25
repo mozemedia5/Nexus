@@ -28,9 +28,9 @@ async function readError(response: Response, fallback: string) {
 
 export async function createCariUploadSession(): Promise<CariUploadSession> {
   const response = await fetch("/api/cloudinary/session", { method: "POST", cache: "no-store" });
-  if (!response.ok) throw await readError(response, "Unable to start a temporary image session.");
+  if (!response.ok) throw await readError(response, "Unable to start a temporary attachment session.");
   const session = await response.json() as Partial<CariUploadSession>;
-  if (!session.sessionId || !session.cleanupToken) throw new Error("The image session could not be verified.");
+  if (!session.sessionId || !session.cleanupToken) throw new Error("The attachment session could not be verified.");
   return { sessionId: session.sessionId, cleanupToken: session.cleanupToken };
 }
 
@@ -41,7 +41,7 @@ export async function requestCloudinaryUploadSignature(
 ): Promise<UploadSignature> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const body = session
-    ? { sessionId: session.sessionId, cleanupToken: session.cleanupToken }
+    ? { sessionId: session.sessionId, cleanupToken: session.cleanupToken, resourceType }
     : { folder, resourceType };
   if (!session) Object.assign(headers, await getAdminAuthHeaders());
 
@@ -62,7 +62,7 @@ export async function uploadToCloudinary(
   const resourceType = options.resourceType ?? "image";
   let session: CariUploadSession | undefined;
   if (options.sessionId || options.cleanupToken) {
-    if (!options.sessionId || !options.cleanupToken) throw new Error("A complete Cari image-session capability is required.");
+    if (!options.sessionId || !options.cleanupToken) throw new Error("A complete Cari attachment-session capability is required.");
     session = { sessionId: options.sessionId, cleanupToken: options.cleanupToken };
   }
 
@@ -88,5 +88,5 @@ export async function cleanupCloudinarySessionImages(sessionId: string, cleanupT
     body: JSON.stringify({ sessionId, cleanupToken }),
   });
   const payload = await response.json().catch(() => ({})) as { error?: string; success?: boolean };
-  if (!response.ok || !payload.success) throw new Error(payload.error || "Unable to clear temporary image uploads.");
+  if (!response.ok || !payload.success) throw new Error(payload.error || "Unable to clear temporary Cari uploads.");
 }

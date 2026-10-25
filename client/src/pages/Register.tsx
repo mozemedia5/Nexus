@@ -43,8 +43,7 @@ export default function Register() {
           await setDoc(doc(db, "nexus_users", result.user.uid), {
             uid: result.user.uid,
             fullName,
-            email,
-            hasDiscountEligible: true,
+            email: result.user.email || email.trim().toLowerCase(),
             registeredAt: serverTimestamp(),
           });
         }
@@ -92,7 +91,6 @@ export default function Register() {
           uid: result.user.uid,
           fullName: result.user.displayName || "",
           email: result.user.email || "",
-          hasDiscountEligible: true,
           registeredAt: serverTimestamp(),
         }, { merge: true });
       } catch {}
@@ -145,7 +143,6 @@ export default function Register() {
           uid: result.user.uid,
           fullName: result.user.displayName || "",
           email: result.user.email || "",
-          hasDiscountEligible: true,
           registeredAt: serverTimestamp(),
         }, { merge: true });
       } catch {}

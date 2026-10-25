@@ -46,12 +46,22 @@ export default function SiteHeader() {
   useEffect(() => {
     const auth = getFirebaseAuth();
     if (!auth) { setAdminDashboardAllowed(false); return; }
-    return onAuthStateChanged(auth, (user) => {
-      if (!user) { setAdminDashboardAllowed(false); return; }
+    let verificationSequence = 0;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const requestSequence = ++verificationSequence;
+      setAdminDashboardAllowed(false);
+      if (!user) return;
       void verifyAdminSession(user)
-        .then((verified) => setAdminDashboardAllowed(Boolean(verified?.authenticated && (verified.role === "admin" || verified.role === "superadmin"))))
-        .catch(() => setAdminDashboardAllowed(false));
+        .then((verified) => {
+          if (requestSequence === verificationSequence && auth.currentUser?.uid === user.uid) {
+            setAdminDashboardAllowed(Boolean(verified?.authenticated && (verified.role === "admin" || verified.role === "superadmin")));
+          }
+        })
+        .catch(() => {
+          if (requestSequence === verificationSequence) setAdminDashboardAllowed(false);
+        });
     });
+    return () => { verificationSequence += 1; unsubscribe(); };
   }, []);
 
   useEffect(() => {

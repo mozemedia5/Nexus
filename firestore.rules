@@ -2,28 +2,84 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null
+        && request.auth.token.admin == true
+        && request.auth.token.email_verified == true;
     }
 
-    // The server uses Firebase Admin SDK for this collection. Clients must never read or write roles.
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function hasValidProfileShape() {
+      return request.resource.data.keys().hasOnly([
+          'uid',
+          'fullName',
+          'email',
+          'hasDiscountEligible',
+          'registeredAt',
+          'lastLoginAt'
+        ])
+        && request.resource.data.keys().hasAll(['uid', 'fullName', 'email'])
+        && request.resource.data.uid is string
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() <= 120
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254;
+    }
+
+    function isCurrentOrUnchanged(field) {
+      return request.resource.data.get(field, resource.data.get(field, null)) == request.time
+        || request.resource.data.get(field, resource.data.get(field, null)) == resource.data.get(field, null);
+    }
+
+    // Firebase Admin SDK server routes manage admin accounts; browser clients never read or write role records.
     match /nexus_admins/{adminId} {
       allow read, write: if false;
     }
 
-    // Customer profiles remain private to their owner and server-authorized admins.
+    // Customer data is private. A customer may update their own basic profile, but cannot grant themselves
+    // admin roles or change an existing discount-eligibility value. Server-side admin code uses the Admin SDK.
     match /nexus_users/{userId} {
-      allow read, update, delete: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create: if isOwner(userId)
+        && hasValidProfileShape()
+        && request.resource.data.uid == userId
+        && (request.resource.data.email == request.auth.token.email || request.resource.data.email == '')
+        && request.resource.data.get('hasDiscountEligible', false) == false
+        && (!('registeredAt' in request.resource.data) || request.resource.data.registeredAt == request.time)
+        && (!('lastLoginAt' in request.resource.data) || request.resource.data.lastLoginAt == request.time);
+
+      allow update: if isOwner(userId)
+        && hasValidProfileShape()
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == userId
+        && (
+          request.resource.data.email == resource.data.email
+          || request.resource.data.email == request.auth.token.email
+          || request.resource.data.email == ''
+        )
+        && request.resource.data.get('hasDiscountEligible', false) == resource.data.get('hasDiscountEligible', false)
+        && isCurrentOrUnchanged('registeredAt')
+        && isCurrentOrUnchanged('lastLoginAt');
+
+      allow delete: if isAdmin();
     }
 
-    // Campaigns are readable publicly; only trusted custom-claim admins can change them.
+    // Campaign data remains public to read; only a verified server-issued administrator can modify it.
     match /nexus_campaigns/{campaignId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Reserved Cari conversations are accessed by server endpoints using Firebase Admin SDK.
+    // Reserved Cari conversations are accessed only through server endpoints using Firebase Admin SDK.
     match /nexus_cari_conversations/{conversationId} {
+      allow read, write: if false;
+    }
+
+    // Everything not explicitly opened above is denied by default.
+    match /{document=**} {
       allow read, write: if false;
     }
   }
