@@ -4,6 +4,7 @@ import { Shield, Mail, Eye, EyeOff, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { getFirebaseAuth, getFirebaseStatus, verifyAdminSession } from "@/lib/firebase";
 import SEO from "@/components/SEO";
+import { saveStoreProfile } from "@/hooks/useStoreAccount";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -43,17 +44,18 @@ export default function Login() {
 
       const cleanUserEmail = userCred.user.email || email;
       const cleanDisplayName = userCred.user.displayName || cleanUserEmail.split("@")[0];
-      localStorage.setItem("nexus_user_profile", JSON.stringify({
+      saveStoreProfile({
         email: cleanUserEmail,
         name: cleanDisplayName,
         uid: userCred.user.uid,
-      }));
+      });
 
       const isRedirected = await checkAdminAndRedirect(userCred.user);
       if (isRedirected) return;
 
       toast.success("Welcome back!", { description: "You are now signed in to Nexus." });
-      setLocation("/");
+      const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+      setLocation(returnTo?.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/");
     } catch (err: any) {
       const msg = err.code === "auth/user-not-found" || err.code === "auth/invalid-credential"
         ? "Invalid email or password."
@@ -98,17 +100,18 @@ export default function Login() {
 
       const cleanUserEmail = result.user.email || "";
       const cleanDisplayName = result.user.displayName || cleanUserEmail.split("@")[0] || "Nexus Member";
-      localStorage.setItem("nexus_user_profile", JSON.stringify({
+      saveStoreProfile({
         email: cleanUserEmail,
         name: cleanDisplayName,
         uid: result.user.uid,
-      }));
+      });
 
       const isRedirected = await checkAdminAndRedirect(result.user);
       if (isRedirected) return;
 
       toast.success("Welcome!", { description: "Signed in with Google." });
-      setLocation("/");
+      const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+      setLocation(returnTo?.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/");
     } catch (err: any) {
       if (err.code === "auth/popup-closed-by-user") {
         return;
@@ -155,17 +158,18 @@ export default function Login() {
 
       const cleanUserEmail = result.user.email || "";
       const cleanDisplayName = result.user.displayName || cleanUserEmail.split("@")[0] || "Nexus Member";
-      localStorage.setItem("nexus_user_profile", JSON.stringify({
+      saveStoreProfile({
         email: cleanUserEmail,
         name: cleanDisplayName,
         uid: result.user.uid,
-      }));
+      });
 
       const isRedirected = await checkAdminAndRedirect(result.user);
       if (isRedirected) return;
 
       toast.success("Welcome!", { description: "Signed in with Apple." });
-      setLocation("/");
+      const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+      setLocation(returnTo?.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/");
     } catch (err: any) {
       if (err.code === "auth/popup-closed-by-user") {
         return;

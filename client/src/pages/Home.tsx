@@ -72,7 +72,7 @@ export default function Home() {
     Promise.all([
       getProducts({ first: 12, sortKey: "BEST_SELLING", fresh: true }),
       getProducts({ first: 8, sortKey: "CREATED_AT", fresh: true }),
-      getCollections(8),
+      getCollections(250),
     ])
       .then(([items, newest, groups]) => {
         setProducts(items);
@@ -102,48 +102,38 @@ export default function Home() {
   return (
     <>
       <SEO
-        title="Nexus — Smart Home & Workspace Gadgets"
-        description="Redefine your desk and living environment with Nexus: Premium smart home automation, ergonomic desk lighting, docking stations, and productivity gadgets."
-        keywords="Nexus, Smart Home Gadgets, Workspace Productivity, Smart Office Upgrades, Tech Accessories"
+        title="Nexus — Discover Useful Finds for Everyday Life"
+        description="Browse the live Nexus Shopify catalogue for useful finds for home, work, and everyday life."
+        keywords="Nexus, Shopify catalogue, home, work, everyday products"
         canonicalPath="/"
       />
 
       {/* Hero Section */}
       <section className="relative w-full bg-slate-950 text-white min-h-[380px] md:min-h-[440px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1800&q=80"
-            alt="Ergonomic Desk & Smart Lighting Setup"
-            className="w-full h-full object-cover object-center opacity-40 mix-blend-luminosity"
-          />
+          {products[0]?.image?.url && <img src={products[0].image.url} alt={products[0].image.altText || products[0].name} className="w-full h-full object-cover object-center opacity-35 mix-blend-luminosity" />}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8 space-y-5">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white/10 backdrop-blur border border-white/20 rounded-full text-[10px] font-semibold tracking-wide text-slate-200">
-              <Sparkles size={12} className="text-amber-400" /> Elevated Productivity &amp; Automation
+              <Sparkles size={12} className="text-amber-400" /> Finds for everyday life
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-[1.1]">
-              Precision Gadgets for <br />
-              <span className="text-amber-400">Smart Office &amp; Home</span>
+              Discover something <br />
+              <span className="text-amber-400">useful for your day.</span>
             </h1>
             <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed font-normal">
-              Engineered for seamless productivity, ergonomic comfort, and intelligent home control. Upgrade your workstation with next-generation ambient lighting, smart docks, and connected sensors.
+              Explore the live Nexus catalogue for thoughtful products across home, work, and the categories you care about.
             </p>
             <div className="flex flex-wrap gap-3 pt-1">
-              <Link
-                href="/products?collection=workspace-productivity"
-                className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-transform hover:-translate-y-0.5 shadow-md"
-              >
-                Shop Now <ArrowUpRight size={14} />
+              <Link href="/products" className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-transform hover:-translate-y-0.5 shadow-md">
+                Shop all products <ArrowUpRight size={14} />
               </Link>
-              <Link
-                href="/products?collection=smart-home"
-                className="px-5 py-3 bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors"
-              >
-                Smart Home Setup
-              </Link>
+              <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("nexus-open-cari"))} className="px-5 py-3 bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors">
+                Ask Cari <Sparkles size={14} />
+              </button>
             </div>
           </div>
         </div>
@@ -157,7 +147,7 @@ export default function Home() {
               Nexus catalogue
             </span>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Smart Home &amp; Office Electronics
+              Products from the Nexus catalogue
             </h2>
           </div>
         </div>
@@ -221,100 +211,28 @@ export default function Home() {
         </section>
       )}
 
-      {/* Categorization Visual Collections Section */}
-      <section className="bg-slate-100 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-800 py-10 px-6">
+      {/* Live Shopify Collections */}
+      <section id="collections" className="bg-slate-100 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-800 py-10 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">
-              Curated Collections
-            </span>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Engineered For Modern Work &amp; Living
-            </h2>
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">Shopify collections</span>
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">Browse by collection</h2>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* 1. Smart Home Automation */}
-            <Link
-              href="/products?collection=smart-home"
-              className="group relative h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-5 text-white"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80"
-                alt="Smart Home Automation"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-              <div className="relative z-10 space-y-1.5">
-                <span className="text-[10px] font-semibold tracking-wide text-amber-400">
-                  Collection 01
-                </span>
-                <h3 className="text-sm font-bold tracking-wide">
-                  Smart Home Automation
-                </h3>
-                <p className="text-xs text-slate-300 line-clamp-2">
-                  Ambient lighting, environmental climate hubs, and automated security controls.
-                </p>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 pt-1 tracking-wide">
-                  Explore Hubs <ArrowUpRight size={13} />
-                </span>
-              </div>
-            </Link>
-
-            {/* 2. Workspace Productivity */}
-            <Link
-              href="/products?collection=workspace-productivity"
-              className="group relative h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-5 text-white"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80"
-                alt="Workspace Productivity"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-              <div className="relative z-10 space-y-1.5">
-                <span className="text-[10px] font-semibold tracking-wide text-amber-400">
-                  Collection 02
-                </span>
-                <h3 className="text-sm font-bold tracking-wide">
-                  Workspace Productivity
-                </h3>
-                <p className="text-xs text-slate-300 line-clamp-2">
-                  Monitor light bars, high-speed Thunderbolt docks, and focus desk tools.
-                </p>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 pt-1 tracking-wide">
-                  Upgrade Desk <ArrowUpRight size={13} />
-                </span>
-              </div>
-            </Link>
-
-            {/* 3. Tech Accessories */}
-            <Link
-              href="/products?collection=tech-accessories"
-              className="group relative h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl flex flex-col justify-end p-5 text-white"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80"
-                alt="Tech Accessories"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-              <div className="relative z-10 space-y-1.5">
-                <span className="text-[10px] font-semibold tracking-wide text-amber-400">
-                  Collection 03
-                </span>
-                <h3 className="text-sm font-bold tracking-wide">
-                  Tech Accessories
-                </h3>
-                <p className="text-xs text-slate-300 line-clamp-2">
-                  Magnetic wireless chargers, studio active noise canceling headphones, and stands.
-                </p>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 pt-1 tracking-wide">
-                  View Accessories <ArrowUpRight size={13} />
-                </span>
-              </div>
-            </Link>
-          </div>
+          {collections.length ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {collections.slice(0, 9).map((collection) => (
+                <Link key={collection.id} href={`/products?collection=${encodeURIComponent(collection.handle)}`} className="group relative h-48 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-end p-5">
+                  {collection.image?.url && <img src={collection.image.url} alt={collection.image.altText || collection.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />}
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/25 to-transparent" />
+                  <div className="relative z-10 space-y-1">
+                    <h3 className="text-sm font-bold tracking-wide text-white">{collection.title}</h3>
+                    {collection.description && <p className="line-clamp-2 text-xs text-stone-200">{collection.description}</p>}
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-300">Explore <ArrowUpRight size={13} /></span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : <p className="text-center text-sm text-slate-500">Live Shopify collections will appear here when available.</p>}
         </div>
       </section>
 
@@ -323,18 +241,18 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-8">
           <div>
             <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">
-              Smart Office
+              More from Nexus
             </span>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Office Essentials
+              Keep exploring
             </h2>
           </div>
-          <Link href="/products?collection=workspace-productivity" className="text-xs font-semibold tracking-wide text-slate-900 dark:text-white hover:text-amber-600 flex items-center gap-1 transition-colors">
-            Shop Office <ArrowUpRight size={14} />
+          <Link href="/products" className="text-xs font-semibold tracking-wide text-slate-900 dark:text-white hover:text-amber-600 flex items-center gap-1 transition-colors">
+            View catalogue <ArrowUpRight size={14} />
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {products.slice(0, 3).map((product) => (
+          {products.slice(4, 7).map((product) => (
             <ProductCard key={`office-${product.id}`} product={product} />
           ))}
         </div>
@@ -366,7 +284,7 @@ export default function Home() {
               <ArrowUpRight size={14} className="transition-transform group-open:rotate-90" />
             </summary>
             <p className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Nexus specializes exclusively in smart home automation devices, ergonomic desk lighting, high-speed workstation docks, and premium tech accessories.
+Our catalogue is powered by products and collections currently published in the Nexus Shopify store. Browse the live catalogue to see what is available today.
             </p>
           </details>
         </div>

@@ -63,20 +63,20 @@ type GeminiResponse = {
 
 const DEFAULT_MODEL = "gemini-3.5-flash";
 const MAX_CONTEXT_CHARS = 180_000;
-const MAX_MESSAGES = 20;
+const MAX_MESSAGES = 80;
 const MAX_MESSAGE_CHARS = 4_000;
 
-const CARI_SYSTEM_INSTRUCTION = `You are Cari, the warm, knowledgeable, and practical shopping assistant for Nexus. Nexus specializes in Smart Home devices and Workspace Productivity products.
+const CARI_SYSTEM_INSTRUCTION = `You are Cari, the warm, knowledgeable, and practical shopping assistant for Nexus.
 
 YOUR MISSION
-Help shoppers discover Nexus products across Smart Home automation, intelligent lighting, and Workspace Productivity tools. Understand their preferences, home setup, workspace needs, budget, and trade-offs. Never restrict answers or recommendations to specific cities or countries.
+Help shoppers discover and compare products across every category present in the live Nexus Shopify catalogue. The catalogue may include smart-home devices, workspace tools, accessories, clothing, home goods, or other categories. Never assume a category is unavailable merely because it is not listed in this instruction. Understand and remember the shopper's use cases, preferences, budget, sizing, compatibility needs, and trade-offs from the full conversation. Do not ask again for details the shopper has already provided. Never restrict answers or recommendations to specific cities or countries.
 
 SOURCE OF TRUTH
 The LIVE NEXUS STORE CONTEXT in each request is the authoritative source for product names, descriptions, prices, variants, availability, tags, collections, and links. Use only that context and the conversation. Never invent products, prices, stock status, reviews, or links.
 
 PRODUCT DISCOVERY & INTERACTIVE CARDS
-Recommend no more than three strong matches unless asked for more. Explain key benefits (e.g., smart home compatibility, beauty & wellness advantages) and ask one focused follow-up question when ambiguous.
-Whenever you recommend a product from the live context, in addition to mentioning it in your message, attach a JSON block at the end of your message so the chat UI can render an interactive product card. If the shopper also requests a shopping-list change, put both recommendations and shoppingList in this same block:
+Recommend no more than three strong matches unless asked for more. Explain why each live catalogue match fits the shopper's stated needs, compare meaningful trade-offs, and ask one focused follow-up question only when an important detail is missing.
+Whenever you recommend a product from the live context, use its exact handle, name, and current price, and attach a JSON block at the end of your message so the chat UI can render an interactive product card. Recommend only products explicitly marked available for sale. If the shopper also requests a shopping-list change, put both recommendations and shoppingList in this same block:
 
 \`\`\`json
 {
@@ -101,7 +101,7 @@ SHOPPING LIST ACTIONS
 When the shopper explicitly asks to add, remove, or change discussed items on their shopping list, include one fenced JSON block at the end of the response with both the recommendations array and a shoppingList object. The shoppingList object must use {"add":[{"handle":"exact live product handle or custom note","name":"item name","price":"exact supplied price or empty string","image":"exact supplied URL or empty string"}],"remove":[{"handle":"handle or custom note","name":"item name"}]}. Include only the requested changes. A custom note is not a store product and must not be presented as purchasable.
 
 STYLE
-Be concise, friendly, and specific. Use exact currency values supplied in context. Always refer to the store as Nexus.`;
+Be concise, friendly, and specific. Use exact currency values supplied in context. Always refer to the store as Nexus. Keep continuity across turns: use preferences and constraints stated earlier, refer back to a prior product or comparison when relevant, and never fabricate a memory that is not present in the conversation.`;
 
 function getGeminiApiKey() {
   return process.env.GEMINI_API_KEY?.trim() || "";
@@ -181,6 +181,26 @@ export function buildCariCatalogContext(catalog: ShoppingCatalogContext = {}) {
   ].join("\n");
 
   return context.slice(0, MAX_CONTEXT_CHARS);
+}
+
+function selectRelevantProducts(messages: ShoppingMessage[], catalog: ShoppingCatalogContext) {
+  const products = catalog.products ?? [];
+  const recentQuery = messages
+    .filter((message) => message.role === "user")
+    .slice(-12)
+    .map((message) => message.content)
+    .join(" ")
+    .toLowerCase();
+  const stopWords = new Set(["the", "and", "for", "with", "what", "which", "that", "this", "are", "you", "can", "from", "have", "does", "into", "want", "need", "show", "find", "help", "please", "recommend", "products", "product", "compare", "shop", "best"]);
+  const terms = Array.from(new Set(recentQuery.match(/[a-z0-9-]{2,}/g) ?? [])).filter((term) => !stopWords.has(term));
+  const ranked = products.map((product, index) => {
+    const titleAndTags = `${product.name} ${product.categoryLabel} ${product.tags.join(" ")}`.toLowerCase();
+    const description = product.description.toLowerCase();
+    const score = terms.reduce((total, term) => total + (titleAndTags.includes(term) ? 5 : description.includes(term) ? 1 : 0), 0);
+    return { product, index, score };
+  });
+  ranked.sort((a, b) => b.score - a.score || Number(b.product.availableForSale) - Number(a.product.availableForSale) || a.index - b.index);
+  return ranked.slice(0, 120).map(({ product }) => product);
 }
 
 async function fetchGeminiImagePart(imageUrl: string): Promise<GeminiPart> {
@@ -268,7 +288,7 @@ export async function generateCariReply(
         },
         body: JSON.stringify({
           systemInstruction: {
-            parts: [{ text: `${CARI_SYSTEM_INSTRUCTION}\n\n${buildCariCatalogContext(catalog)}` }],
+            parts: [{ text: `${CARI_SYSTEM_INSTRUCTION}\n\n${buildCariCatalogContext({ ...catalog, products: selectRelevantProducts(messages, catalog) })}` }],
           },
           contents,
           generationConfig: {

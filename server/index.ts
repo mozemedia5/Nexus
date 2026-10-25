@@ -96,7 +96,7 @@ async function startServer() {
           typeof candidate.content === "string"
         );
       })
-      .slice(-20)
+      .slice(-80)
       .map((message): ShoppingMessage => ({
         role: message.role as ShoppingMessage["role"],
         content: message.content.slice(0, 4000),
@@ -112,8 +112,8 @@ async function startServer() {
     try {
       const reply = await generateCariReply(messages, {
         currentPath: typeof catalog.currentPath === "string" ? catalog.currentPath.slice(0, 300) : "/",
-        products: Array.isArray(catalog.products) ? catalog.products.slice(0, 120) : [],
-        collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 40) : [],
+        products: Array.isArray(catalog.products) ? catalog.products.slice(0, 1000) : [],
+        collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 250) : [],
         shoppingList: Array.isArray(catalog.shoppingList) ? catalog.shoppingList.slice(0, 100) : [],
       });
       res.json({ reply });
@@ -238,14 +238,15 @@ async function startServer() {
 
   // Memory/Firestore subscriber and interaction stores
   const inMemorySubscribers: Array<{ id: string; email: string; source: string; subscribedAt: string }> = [];
-  const inMemoryInteractions: Array<{ id: string; userEmail?: string; action: string; productTitle: string; category?: string; timestamp: string }> = [];
+  const inMemoryCustomers: Array<{ uid: string; email: string; fullName: string; lastSeenAt: string }> = [];
+  const inMemoryInteractions: Array<{ id: string; userEmail?: string; action: string; productTitle: string; productHandle?: string; category?: string; timestamp: string }> = [];
 
   // Newsletter Subscription API
   app.post("/api/newsletter/subscribe", async (req, res) => {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const source = typeof req.body?.source === "string" ? req.body.source : "Newsletter Modal";
 
-    if (!email || !email.includes("@")) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) {
       res.status(400).json({ error: "Valid email address is required" });
       return;
     }
@@ -277,20 +278,58 @@ async function startServer() {
     }
   });
 
+  // Store signed-in customer emails only after verifying their Firebase ID token.
+  app.post("/api/store/account", async (req, res) => {
+    const bearer = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
+    if (!bearer) {
+      res.status(401).json({ error: "A signed-in customer session is required" });
+      return;
+    }
+    try {
+      if (!parseFirebaseServiceAccount()) {
+        res.status(503).json({ error: "Customer email sync is not configured on this server" });
+        return;
+      }
+      const { auth, firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
+      const identity = await auth.verifyIdToken(bearer);
+      const email = identity.email?.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        res.status(401).json({ error: "Verified account email is required" });
+        return;
+      }
+      const suppliedName = typeof req.body?.fullName === "string" ? req.body.fullName.trim().slice(0, 120) : "";
+      const customer = { uid: identity.uid, email, fullName: suppliedName || identity.name || email.split("@")[0], lastSeenAt: new Date().toISOString() };
+      await firestore.collection("nexus_customer_accounts").doc(identity.uid).set(customer, { merge: true });
+      const existing = inMemoryCustomers.find((item) => item.uid === customer.uid);
+      if (existing) Object.assign(existing, customer);
+      else inMemoryCustomers.unshift(customer);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(401).json({ error: error instanceof Error ? error.message : "Customer account could not be verified" });
+    }
+  });
+
   // Track User Interaction / Likes API
   app.post("/api/user/interactions", async (req, res) => {
-    const { userEmail, action, productTitle, category } = req.body || {};
-    if (!productTitle) {
+    const { userEmail, action, productTitle, productHandle, category } = req.body || {};
+    const cleanTitle = typeof productTitle === "string" ? productTitle.trim().slice(0, 200) : "";
+    const cleanEmail = typeof userEmail === "string" ? userEmail.trim().toLowerCase() : "";
+    if (!cleanTitle) {
       res.status(400).json({ error: "productTitle is required" });
+      return;
+    }
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) {
+      res.status(400).json({ error: "A valid email address is required for identified product interests" });
       return;
     }
 
     const interaction = {
       id: `int-${Date.now()}`,
-      userEmail: typeof userEmail === "string" ? userEmail.toLowerCase() : "anonymous",
-      action: typeof action === "string" ? action : "view",
-      productTitle: String(productTitle),
-      category: typeof category === "string" ? category : "all",
+      userEmail: cleanEmail || "anonymous",
+      action: typeof action === "string" && ["view", "add_to_cart", "newsletter_product_interest"].includes(action) ? action : "view",
+      productTitle: cleanTitle,
+      productHandle: typeof productHandle === "string" ? productHandle.trim().slice(0, 200) : undefined,
+      category: typeof category === "string" ? category.trim().slice(0, 120) : "all",
       timestamp: new Date().toISOString(),
     };
 
@@ -312,6 +351,7 @@ async function startServer() {
     try {
       let subscribers = [...inMemorySubscribers];
       let interactions = [...inMemoryInteractions];
+      let customers = [...inMemoryCustomers];
 
       const admin = parseFirebaseServiceAccount();
       if (admin) {
@@ -325,10 +365,12 @@ async function startServer() {
           if (!intSnap.empty) {
             interactions = intSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
           }
+          const customerSnap = await firestore.collection("nexus_customer_accounts").get();
+          if (!customerSnap.empty) customers = customerSnap.docs.map((doc) => doc.data() as any);
         } catch {}
       }
 
-      res.json({ subscribers, interactions });
+      res.json({ subscribers, interactions, customers });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch leads" });
     }
@@ -339,6 +381,7 @@ async function startServer() {
     try {
       let subscribers = [...inMemorySubscribers];
       let interactions = [...inMemoryInteractions];
+      let customers = [...inMemoryCustomers];
 
       const admin = parseFirebaseServiceAccount();
       if (admin) {
@@ -352,41 +395,58 @@ async function startServer() {
           if (!intSnap.empty) {
             interactions = intSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
           }
+          const customerSnap = await firestore.collection("nexus_customer_accounts").get();
+          if (!customerSnap.empty) customers = customerSnap.docs.map((doc) => doc.data() as any);
         } catch {}
       }
 
       const orders = await fetchShopifyAdminOrders();
 
       const usersMap: Record<string, any> = {};
+      const emails = new Set<string>();
+      subscribers.forEach((subscriber) => { if (subscriber.email) emails.add(subscriber.email.toLowerCase()); });
+      customers.forEach((customer) => { if (customer.email) emails.add(customer.email.toLowerCase()); });
+      interactions.forEach((interaction) => {
+        if (interaction.userEmail && interaction.userEmail !== "anonymous" && interaction.userEmail.includes("@")) {
+          emails.add(interaction.userEmail.toLowerCase());
+        }
+      });
 
-      subscribers.forEach((sub, idx) => {
-        const email = sub.email.toLowerCase();
-        const userOrders = orders.filter((o) => o.customerEmail?.toLowerCase() === email);
-        const totalSpent = userOrders.reduce((sum, o) => sum + (parseFloat(o.totalPrice?.amount) || 0), 0);
-        const userInts = interactions.filter((i) => i.userEmail?.toLowerCase() === email);
-        const smartCount = userInts.filter((i) => i.category === "smart-home").length;
-        const workCount = userInts.filter((i) => i.category === "workspace-productivity").length;
-        const totalInts = userInts.length || 1;
-
-        const smartScore = Math.round((smartCount / totalInts) * 100) || 50;
+      Array.from(emails).forEach((email, idx) => {
+        const subscriber = subscribers.find((item) => item.email?.toLowerCase() === email);
+        const customer = customers.find((item) => item.email?.toLowerCase() === email);
+        const userOrders = orders.filter((order) => order.customerEmail?.toLowerCase() === email);
+        const totalSpent = userOrders.reduce((sum, order) => sum + (parseFloat(order.totalPrice?.amount) || 0), 0);
+        const userInts = interactions.filter((interaction) => interaction.userEmail?.toLowerCase() === email);
+        const smartCount = userInts.filter((interaction) => /smart|home/i.test(interaction.category || "")).length;
+        const workCount = userInts.filter((interaction) => /workspace|desk/i.test(interaction.category || "")).length;
+        const totalInts = smartCount + workCount;
+        const smartScore = totalInts ? Math.round((smartCount / totalInts) * 100) : 50;
         const workScore = 100 - smartScore;
+        const productTitles = Array.from(new Set(userInts.map((interaction) => interaction.productTitle).filter(Boolean)));
+        const categories = userInts.reduce((counts: Record<string, number>, interaction) => {
+          const label = interaction.category || "Other";
+          counts[label] = (counts[label] || 0) + 1;
+          return counts;
+        }, {});
+        const primaryInterest = Object.entries(categories).sort((a, b) => b[1] - a[1])[0]?.[0]
+          || (userOrders.length ? "Customer" : "Newsletter subscriber");
 
         usersMap[email] = {
           id: `usr-${idx + 1}`,
-          fullName: userOrders[0]?.customerName || email.split("@")[0].replace(".", " "),
+          fullName: customer?.fullName || userOrders[0]?.customerName || email.split("@")[0].replace(/[._-]/g, " "),
           email,
-          location: "Global Customer",
+          location: "Not provided",
           totalOrders: userOrders.length,
           totalSpent,
-          primaryInterest: smartScore >= workScore ? "Smart Home Automation" : "Workspace Productivity",
+          primaryInterest,
           smartHomeScore: smartScore,
           workspaceScore: workScore,
-          searchedKeywords: userInts.map((i) => i.productTitle).slice(0, 5),
-          likedProducts: userInts.filter((i) => i.action === "like").map((i) => i.productTitle),
-          lastActive: sub.subscribedAt || new Date().toISOString(),
+          searchedKeywords: productTitles.slice(0, 10),
+          likedProducts: userInts.filter((interaction) => interaction.action === "like").map((interaction) => interaction.productTitle),
+          lastActive: customer?.lastSeenAt || userInts.at(-1)?.timestamp || subscriber?.subscribedAt || new Date().toISOString(),
         };
       });
-
       res.json({ users: Object.values(usersMap) });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch users" });
@@ -400,56 +460,61 @@ async function startServer() {
       const orders = await fetchShopifyAdminOrders();
       let subscribers = [...inMemorySubscribers];
       let interactions = [...inMemoryInteractions];
+      let customers = [...inMemoryCustomers];
 
-      const admin = parseFirebaseServiceAccount();
-      if (admin) {
+      if (parseFirebaseServiceAccount()) {
         try {
           const { firestore } = await import("./firebaseAdmin.js").then((m) => m.getFirebaseAdmin());
-          const subSnap = await firestore.collection("nexus_subscribers").get();
-          if (!subSnap.empty) {
-            subscribers = subSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
-          }
-          const intSnap = await firestore.collection("nexus_user_interactions").limit(100).get();
-          if (!intSnap.empty) {
-            interactions = intSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
-          }
+          const [subSnap, intSnap, customerSnap] = await Promise.all([
+            firestore.collection("nexus_subscribers").get(),
+            firestore.collection("nexus_user_interactions").limit(100).get(),
+            firestore.collection("nexus_customer_accounts").get(),
+          ]);
+          if (!subSnap.empty) subscribers = subSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+          if (!intSnap.empty) interactions = intSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+          if (!customerSnap.empty) customers = customerSnap.docs.map((doc) => doc.data() as any);
         } catch {}
       }
 
-      const matchedSub = subscribers.find((_, idx) => `usr-${idx + 1}` === id) || subscribers[0];
-      if (!matchedSub) {
+      const emails = new Set<string>();
+      subscribers.forEach((subscriber) => { if (subscriber.email) emails.add(subscriber.email.toLowerCase()); });
+      customers.forEach((customer) => { if (customer.email) emails.add(customer.email.toLowerCase()); });
+      interactions.forEach((interaction) => {
+        if (interaction.userEmail && interaction.userEmail !== "anonymous" && interaction.userEmail.includes("@")) emails.add(interaction.userEmail.toLowerCase());
+      });
+      const userIndex = Number(id.replace(/^usr-/, "")) - 1;
+      const email = Array.from(emails)[userIndex];
+      if (!email) {
         res.status(404).json({ error: "User not found" });
         return;
       }
 
-      const email = matchedSub.email.toLowerCase();
-      const userOrders = orders.filter((o) => o.customerEmail?.toLowerCase() === email);
-      const totalSpent = userOrders.reduce((sum, o) => sum + (parseFloat(o.totalPrice?.amount) || 0), 0);
-      const userInts = interactions.filter((i) => i.userEmail?.toLowerCase() === email);
-      const smartCount = userInts.filter((i) => i.category === "smart-home").length;
-      const workCount = userInts.filter((i) => i.category === "workspace-productivity").length;
-      const totalInts = userInts.length || 1;
-
-      const smartScore = Math.round((smartCount / totalInts) * 100) || 50;
-      const workScore = 100 - smartScore;
-
+      const customer = customers.find((item) => item.email?.toLowerCase() === email);
+      const subscriber = subscribers.find((item) => item.email?.toLowerCase() === email);
+      const userOrders = orders.filter((order) => order.customerEmail?.toLowerCase() === email);
+      const userInts = interactions.filter((interaction) => interaction.userEmail?.toLowerCase() === email);
+      const categories = userInts.reduce((counts: Record<string, number>, interaction) => {
+        const label = interaction.category || "Other";
+        counts[label] = (counts[label] || 0) + 1;
+        return counts;
+      }, {});
+      const productInterests = Array.from(new Set(userInts.map((interaction) => interaction.productTitle).filter(Boolean))).slice(0, 30);
+      const totalSpent = userOrders.reduce((sum, order) => sum + (parseFloat(order.totalPrice?.amount) || 0), 0);
       const user = {
         id,
-        fullName: userOrders[0]?.customerName || email.split("@")[0].replace(".", " "),
+        fullName: customer?.fullName || userOrders[0]?.customerName || email.split("@")[0].replace(/[._-]/g, " "),
         email,
-        location: "Global Customer",
+        location: "Not provided",
         totalOrders: userOrders.length,
         totalSpent,
-        primaryInterest: smartScore >= workScore ? "Smart Home Automation" : "Workspace Productivity",
-        smartHomeScore: smartScore,
-        workspaceScore: workScore,
-        searchedKeywords: userInts.map((i) => i.productTitle).slice(0, 5),
-        likedProducts: userInts.filter((i) => i.action === "like").map((i) => i.productTitle),
-        lastActive: matchedSub.subscribedAt || new Date().toISOString(),
+        primaryInterest: Object.entries(categories).sort((a, b) => b[1] - a[1])[0]?.[0] || (userOrders.length ? "Customer" : "Newsletter subscriber"),
+        productInterests,
+        searchedKeywords: productInterests,
+        likedProducts: userInts.filter((interaction) => interaction.action === "like").map((interaction) => interaction.productTitle),
+        lastActive: customer?.lastSeenAt || userInts.at(-1)?.timestamp || subscriber?.subscribedAt || new Date().toISOString(),
       };
-
       res.json({ user });
-    } catch (error) {
+    } catch {
       res.status(500).json({ error: "Failed to fetch user details" });
     }
   });

@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { getProduct, formatPrice, shopifyConfigured, type Product } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
 import SEO from "@/components/SEO";
+import ProductInterestPrompt from "@/components/ProductInterestPrompt";
+import { useStoreAccount } from "@/hooks/useStoreAccount";
 
 export default function ProductDetail() {
   const [, params] = useRoute("/products/:handle");
@@ -15,26 +17,14 @@ export default function ProductDetail() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [error, setError] = useState("");
   const { addItem } = useCart();
+  const { profile } = useStoreAccount();
 
   useEffect(() => {
     if (!params?.handle) return;
-    getProduct(params.handle)
+      getProduct(params.handle)
       .then((item) => {
         setProduct(item);
         setSelected(item?.variants.find((variant) => variant.availableForSale)?.id ?? item?.variants[0]?.id ?? "");
-        if (item) {
-          try {
-            fetch("/api/user/interactions", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "view",
-                productTitle: item.name,
-                category: item.categoryLabel,
-              }),
-            }).catch(() => {});
-          } catch {}
-        }
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load this product."));
   }, [params?.handle]);
@@ -67,7 +57,9 @@ export default function ProductDetail() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "add_to_cart",
+          userEmail: profile?.email,
           productTitle: product.name,
+          productHandle: product.handle,
           category: product.categoryLabel,
         }),
       }).catch(() => {});
@@ -107,6 +99,7 @@ export default function ProductDetail() {
           }
         }}
       />
+      <ProductInterestPrompt product={product} />
       <section className="product-detail section-pad max-w-7xl mx-auto">
       <Link href="/products" className="back-link inline-flex items-center gap-2 text-sm mb-6 text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft size={15} /> Back to catalogue
@@ -187,7 +180,7 @@ export default function ProductDetail() {
                 Overview
               </h4>
               <p className="leading-relaxed">
-                {product.description?.split(/(?<=\.)\s+/)[0] || product.description || "A smart home or workspace productivity gadget curated by Nexus."}
+                {product.description?.split(/(?<=\.)\s+/)[0] || product.description || "No description has been provided for this Shopify listing yet."}
               </p>
             </div>
 
@@ -195,28 +188,26 @@ export default function ProductDetail() {
               <h4 className="text-xs font-bold tracking-wide text-amber-600 dark:text-amber-400 mb-2">
                 Key Highlights
               </h4>
-              <ul className="space-y-2">
-                {(product.description?.split(/(?<=\.)\s+/).slice(1).length ? product.description.split(/(?<=\.)\s+/).slice(1) : [
-                  "Precision-engineered build quality for long-lasting daily productivity.",
-                  "Seamless integration with modern desk and smart home environments.",
-                  "Energy-efficient performance with intelligent environmental controls."
-                ]).map((point, idx) => (
-                  <li key={idx} className="flex items-start gap-2.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
-                    <span className="leading-relaxed">{point}</span>
-                  </li>
-                ))}
-              </ul>
+              {product.description?.split(/(?<=\.)\s+/).slice(1).length ? (
+                <ul className="space-y-2">
+                  {product.description.split(/(?<=\.)\s+/).slice(1).map((point, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
+                      <span className="leading-relaxed">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-xs text-muted-foreground">The Shopify listing has no additional highlights.</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
                 <span className="text-[10px] font-bold tracking-wide text-slate-400 block">Category</span>
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{product.categoryLabel || "Smart Tech"}</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{product.categoryLabel || "Uncategorized"}</span>
               </div>
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                <span className="text-[10px] font-bold tracking-wide text-slate-400 block">Fulfillment</span>
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Global Courier Express</span>
+                <span className="text-[10px] font-bold tracking-wide text-slate-400 block">Availability</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{variant?.availableForSale ? "Available" : "Unavailable"}</span>
               </div>
             </div>
           </div>

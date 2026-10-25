@@ -1,12 +1,5 @@
-import React, { useState, useEffect } from "react";
-import {
-  Users,
-  Search,
-  MapPin,
-  ArrowRight,
-  Mail,
-} from "lucide-react";
-import { Link } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { Users, Search, Mail, Package, Clock3 } from "lucide-react";
 import { getAdminAuthHeaders } from "@/lib/firebase";
 
 export interface TrackedUser {
@@ -17,11 +10,15 @@ export interface TrackedUser {
   totalOrders: number;
   totalSpent: number;
   primaryInterest: string;
-  smartHomeScore: number;
-  workspaceScore: number;
+  productInterests?: string[];
   searchedKeywords: string[];
   likedProducts: string[];
   lastActive: string;
+}
+
+function formatActive(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Recently active" : date.toLocaleString();
 }
 
 export default function AdminUsers() {
@@ -30,117 +27,81 @@ export default function AdminUsers() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
     async function loadUsers() {
       setLoading(true);
-      const headers = await getAdminAuthHeaders();
-      fetch("/api/admin/users", { headers })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.users) setUsers(d.users);
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
+      try {
+        const headers = await getAdminAuthHeaders();
+        const response = await fetch("/api/admin/users", { headers });
+        const data = await response.json();
+        if (!cancelled && response.ok && Array.isArray(data.users)) setUsers(data.users);
+      } catch {}
+      if (!cancelled) setLoading(false);
     }
-    loadUsers();
+    void loadUsers();
+    return () => { cancelled = true; };
   }, []);
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.fullName.toLowerCase().includes(query.toLowerCase()) ||
-      u.email.toLowerCase().includes(query.toLowerCase()) ||
-      u.location.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredUsers = useMemo(() => users.filter((user) => {
+    const haystack = `${user.fullName} ${user.email} ${user.primaryInterest} ${(user.productInterests || user.searchedKeywords || []).join(" ")}`.toLowerCase();
+    return haystack.includes(query.trim().toLowerCase());
+  }), [users, query]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
           <span className="text-xs font-bold text-amber-400 tracking-wider uppercase flex items-center gap-1.5">
-            <Users size={14} /> Customer Intelligence &amp; Lead Profiling
+            <Users size={14} /> Customer emails &amp; product interests
           </span>
-          <h1 className="text-2xl font-black text-white mt-1">
-            Tracked Users &amp; Product Affinity Scores
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Tracked customer locations, search queries, liked products, and interest analysis.
-          </p>
+          <h1 className="text-2xl font-black text-white mt-1">Customer activity</h1>
+          <p className="text-xs text-slate-400 mt-1">Verified sign-ins, newsletter subscribers, and products shoppers viewed or added to cart.</p>
         </div>
-
         <div className="relative w-full sm:w-72">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            type="text"
+            type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search users, location, email..."
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search email or product…"
             className="w-full pl-9 pr-4 py-2 text-xs bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none text-white placeholder-slate-500"
           />
         </div>
       </div>
 
-      {/* Users Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {filteredUsers.length === 0 ? (
-          <div className="col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-xs text-slate-400">
-            {loading ? "Loading tracked store users..." : "No tracked users found. User activity and subscriptions will automatically populate profiles."}
+          <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-xs text-slate-400">
+            {loading ? "Loading customer activity…" : "No customers or leads found yet. Verified sign-ins, newsletter subscriptions, and identified product interests will appear here."}
           </div>
-        ) : (
-          filteredUsers.map((user) => (
-          <div
-            key={user.id}
-            className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4 hover:border-slate-700 transition-colors"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-extrabold text-white text-base flex items-center gap-2">
-                  {user.fullName}
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
-                    {user.primaryInterest}
-                  </span>
-                </h3>
-                <div className="text-xs text-slate-400 flex items-center gap-3 mt-1">
-                  <span className="flex items-center gap-1">
-                    <Mail size={12} className="text-amber-400" /> {user.email}
-                  </span>
-                  <span className="flex items-center gap-1 text-slate-400">
-                    <MapPin size={12} className="text-rose-400" /> {user.location}
-                  </span>
+        ) : filteredUsers.map((user) => {
+          const interests = user.productInterests || user.searchedKeywords || [];
+          return (
+            <article key={user.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="flex flex-wrap items-center gap-2 text-base font-extrabold text-white">
+                    {user.fullName || user.email.split("@")[0]}
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300">{user.primaryInterest}</span>
+                  </h2>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-300 break-all"><Mail size={13} className="shrink-0 text-amber-400" />{user.email}</div>
                 </div>
+                <span className="shrink-0 rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs text-slate-300"><Package size={13} className="mr-1 inline" />{user.totalOrders || 0} orders</span>
               </div>
 
-              <Link
-                href={`/admin/users/${user.id}`}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl transition-colors flex items-center gap-1 shrink-0"
-              >
-                <span>View Page</span>
-                <ArrowRight size={12} />
-              </Link>
-            </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400"><Clock3 size={13} /> Last activity: {formatActive(user.lastActive)}</div>
 
-            {/* Interest Affinity Scores */}
-            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-800/50 rounded-xl border border-slate-800 text-xs">
-              <div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase">Smart Home Score</div>
-                <div className="font-extrabold text-amber-400 text-sm">{user.smartHomeScore}%</div>
+              <div className="border-t border-slate-800 pt-3">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Products of interest</div>
+                {interests.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {interests.map((product, index) => <span key={`${product}-${index}`} className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-slate-200">{product}</span>)}
+                  </div>
+                ) : <p className="text-xs text-slate-500">No product activity has been recorded for this email yet.</p>}
               </div>
-              <div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase">Workspace Score</div>
-                <div className="font-extrabold text-blue-400 text-sm">{user.workspaceScore}%</div>
-              </div>
-            </div>
-
-            {/* Searched Keywords & Liked Products */}
-            <div className="space-y-1.5 text-xs">
-              <div className="text-[11px] font-bold text-slate-300">
-                Searched Keywords: <span className="font-normal text-slate-400">{user.searchedKeywords.join(", ")}</span>
-              </div>
-              <div className="text-[11px] font-bold text-slate-300">
-                Liked Products: <span className="font-normal text-amber-300">{user.likedProducts.join(", ")}</span>
-              </div>
-            </div>
-          </div>
-        )))}
+            </article>
+          );
+        })}
       </div>
     </div>
   );

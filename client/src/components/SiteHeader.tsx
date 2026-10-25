@@ -1,85 +1,142 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, ShoppingCart, PackageCheck, X, Home, Store, Sparkles, Cable, Accessibility, User } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  House,
+  Store,
+  Tags,
+  BookOpen,
+  Menu,
+  PackageCheck,
+  ShoppingCart,
+  UserRound,
+  X,
+  LogOut,
+  Mail,
+} from "lucide-react";
+import { signOut } from "firebase/auth";
 import { useCart } from "@/contexts/CartContext";
+import { clearStoreProfile, useStoreAccount } from "@/hooks/useStoreAccount";
+import { getFirebaseAuth } from "@/lib/firebase";
+import { getCollections, type Collection } from "@/lib/store";
 
 const links = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/products", label: "Browse products", icon: Store },
-  { href: "/products?collection=smart-home", label: "Smart home", icon: Sparkles },
-  { href: "/products?collection=workspace-productivity", label: "Work & study", icon: Cable },
-  { href: "/products?collection=tech-accessories", label: "Accessories", icon: Accessibility },
-  { href: "/about", label: "Our story", icon: null },
+  { href: "/", label: "Home", icon: House },
+  { href: "/products", label: "All products", icon: Store },
+  { href: "/about", label: "Our story", icon: BookOpen },
 ];
 
 export default function SiteHeader() {
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem("nexus_store_sidebar_collapsed") === "true"; } catch { return false; }
+  });
+  const [storeCollections, setStoreCollections] = useState<Collection[]>([]);
   const { itemCount, openCart } = useCart();
+  const { profile, loading } = useStoreAccount();
+  const currentSearch = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
 
   useEffect(() => setMenuOpen(false), [location]);
 
+  useEffect(() => {
+    let cancelled = false;
+    getCollections(20).then((items) => { if (!cancelled) setStoreCollections(items); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((value) => {
+      const next = !value;
+      try { localStorage.setItem("nexus_store_sidebar_collapsed", String(next)); } catch {}
+      return next;
+    });
+  };
+
+  const handleSignOut = async () => {
+    const auth = getFirebaseAuth();
+    if (auth) await signOut(auth).catch(() => {});
+    clearStoreProfile();
+  };
+
+  const openNewsletter = () => window.dispatchEvent(new CustomEvent("open-society"));
+
   return (
     <>
-      <div className="announcement-bar">
-        Nexus A Liverton Store <span>·</span> Smart Home &amp; Office Electronics
-      </div>
-      <header className="site-header">
-        <div className="header-inner">
-          <Link href="/" className="brand-lockup" aria-label="Nexus A Liverton Store home">
-            <img src="/logo.png" alt="Nexus Logo" className="brand-logo-img h-8 w-auto object-contain" />
-            <div className="brand-text-stack">
+      <header className={`site-header shop-sidebar ${collapsed ? "is-collapsed" : ""} ${menuOpen ? "mobile-open" : ""}`}>
+        <div className="shop-sidebar-top">
+          <Link href="/" className="brand-lockup" aria-label="Nexus home">
+            <img src="/logo.png" alt="" className="brand-logo-img h-8 w-auto object-contain" />
+            <div className="brand-text-stack shop-sidebar-brand-text">
               <span className="brand-name">Nexus</span>
               <span className="brand-sub">A Liverton Store</span>
             </div>
           </Link>
-          <nav className="desktop-nav" aria-label="Primary navigation">
-            {links.map((link) => (
-              <Link key={link.href} href={link.href} className="nav-link">
-                {link.icon && <link.icon size={14} strokeWidth={2} />}
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="header-actions">
-            <button className="cart-trigger" type="button" onClick={openCart} aria-label={`Open Cart with ${itemCount} items`}>
-              <ShoppingCart size={17} />
-              <span className="cart-label">Cart</span>
-              <span className="cart-count">{itemCount}</span>
+          <div className="shop-sidebar-controls">
+            <button type="button" className="shop-sidebar-collapse" onClick={toggleCollapsed} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"} title={collapsed ? "Expand navigation" : "Collapse navigation"}>
+              {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
             </button>
-            <button className="menu-trigger" type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu">
-              <Menu size={20} />
+            <button type="button" className="shop-mobile-menu-trigger" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen}>
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <button type="button" className="shop-mobile-cart" onClick={openCart} aria-label={`Open cart with ${itemCount} items`}>
+              <ShoppingCart size={18} /><span>{itemCount}</span>
             </button>
           </div>
         </div>
-      </header>
-      <div className={`mobile-menu ${menuOpen ? "is-open" : ""}`}>
-        <div className="mobile-menu-head">
-          <span className="eyebrow">Explore Nexus</span>
-          <button type="button" className="icon-button" onClick={() => setMenuOpen(false)} aria-label="Close menu">
-            <X size={20} />
-          </button>
-        </div>
-        <nav className="mobile-nav" aria-label="Mobile navigation">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className="mobile-nav-link">
-              {link.label}
+
+        <div className="shop-sidebar-content">
+          <span className="shop-sidebar-section-label">Shop</span>
+          <nav className="shop-sidebar-nav" aria-label="Main navigation">
+            {[...links, ...storeCollections.map((collection) => ({ href: `/products?collection=${encodeURIComponent(collection.handle)}`, label: collection.title, icon: Tags }))].map(({ href, label, icon: Icon }) => {
+              const targetSearch = href.includes("?") ? new URLSearchParams(href.split("?")[1]) : null;
+              const isActive = href === "/"
+                ? location === "/"
+                : location.split("?")[0] === href.split("?")[0] && (targetSearch
+                  ? targetSearch.get("collection") === currentSearch.get("collection")
+                  : !currentSearch.has("collection"));
+              return (
+                <Link key={href} href={href} className={`shop-sidebar-link ${isActive ? "is-active" : ""}`} title={collapsed ? label : undefined} aria-current={isActive ? "page" : undefined}>
+                  <Icon size={18} strokeWidth={1.8} />
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="shop-sidebar-lower">
+            <span className="shop-sidebar-section-label">Account</span>
+            {profile ? (
+              <div className="shop-account-card">
+                <span className="shop-account-avatar" aria-hidden="true"><UserRound size={17} /></span>
+                <span className="shop-account-copy"><strong>{profile.name}</strong><small>Signed in</small></span>
+                <button type="button" className="shop-signout" onClick={handleSignOut} title="Sign out" aria-label="Sign out"><LogOut size={16} /></button>
+              </div>
+            ) : !loading ? (
+              <Link href="/login" className="shop-sidebar-link" title={collapsed ? "Sign in" : undefined}>
+                <UserRound size={18} strokeWidth={1.8} /><span>Sign in</span>
+              </Link>
+            ) : null}
+            <Link href="/track-order" className="shop-sidebar-link" title={collapsed ? "Track an order" : undefined}>
+              <PackageCheck size={18} strokeWidth={1.8} /><span>Track an order</span>
             </Link>
-          ))}
-        </nav>
-        <div className="mobile-menu-foot flex flex-col gap-3">
-          <Link href="/login" className="text-link">
-            <User size={14} /> Account &amp; sign in
-          </Link>
-          <Link href="/track-order" className="text-link">
-            <PackageCheck size={14} /> Track an order
-          </Link>
-          <button type="button" className="text-link" onClick={openCart}>
-            <ShoppingCart size={14} /> View Cart
-          </button>
+            <button type="button" className="shop-sidebar-link shop-newsletter-link" onClick={openNewsletter} title={collapsed ? "Newsletter" : undefined}>
+              <Mail size={18} strokeWidth={1.8} /><span>Newsletter</span>
+            </button>
+          </div>
+
+          <div className="shop-sidebar-bottom">
+            <button type="button" className="shop-cart-button" onClick={openCart} title={collapsed ? `Cart (${itemCount})` : undefined}>
+              <ShoppingCart size={18} strokeWidth={1.8} />
+              <span>View cart</span>
+              <b>{itemCount}</b>
+            </button>
+            <p>Thoughtful finds for home and work.</p>
+          </div>
         </div>
-      </div>
-      {menuOpen && <button className="mobile-scrim" type="button" aria-label="Close menu" onClick={() => setMenuOpen(false)} />}
+      </header>
+      {menuOpen && <button type="button" className="shop-mobile-scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
     </>
   );
 }

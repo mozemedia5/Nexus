@@ -1,18 +1,18 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { X, Send, Bot, User, Sparkles, Loader2, Minus, Maximize2, ShoppingCart, ArrowUpRight, Bookmark, ListChecks, Trash2, ImagePlus, ThumbsUp, ThumbsDown, Share2, Copy, Check, ChevronDown, Volume2, Download, Maximize, Camera, Play, Pause } from "lucide-react";
+import { X, Send, User, Sparkles, Loader2, Minus, Maximize2, ShoppingCart, ArrowUpRight, Bookmark, ListChecks, Trash2, ImagePlus, Download, Maximize } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { useCart } from "@/contexts/CartContext";
 import { getAdminAuthHeaders } from "@/lib/firebase";
-import { cleanupCloudinarySessionImages, createCariUploadSession, uploadToCloudinary } from "@/lib/cloudinary";
+import { createCariUploadSession, uploadToCloudinary } from "@/lib/cloudinary";
 import {
   getCollections,
-  getProducts,
   shopifyConfigured,
-  FALLBACK_PRODUCTS,
   type Collection,
   type Product,
+  formatPrice,
+  getAllProducts,
 } from "@/lib/store";
 
 interface Message {
@@ -23,8 +23,6 @@ interface Message {
   imageNames?: string[];
   timestamp: Date;
 }
-
-interface SavedCariChat { id: string; title: string; savedAt: string; messages: Message[]; }
 
 interface ShoppingListItem {
   id: string;
@@ -42,24 +40,24 @@ interface AssistantPayload {
 }
 
 const DEFAULT_SUGGESTIONS = [
-  "Recommend top Smart Home devices",
-  "Show Workspace Productivity gadgets",
+  "Find a useful product for my home",
+  "Help me choose something for work",
   "How do I track my order?",
-  "Tell me about Nexus Store"
+  "Compare a couple of products for me"
 ];
 
 const SHOPPING_SUGGESTIONS = [
-  "Smart lighting & ambient items",
-  "Best ergonomic desk setups",
+  "Show me products for everyday use",
+  "Help me compare two options",
   "How do I place an order?",
   "Track an existing purchase"
 ];
 
 const STORE_SUGGESTIONS = [
   "Where can I track my order?",
-  "Browse Smart Home collection",
-  "Browse Workspace collection",
-  "Can you help me compare products?",
+  "Find an item from the live catalogue",
+  "Help me compare products",
+  "Can you help me choose a product?",
 ];
 
 function assistantCatalog(products: Product[], collections: Collection[], currentPath: string, shoppingList: ShoppingListItem[]) {
@@ -68,14 +66,14 @@ function assistantCatalog(products: Product[], collections: Collection[], curren
     products: products.map((product) => ({
       handle: product.handle,
       name: product.name,
-      description: product.description,
+      description: product.description.slice(0, 1000),
       categoryLabel: product.categoryLabel,
-      tags: product.tags,
-      image: product.image,
+      tags: product.tags.slice(0, 30),
+      image: product.image ? { url: product.image.url, altText: product.image.altText } : null,
       price: product.price,
       compareAtPrice: product.compareAtPrice,
       availableForSale: product.availableForSale,
-      variants: product.variants.map((variant) => ({
+      variants: product.variants.slice(0, 10).map((variant) => ({
         title: variant.title,
         availableForSale: variant.availableForSale,
         price: variant.price,
@@ -107,50 +105,6 @@ function parseAssistantPayload(content: string): AssistantPayload {
   return { cleanText: content, recommendations: [] };
 }
 
-function SpeechPlayer({ text }: { text: string }) {
-  const [playing, setPlaying] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const duration = Math.max(1, Math.ceil(text.trim().split(/\s+/).length / 2.6));
-  useEffect(() => {
-    if (!playing) return;
-    const timer = window.setInterval(() => setElapsed((value) => Math.min(duration, value + 1)), 1000);
-    return () => window.clearInterval(timer);
-  }, [playing, duration]);
-  useEffect(() => () => { window.speechSynthesis?.cancel(); }, []);
-  const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-  const toggle = () => {
-    if (!("speechSynthesis" in window)) {
-      toast.error("Read aloud is not supported by this browser.");
-      return;
-    }
-    if (playing) {
-      window.speechSynthesis.pause();
-      setPlaying(false);
-      return;
-    }
-    if (window.speechSynthesis.paused && utteranceRef.current) {
-      window.speechSynthesis.resume();
-      setPlaying(true);
-      return;
-    }
-    window.speechSynthesis.cancel();
-    setElapsed(0);
-    const utterance = new SpeechSynthesisUtterance(text);
-    utteranceRef.current = utterance;
-    utterance.onstart = () => setPlaying(true);
-    utterance.onend = () => { setPlaying(false); setElapsed(duration); };
-    utterance.onerror = () => setPlaying(false);
-    window.speechSynthesis.speak(utterance);
-  };
-  return <div className={`ai-audio-player ${playing ? "is-playing" : ""}`}>
-    <button type="button" onClick={toggle} aria-label={playing ? "Pause read aloud" : "Play read aloud"}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
-    <div className="ai-audio-wave" aria-hidden="true">{Array.from({ length: 24 }, (_, index) => <i key={index} style={{ "--wave-index": index } as React.CSSProperties} />)}</div>
-    <span>{formatTime(elapsed)} / {formatTime(duration)}</span>
-    <Volume2 size={13} className="ai-audio-volume" />
-  </div>;
-}
-
 export default function AiAssistant() {
   const [location] = useLocation();
   const { addItem, addItems } = useCart();
@@ -171,10 +125,7 @@ export default function AiAssistant() {
     };
   }, []);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "list" | "chats">("chat");
-  const [savedChats, setSavedChats] = useState<SavedCariChat[]>(() => {
-    try { return JSON.parse(localStorage.getItem("nexus_cari_saved_chats_v1") || "[]"); } catch { return []; }
-  });
+  const [activeTab, setActiveTab] = useState<"chat" | "list">("chat");
 
   const [sessionId, setSessionId] = useState(() => sessionStorage.getItem("nexus_cari_session_id") || "");
   const [cleanupToken, setCleanupToken] = useState(() => sessionStorage.getItem("nexus_cari_cleanup_token") || "");
@@ -275,7 +226,7 @@ export default function AiAssistant() {
       {
         id: "welcome",
         role: "assistant",
-        content: "Hello! I'm Cari, your Shopping Assistant at Nexus. I'm here to help you discover our smart home automation devices and workspace productivity gadgets. How can I help today?",
+        content: "Hello! I'm Cari, your shopping assistant at Nexus. I can help you explore the live Shopify catalogue, compare products, and narrow down options using your preferences. What are you looking for today?",
         timestamp: new Date(),
       },
     ];
@@ -287,9 +238,6 @@ export default function AiAssistant() {
     } catch {}
   }, [messages]);
 
-  useEffect(() => {
-    try { localStorage.setItem("nexus_cari_saved_chats_v1", JSON.stringify(savedChats)); } catch {}
-  }, [savedChats]);
 
   const addToShoppingList = (item: { handle?: string; name: string; price?: string; image?: string }) => {
     const name = item.name.trim();
@@ -349,13 +297,6 @@ export default function AiAssistant() {
     }
   };
 
-  const saveCurrentChat = () => {
-    if (messages.filter((message) => message.role === "user").length === 0) { toast.info("Start a conversation before saving it."); return; }
-    const title = messages.find((message) => message.role === "user")?.content.slice(0, 48) || "Shopping chat";
-    setSavedChats((previous) => [{ id: Date.now().toString(), title, savedAt: new Date().toISOString(), messages }, ...previous]);
-    setActiveTab("chats");
-    toast.success("Chat saved.");
-  };
   const handleImageFiles = async (files: FileList | File[]) => {
     const selectedFiles = Array.from(files).slice(0, Math.max(0, 4 - attachedImages.length));
     if (!selectedFiles.length) return;
@@ -395,53 +336,15 @@ export default function AiAssistant() {
     }
   };
 
-  const completeSession = async () => {
-    const completedSessionId = sessionId;
-    try {
-      if (completedSessionId && cleanupToken) await cleanupCloudinarySessionImages(completedSessionId, cleanupToken);
-      sessionStorage.removeItem("nexus_cari_session_id");
-      sessionStorage.removeItem("nexus_cari_cleanup_token");
-      setSessionId("");
-      setCleanupToken("");
-      setAttachedImages([]);
-      window.speechSynthesis?.cancel();
-      setSavedChats((previous) => {
-        const cleaned = previous.map((chat) => ({
-          ...chat,
-          messages: chat.messages.map((message) => {
-            const keepIndexes = (message.imageUrls ?? []).map((url, index) => completedSessionId && url.includes(completedSessionId) ? -1 : index).filter((index) => index >= 0);
-            return {
-              ...message,
-              imageUrls: keepIndexes.length ? keepIndexes.map((index) => message.imageUrls![index]) : undefined,
-              imageNames: keepIndexes.length ? keepIndexes.map((index) => message.imageNames?.[index] ?? "Image") : undefined,
-            };
-          }),
-        }));
-        try { localStorage.setItem("nexus_cari_saved_chats_v1", JSON.stringify(cleaned)); } catch {}
-        return cleaned;
-      });
-      const welcome: Message = { id: `welcome-${Date.now()}`, role: "assistant", content: "Hi, I'm Cari. Tell me what you're shopping for, and I'll help you find a good match from the live Nexus catalogue.", timestamp: new Date() };
-      setMessages([welcome]);
-      setActiveTab("chat");
-      setInput("");
-      toast.success("Session finished. Temporary search images were removed from Cloudinary.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not remove temporary images. Please retry finishing the session.");
-    }
-  };
-
-  const startNewChat = async () => {
-    await completeSession();
-  };
 
   const handleAddToCart = async (rec: { handle: string; name: string }) => {
-    const liveProd = products.find((p) => p.handle === rec.handle) || FALLBACK_PRODUCTS.find((p) => p.handle === rec.handle);
+    const liveProd = products.find((p) => p.handle === rec.handle && p.availableForSale);
     if (liveProd) await addItem(liveProd);
     else toast.error(`${rec.name} is not available in the current store catalog.`);
   };
 
   const handleBuyAll = async () => {
-    const matched = shoppingList.map((item) => products.find((product) => product.handle === item.handle) || FALLBACK_PRODUCTS.find((product) => product.handle === item.handle) || products.find((product) => product.name.toLowerCase() === item.name.toLowerCase())).filter((product): product is Product => Boolean(product?.availableForSale));
+    const matched = shoppingList.map((item) => products.find((product) => product.handle === item.handle) || products.find((product) => product.name.toLowerCase() === item.name.toLowerCase())).filter((product): product is Product => Boolean(product?.availableForSale));
     if (!matched.length) {
       toast.error("There are no catalog products in this list to add to Cart yet.");
       return;
@@ -487,8 +390,8 @@ export default function AiAssistant() {
 
     setCatalogLoading(true);
     Promise.all([
-      getProducts({ first: 120, sortKey: "CREATED_AT" }),
-      getCollections(40),
+      getAllProducts(),
+      getCollections(250),
     ])
       .then(([liveProducts, liveCollections]) => {
         setProducts(liveProducts);
@@ -532,7 +435,7 @@ export default function AiAssistant() {
     setLoading(true);
 
     try {
-      const history = [...messages, userMessage].map((m) => ({
+      const history = [...messages, userMessage].slice(-100).map((m) => ({
         role: m.role,
         content: m.content,
         ...(m.imageUrls?.length ? { imageUrls: m.imageUrls } : {}),
@@ -614,16 +517,6 @@ export default function AiAssistant() {
             </div>
             <div className="ai-header-controls flex items-center gap-1">
               {isAdminRoute && <button type="button" onClick={loadCustomerEmails} className="ai-icon-btn text-xs" title="View Firebase customer emails (admin only)" aria-label="View Firebase customer emails">Emails</button>}
-              <button type="button" onClick={completeSession} disabled={imageUploading || loading} className="ai-icon-btn" title="Finish session and delete temporary image uploads" aria-label="Finish Cari session"><Trash2 size={15} /></button>
-              <button
-                type="button"
-                onClick={saveCurrentChat}
-                className="ai-icon-btn text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                title="Save this chat"
-                aria-label="Save this chat"
-              >
-                <Bookmark size={16} />
-              </button>
               <button
                 type="button"
                 onClick={() => setIsMinimized(!isMinimized)}
@@ -645,35 +538,11 @@ export default function AiAssistant() {
 
           {!isMinimized && (
             <>
-              {/* Tabs Navigation */}
-              <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-3 py-1.5 text-xs font-medium justify-between items-center">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("chat")}
-                    className={`px-2.5 py-1 rounded-md transition-colors ${
-                      activeTab === "chat"
-                        ? "bg-amber-500 text-white font-semibold shadow-sm"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                    }`}
-                  >
-                    Chat
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("list")}
-                    className={`px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 ${
-                      activeTab === "list"
-                        ? "bg-amber-500 text-white font-semibold shadow-sm"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                    }`}
-                  >
-                    <ListChecks size={13} />
-                    Shopping List ({shoppingList.length})
-                  </button>
-                  <button type="button" onClick={() => setActiveTab("chats")} className={`px-2.5 py-1 rounded-md text-xs ${activeTab === "chats" ? "bg-amber-500 text-white" : "text-slate-600"}`}>Chats ({savedChats.length})</button>
-                </div>
-                <button type="button" onClick={saveCurrentChat} className="text-[11px] text-amber-700 font-semibold hover:underline flex items-center gap-1"><Bookmark size={12} /> Save</button>
+              <div className="ai-assistant-tabs">
+                <span className="ai-thread-label">Your Cari conversation</span>
+                <button type="button" onClick={() => setActiveTab(activeTab === "list" ? "chat" : "list")} className={`ai-list-toggle ${activeTab === "list" ? "is-active" : ""}`}>
+                  <ListChecks size={14} /> Shopping list <span>{shoppingList.length}</span>
+                </button>
               </div>
 
               {isAdminRoute && adminEmails !== null && (
@@ -682,12 +551,7 @@ export default function AiAssistant() {
                   {adminEmails.length ? adminEmails.map((email) => <div key={email}>{email}</div>) : <div>No Firebase customer accounts found.</div>}
                 </div>
               )}
-              {activeTab === "chats" ? (
-                <div className="ai-assistant-messages flex flex-col gap-2 p-3">
-                  <div className="flex items-center justify-between"><strong className="text-sm">Recent chats</strong><button type="button" onClick={startNewChat} className="text-xs text-amber-700">New chat</button></div>
-                  {savedChats.length === 0 ? <p className="py-8 text-center text-xs text-slate-500">Saved chats will appear here.</p> : savedChats.map((chat) => <div key={chat.id} className="flex items-center gap-2 rounded border border-slate-200 p-2"><button type="button" className="flex-1 truncate text-left text-xs" onClick={() => { setMessages(chat.messages.map((message) => ({ ...message, timestamp: new Date(message.timestamp) }))); setActiveTab("chat"); }}><strong className="block truncate">{chat.title}</strong><span className="text-slate-500">{new Date(chat.savedAt).toLocaleString()}</span></button><button type="button" onClick={() => setSavedChats((previous) => previous.filter((item) => item.id !== chat.id))} className="text-rose-500" aria-label="Delete saved chat"><Trash2 size={14} /></button></div>)}
-                </div>
-              ) : activeTab === "list" ? (
+              {activeTab === "list" ? (
                 /* Shopping List View */
                 <div className="ai-assistant-messages flex flex-col gap-3 p-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
@@ -728,7 +592,7 @@ export default function AiAssistant() {
                         <button type="submit" disabled={!newListItem.trim()}>Add</button>
                       </form>
                       {shoppingList.map((item) => {
-                        const matchedProd = products.find((p) => p.handle === item.handle) || FALLBACK_PRODUCTS.find((p) => p.handle === item.handle);
+                        const matchedProd = products.find((p) => p.handle === item.handle);
                         const imgUrl = item.image || matchedProd?.image?.url;
                         return (
                           <div key={item.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -805,28 +669,29 @@ export default function AiAssistant() {
                                         <Sparkles size={11} /> Recommended Items
                                       </span>
                                       {recommendations.map((rec: any, idx: number) => {
-                                        const matchedProd = products.find((p) => p.handle === rec.handle) || FALLBACK_PRODUCTS.find((p) => p.handle === rec.handle);
-                                        const imgUrl = rec.image || matchedProd?.image?.url || "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=300&q=80";
+                                        const matchedProd = products.find((p) => p.handle === rec.handle && p.availableForSale);
+                                        if (!matchedProd) return null;
+                                        const imgUrl = matchedProd.image?.url || matchedProd.images[0]?.url;
                                         return (
-                                          <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                                            <img src={imgUrl} alt={rec.name} className="w-12 h-12 object-cover rounded-md" />
+                                          <div key={matchedProd.handle} className="flex items-center gap-3 p-2 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                            {imgUrl ? <img src={imgUrl} alt={matchedProd.name} className="w-12 h-12 object-cover rounded-md" /> : <div className="w-12 h-12 rounded-md bg-stone-100" aria-hidden="true" />}
                                             <div className="flex-1 min-w-0">
-                                              <strong className="block text-xs font-semibold truncate text-slate-900 dark:text-slate-100">{rec.name}</strong>
-                                              <span className="text-xs text-amber-600 font-bold">{rec.price}</span>
+                                              <strong className="block text-xs font-semibold truncate text-slate-900 dark:text-slate-100">{matchedProd.name}</strong>
+                                              <span className="text-xs text-amber-600 font-bold">{formatPrice(matchedProd.price)}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
                                               <button
                                                 type="button"
-                                                onClick={() => addToShoppingList({ handle: rec.handle, name: rec.name, price: rec.price, image: imgUrl })}
+                                                onClick={() => addToShoppingList({ handle: matchedProd.handle, name: matchedProd.name, price: formatPrice(matchedProd.price), image: imgUrl })}
                                                 className="p-1.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-950 text-amber-600 dark:text-amber-400"
                                                 title="Save to Cari Shopping List"
                                               >
                                                 <Bookmark size={14} />
                                               </button>
-                                              <Link href={`/products/${rec.handle}`} className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300" title="View details">
+                                              <Link href={`/products/${matchedProd.handle}`} className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300" title="View details">
                                                 <ArrowUpRight size={14} />
                                               </Link>
-                                              <button type="button" onClick={() => handleAddToCart(rec)} className="p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-xs flex items-center gap-1" title="Add to Cart">
+                                              <button type="button" onClick={() => handleAddToCart({ handle: matchedProd.handle, name: matchedProd.name })} className="p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-xs flex items-center gap-1" title="Add to Cart">
                                                 <ShoppingCart size={13} />
                                               </button>
                                             </div>
@@ -835,7 +700,6 @@ export default function AiAssistant() {
                                       })}
                                     </div>
                                   )}
-                                  {cleanText && <SpeechPlayer text={cleanText} />}
                                 </div>
                               );
                             })()
@@ -845,14 +709,6 @@ export default function AiAssistant() {
                           <span className="ai-message-time">
                             {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           </span>
-                          {msg.role === "assistant" && <div className="ai-response-actions">
-                            <button type="button" aria-label="Good response" title="Good response" onClick={() => toast.success("Thanks for the feedback.")}><ThumbsUp size={14} /></button>
-                            <button type="button" aria-label="Poor response" title="Poor response" onClick={() => toast.info("Thanks. Cari will use your feedback.")}><ThumbsDown size={14} /></button>
-                            <button type="button" aria-label="Share response" title="Share" onClick={async () => { const text = parseAssistantPayload(msg.content).cleanText; if (navigator.share) await navigator.share({ text }).catch(() => {}); else { await navigator.clipboard.writeText(text); toast.success("Response copied so you can share it."); } }}><Share2 size={14} /></button>
-                            <details className="ai-modify-menu"><summary title="Modify response">Modify <ChevronDown size={12} /></summary><div>{["Make it shorter", "Add more detail", "Compare the options"].map((instruction) => <button type="button" key={instruction} onClick={() => { setInput(`${instruction}: ${parseAssistantPayload(msg.content).cleanText.slice(0, 160)}`); setActiveTab("chat"); }}>{instruction}</button>)}</div></details>
-                            <button type="button" aria-label="Copy response" title="Copy" onClick={() => { void navigator.clipboard.writeText(parseAssistantPayload(msg.content).cleanText).then(() => toast.success("Response copied.")); }}><Copy size={14} /></button>
-                            <button type="button" aria-label="Search response on Google" title="Google Search" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(parseAssistantPayload(msg.content).cleanText.slice(0, 240))}`, "_blank", "noopener,noreferrer")}><span className="google-g-icon">G</span></button>
-                          </div>}
                         </div>
                         {msg.role === "user" && (
                           <div className="ai-msg-avatar user-msg-avatar">

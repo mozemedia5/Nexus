@@ -71,7 +71,8 @@ export const shopifyConfigured = Boolean(domain && token);
 export const shopifyEndpoint = domain ? `https://${domain}/api/${apiVersion}/graphql.json` : "";
 
 const PRODUCT_FIELDS = `
-  id handle title description descriptionHtml availableForSale tags
+  id handle title description descriptionHtml availableForSale tags productType
+  collections(first: 5) { nodes { title handle } }
   featuredImage { url altText width height }
   images(first: 8) { nodes { url altText width height } }
   priceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } }
@@ -122,74 +123,17 @@ async function shopifyFetch<T>(query: string, variables: Record<string, unknown>
   return payload.data as T;
 }
 
-const CATEGORY_IMAGES_GALLERY: Record<string, ShopifyImage[]> = {
-  "smart-home": [
-    { url: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1000&q=80", altText: "Smart Home Control Hub" },
-    { url: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1000&q=80", altText: "Smart LED Ambient Light Bar" },
-    { url: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=1000&q=80", altText: "Smart Climate & Air Quality Monitor" },
-    { url: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1000&q=80", altText: "Modern Automated Smart Home" },
-    { url: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=1000&q=80", altText: "Connected Automation Sensor" },
-  ],
-  "workspace-productivity": [
-    { url: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1000&q=80", altText: "Ergonomic Desk & Ambient Lighting" },
-    { url: "https://images.unsplash.com/photo-1593062096033-9a26b09da705?auto=format&fit=crop&w=1000&q=80", altText: "Minimal Desk Setup with Smart Dock" },
-    { url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=1000&q=80", altText: "Wireless Smart Desk Charging Station" },
-    { url: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=1000&q=80", altText: "Smart Desk Lamp & Productivity Setup" },
-  ],
-  "tech-accessories": [
-    { url: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=1000&q=80", altText: "ANC Smart Wireless Headphones" },
-    { url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1000&q=80", altText: "High Precision Audio & Accessories" },
-    { url: "https://images.unsplash.com/photo-1616410011236-7a42121dd981?auto=format&fit=crop&w=1000&q=80", altText: "Magnetic Wireless Desk Stand" },
-  ]
-};
-
-function enrichProductImages(featured: ShopifyImage | null, existingImages: ShopifyImage[], categoryTag: string): ShopifyImage[] {
-  const result: ShopifyImage[] = [];
-  const seenUrls = new Set<string>();
-
-  if (featured && featured.url) {
-    result.push(featured);
-    seenUrls.add(featured.url);
-  }
-
-  for (const img of existingImages) {
-    if (img && img.url && !seenUrls.has(img.url)) {
-      result.push(img);
-      seenUrls.add(img.url);
-    }
-  }
-
-  // If fewer than 5 images, append category related high-res web images automatically
-  const fallbackGallery = CATEGORY_IMAGES_GALLERY[categoryTag] || CATEGORY_IMAGES_GALLERY["smart-home"];
-  for (const img of fallbackGallery) {
-    if (result.length >= 5) break;
-    if (!seenUrls.has(img.url)) {
-      result.push(img);
-      seenUrls.add(img.url);
-    }
-  }
-
-  return result;
-}
-
 function normalizeProduct(raw: any): Product {
   const min = raw.priceRange.minVariantPrice;
   const compare = raw.compareAtPriceRange?.minVariantPrice?.amount && raw.compareAtPriceRange.minVariantPrice.amount !== "0.0" ? raw.compareAtPriceRange.minVariantPrice : null;
   const tagList: string[] = raw.tags ?? [];
-  let categoryTag = "smart-home";
-  if (tagList.includes("workspace-productivity") || raw.title?.toLowerCase().includes("desk") || raw.title?.toLowerCase().includes("lamp") || raw.title?.toLowerCase().includes("dock") || raw.title?.toLowerCase().includes("monitor")) {
-    categoryTag = "workspace-productivity";
-  } else if (tagList.includes("tech-accessories") || raw.title?.toLowerCase().includes("charger") || raw.title?.toLowerCase().includes("headphone") || raw.title?.toLowerCase().includes("stand") || raw.title?.toLowerCase().includes("hub")) {
-    categoryTag = "tech-accessories";
-  }
+  const knownCategory = tagList.find((tag) => ["smart-home", "workspace-productivity", "tech-accessories"].includes(tag.toLowerCase()))?.toLowerCase();
+  const collectionTitle = raw.collections?.nodes?.[0]?.title?.trim();
+  const label = raw.productType?.trim() || collectionTitle || (knownCategory === "smart-home" ? "Smart Home Automation" : knownCategory === "workspace-productivity" ? "Workspace Productivity" : knownCategory === "tech-accessories" ? "Tech Accessories" : "Uncategorized");
 
   const rawImages: ShopifyImage[] = raw.images?.nodes ?? [];
   const featured = raw.featuredImage ?? rawImages[0] ?? null;
   const actualImages = rawImages.filter((image) => Boolean(image?.url));
-
-  let label = "Smart Home Automation";
-  if (categoryTag === "workspace-productivity") label = "Workspace Productivity";
-  if (categoryTag === "tech-accessories") label = "Tech Accessories";
 
   return {
     id: raw.id,
@@ -218,7 +162,6 @@ export function formatPrice(price: { amount: string; currencyCode: string } | nu
 }
 
 export const FALLBACK_COLLECTIONS: Collection[] = [];
-export const FALLBACK_PRODUCTS: Product[] = [];
 
 export async function getProducts(options: { first?: number; query?: string; sortKey?: string; fresh?: boolean } = {}): Promise<Product[]> {
   const cacheKey = `products_${options.first ?? 24}_${options.query || ""}_${options.sortKey || "BEST_SELLING"}`;
@@ -239,6 +182,42 @@ export async function getProducts(options: { first?: number; query?: string; sor
   } catch (err) {
     console.error("Shopify fetch failed:", err);
     return [];
+  }
+}
+
+export async function getAllProducts(): Promise<Product[]> {
+  const cacheKey = "products_all_shopify";
+  const cached = getCached<Product[]>(cacheKey);
+  if (cached) return cached;
+  if (!shopifyConfigured) return [];
+
+  const allProducts: Product[] = [];
+  let cursor: string | null = null;
+  let hasNextPage = true;
+  let pageCount = 0;
+
+  try {
+    while (hasNextPage && pageCount < 100) {
+      const data: { products: { edges: Array<{ cursor: string; node: any }>; pageInfo: { hasNextPage: boolean } } } = await shopifyFetch<{
+        products: {
+          edges: Array<{ cursor: string; node: any }>;
+          pageInfo: { hasNextPage: boolean };
+        };
+      }>(
+        `query AllProducts($first: Int!, $after: String) { products(first: $first, after: $after, sortKey: TITLE) { edges { cursor node { ${PRODUCT_FIELDS} } } pageInfo { hasNextPage } } }`,
+        { first: 250, after: cursor },
+      );
+      const edges: Array<{ cursor: string; node: any }> = data.products.edges ?? [];
+      allProducts.push(...edges.map(({ node }) => normalizeProduct(node)));
+      hasNextPage = Boolean(data.products.pageInfo?.hasNextPage && edges.length);
+      cursor = edges.at(-1)?.cursor ?? null;
+      pageCount += 1;
+    }
+    setCached(cacheKey, allProducts);
+    return allProducts;
+  } catch (error) {
+    console.error("Shopify full catalogue fetch failed:", error);
+    return allProducts;
   }
 }
 
@@ -289,7 +268,7 @@ export async function getCollections(first = 30): Promise<Collection[]> {
   }
 }
 
-export async function getCollectionProducts(handle: string, first = 24): Promise<Product[]> {
+export async function getCollectionProducts(handle: string, first = 250): Promise<Product[]> {
   const cacheKey = `col_products_${handle}_${first}`;
   const cached = getCached<Product[]>(cacheKey);
   if (cached) return cached;
@@ -315,12 +294,8 @@ export async function getOrderDetails(orderInput: string, emailOrPhone: string):
   const trimmedOrder = orderInput.trim();
   const trimmedContact = emailOrPhone.trim();
 
-  if (!trimmedOrder) {
-    throw new Error("Please enter your Order ID or Confirmation Number.");
-  }
-  if (!trimmedContact) {
-    throw new Error("Please enter your email address or phone number for verification.");
-  }
+  if (!trimmedOrder) throw new Error("Please enter your Order ID or Confirmation Number.");
+  if (!trimmedContact) throw new Error("Please enter your email address or phone number for verification.");
 
   try {
     const response = await fetch("/api/order-tracking", {
@@ -328,53 +303,13 @@ export async function getOrderDetails(orderInput: string, emailOrPhone: string):
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderNumber: trimmedOrder, emailOrPhone: trimmedContact }),
     });
-
     const payload = await response.json().catch(() => ({}));
-    if (response.ok && payload.order) {
-      return payload.order as TrackedOrder;
-    }
-  } catch {}
-
-  // Fallback client order tracking if endpoint fails
-  const cleanNum = trimmedOrder.toUpperCase().replace(/^#/, "");
-  return {
-    id: `gid://shopify/Order/local-${cleanNum || "1001"}`,
-    name: `#${cleanNum || "1001"}`,
-    orderNumber: cleanNum || "1001",
-    processedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    financialStatus: "PAID",
-    fulfillmentStatus: "IN_TRANSIT",
-    statusUrl: "https://nexus.com/order-tracking",
-    totalPrice: { amount: "218.00", currencyCode: "USD" },
-    shippingAddress: {
-      firstName: "Verified",
-      lastName: "Customer",
-      address1: "100 Innovation Way",
-      city: "Global Hub",
-      country: "United States",
-    },
-    lineItems: [
-      {
-        title: "Nexus Ergonomic Smart Light Bar",
-        quantity: 1,
-        price: { amount: "129.00", currencyCode: "USD" },
-        variantTitle: "Matte Black",
-      },
-      {
-        title: "Nexus Smart Gradient Light Strip",
-        quantity: 1,
-        price: { amount: "89.00", currencyCode: "USD" },
-        variantTitle: "2-Meter Starter Kit",
-      },
-    ],
-    fulfillments: [
-      {
-        trackingNumber: `NEXUS-TRK-${cleanNum || "98765"}`,
-        trackingUrl: "https://www.dhl.com/en/express/tracking.html",
-        company: "DHL Express Global",
-      },
-    ],
-  };
+    if (response.ok && payload.order) return payload.order as TrackedOrder;
+    throw new Error(payload.error || "Unable to verify this order. Please check the order details and try again.");
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("Order tracking is temporarily unavailable. Please try again.");
+  }
 }
 
 export async function createCart(variantId: string, quantity = 1) {

@@ -4,7 +4,7 @@ import { ArrowUpRight, Sparkles, Camera, Search, X, Loader2 } from "lucide-react
 import { toast } from "sonner";
 import ProductCard, { CategoryPills } from "@/components/ProductCard";
 import SEO from "@/components/SEO";
-import { getCollectionProducts, getCollections, getProducts, type Collection, type Product } from "@/lib/store";
+import { getAllProducts, getCollectionProducts, getCollections, type Collection, type Product } from "@/lib/store";
 
 export default function Collections() {
   const [location] = useLocation();
@@ -55,12 +55,12 @@ export default function Collections() {
         });
         const searchResult = await searchRes.json();
         setImageSearchActive(true);
-        if (searchResult.detectedCategory === "smart-home") {
-          setActive("smart-home");
-        } else {
-          setActive("workspace-productivity");
-        }
-        toast.success("Visual image search completed! Catalog filtered.");
+        const detected = typeof searchResult.detectedCategory === "string" ? searchResult.detectedCategory.toLowerCase() : "";
+        const matchingCollection = collections.find((collection) =>
+          collection.handle.toLowerCase() === detected || collection.title.toLowerCase() === detected
+        );
+        setActive(matchingCollection?.handle || "all");
+        toast.success(matchingCollection ? `Showing the ${matchingCollection.title} Shopify collection.` : "Visual search completed. Showing the live Shopify catalogue.");
       } else {
         throw new Error("Image upload failed");
       }
@@ -107,7 +107,7 @@ export default function Collections() {
     setError("");
     Promise.all([
       getCollections(),
-      active === "all" ? getProducts({ first: 48, sortKey: "CREATED_AT" }) : getCollectionProducts(active, 48),
+      active === "all" ? getAllProducts() : getCollectionProducts(active, 250),
     ])
       .then(([groups, items]) => {
         setCollections(groups);
@@ -123,14 +123,14 @@ export default function Collections() {
     <>
       <SEO
         title={`${selected ? selected.title : "All Products"} — Nexus`}
-        description={selected?.description || "Browse Nexus catalogue: Smart Home devices, workspace productivity lighting, docking stations, and tech accessories."}
-        keywords="Nexus products, Smart Home devices, Workspace productivity, Tech accessories, Desk light bars, Thunderbolt docks"
+        description={selected?.description || "Browse the live Nexus Shopify catalogue and current product collections."}
+        keywords="Nexus, live Shopify catalogue, products, collections"
         canonicalPath={`/products${active !== "all" ? `?collection=${active}` : ""}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           "name": selected ? selected.title : "Store Catalogue",
-          "description": selected?.description || "All Smart Home and Workspace Productivity products from Nexus.",
+          "description": selected?.description || "All products currently published in the Nexus Shopify catalogue.",
           "url": `https://liverton-nexus.vercel.app/products${active !== "all" ? `?collection=${active}` : ""}`,
           "mainEntity": {
             "@type": "ItemList",
@@ -156,8 +156,8 @@ export default function Collections() {
 
       <section className="page-intro py-8 px-4 max-w-7xl mx-auto">
         <span className="eyebrow text-xs uppercase tracking-wider text-amber-600 font-bold">Nexus Catalogue</span>
-        <h1 className="catalogue-title text-2xl sm:text-3xl font-semibold tracking-tight mt-1 text-slate-900 dark:text-white">Smart Home &amp; Office Electronics</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">{selected?.description || "Explore our curated Smart Home devices and Workspace Productivity gadgets."}</p>
+        <h1 className="catalogue-title text-2xl sm:text-3xl font-semibold tracking-tight mt-1 text-slate-900 dark:text-white">{selected?.title || "The Nexus catalogue"}</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">{selected?.description || "Explore products and collections currently published by the store."}</p>
       </section>
 
       <section className="catalogue py-6 px-4 max-w-7xl mx-auto">
@@ -245,7 +245,7 @@ export default function Collections() {
         ) : (
           <div className="empty-state">
             <h3>No products in this collection yet</h3>
-            <p>New items will be arriving soon. Explore our other curated collections above.</p>
+            <p>Try another Shopify collection or return to all products.</p>
           </div>
         )}
       </section>

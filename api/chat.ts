@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const messages: ShoppingMessage[] = body.messages
     .filter(isMessage)
-    .slice(-20)
+    .slice(-80)
     .map((message) => ({
       role: message.role,
       content: message.content.slice(0, 4000),
@@ -50,8 +50,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const reply = await generateCariReply(messages, {
       currentPath: typeof catalog.currentPath === "string" ? catalog.currentPath.slice(0, 300) : "/",
-      products: Array.isArray(catalog.products) ? catalog.products.slice(0, 120) : [],
-      collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 40) : [],
+      products: Array.isArray(catalog.products) ? catalog.products.slice(0, 1000) : [],
+      collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 250) : [],
       shoppingList: Array.isArray(catalog.shoppingList) ? catalog.shoppingList.slice(0, 100) : [],
     });
     return res.status(200).json({ reply });
