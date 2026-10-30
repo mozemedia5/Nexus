@@ -31,7 +31,8 @@ async function getFirebaseServices() {
 export async function listAdminAccounts(): Promise<AdminAccount[]> {
   const { auth, firestore } = await getFirebaseServices();
   const records = await firestore.collection("nexus_admins").where("isAdmin", "==", true).get();
-  const admins = (await Promise.all(records.docs.map(async (record) => {
+  const adminDocs = records.docs as Array<{ id: string; data: () => Record<string, unknown> }>;
+  const admins = (await Promise.all(adminDocs.map(async (record) => {
     try {
       const user = await auth.getUser(record.id);
       const stored = record.data();
