@@ -68,7 +68,7 @@ type GeminiResponse = {
   error?: { message?: string };
 };
 
-const DEFAULT_MODEL = "gemini-3.5-flash";
+const DEFAULT_MODEL = "gemini-3.8-flash";
 const MAX_CONTEXT_CHARS = 180_000;
 const MAX_MESSAGES = 80;
 const MAX_MESSAGE_CHARS = 4_000;
