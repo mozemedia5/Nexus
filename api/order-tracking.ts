@@ -10,108 +10,130 @@ type VercelResponse = {
   json: (body: unknown) => VercelResponse;
 };
 
+export class InvalidOrderLookupError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidOrderLookupError";
+  }
+}
+
+export class OrderTrackingUnavailableError extends Error {
+  constructor() {
+    super("Order tracking is temporarily unavailable. Please try again later.");
+    this.name = "OrderTrackingUnavailableError";
+  }
+}
+
 function normalizeOrderQuery(orderInput: string): string {
-  const trimmed = orderInput.trim().replace(/^#/, "");
-  if (!trimmed) return "";
+  const trimmed = orderInput.trim().replace(/^#\s*/, "");
+  if (!trimmed || trimmed.length > 64 || !/^[A-Za-z0-9-]+$/.test(trimmed)) {
+    throw new InvalidOrderLookupError("Enter a valid order number, such as #1001.");
+  }
   return trimmed;
 }
 
-function normalizeContact(contactInput: string): string {
-  return contactInput.trim().toLowerCase().replace(/[\s\-\(\)]/g, "");
+function normalizePhone(contactInput: string): string {
+  return contactInput.replace(/\D/g, "");
 }
 
 export async function fetchShopifyOrderTracking(
   orderInput: string,
-  emailOrPhoneInput: string
+  emailOrPhoneInput: string,
 ): Promise<TrackedOrder | null> {
   const orderNum = normalizeOrderQuery(orderInput);
-  const contact = normalizeContact(emailOrPhoneInput);
-
-  if (!orderNum) {
-    throw new Error("Order number or Order ID is required.");
+  const rawContact = emailOrPhoneInput.trim();
+  if (!rawContact) {
+    throw new InvalidOrderLookupError("Enter the email address or phone number used for the order.");
   }
-  if (!contact) {
-    throw new Error("Customer Email Address or Phone Number is required for verification.");
+
+  const isEmail = rawContact.includes("@");
+  let normalizedContact: string;
+  if (isEmail) {
+    if (rawContact.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawContact)) {
+      throw new InvalidOrderLookupError("Enter a valid email address or phone number.");
+    }
+    normalizedContact = rawContact.toLowerCase();
+  } else {
+    normalizedContact = normalizePhone(rawContact);
+    if (normalizedContact.length < 7 || normalizedContact.length > 15) {
+      throw new InvalidOrderLookupError("Enter a valid email address or phone number.");
+    }
   }
 
   const domain = (process.env.SHOPIFY_STORE_DOMAIN || process.env.VITE_SHOPIFY_STORE_DOMAIN || "")
     .replace(/^https?:\/\//, "")
     .replace(/\/$/, "");
-  const adminToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || "";
-  const storefrontToken =
-    process.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
-    process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
-    process.env.VITE_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
-    process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
-    "";
+  const adminToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN?.trim() || "";
   const apiVersion = process.env.SHOPIFY_API_VERSION || process.env.VITE_SHOPIFY_API_VERSION || "2026-07";
 
-  if (!domain) {
-    throw new Error("Shopify store domain is not configured.");
+  if (!domain || !adminToken) {
+    throw new OrderTrackingUnavailableError();
   }
 
-  // Preferred route: Shopify Admin GraphQL API (if SHOPIFY_ADMIN_ACCESS_TOKEN is provided)
-  if (adminToken) {
-    const adminEndpoint = `https://${domain}/admin/api/${apiVersion}/graphql.json`;
-    const query = `
-      query SearchOrders($query: String!) {
-        orders(first: 5, query: $query) {
-          nodes {
-            id
-            name
-            orderNumber
-            processedAt
-            displayFinancialStatus
-            displayFulfillmentStatus
-            statusPageUrl
-            email
+  const adminEndpoint = `https://${domain}/admin/api/${apiVersion}/graphql.json`;
+  const query = `
+    query SearchOrders($query: String!) {
+      orders(first: 10, query: $query) {
+        nodes {
+          id
+          name
+          orderNumber
+          processedAt
+          displayFinancialStatus
+          displayFulfillmentStatus
+          statusPageUrl
+          email
+          phone
+          totalPriceSet {
+            shopMoney {
+              amount
+              currencyCode
+            }
+          }
+          shippingAddress {
+            firstName
+            lastName
+            address1
+            city
+            country
             phone
-            totalPriceSet {
-              shopMoney {
-                amount
-                currencyCode
+          }
+          lineItems(first: 20) {
+            nodes {
+              title
+              quantity
+              originalTotalSet {
+                shopMoney {
+                  amount
+                  currencyCode
+                }
               }
-            }
-            shippingAddress {
-              firstName
-              lastName
-              address1
-              city
-              country
-            }
-            lineItems(first: 20) {
-              nodes {
+              variant {
                 title
-                quantity
-                originalTotalSet {
-                  shopMoney {
-                    amount
-                    currencyCode
-                  }
-                }
-                variant {
-                  title
-                  image {
-                    url
-                  }
+                image {
+                  url
                 }
               }
             }
-            fulfillments {
-              trackingInfo {
-                number
-                url
-                company
-              }
+          }
+          fulfillments {
+            displayStatus
+            deliveredAt
+            trackingInfo {
+              number
+              url
+              company
             }
           }
         }
       }
-    `;
+    }
+  `;
 
-    // Query for name or order_number
-    const searchQuery = `name:#${orderNum} OR name:${orderNum} OR order_number:${orderNum}`;
-    const response = await fetch(adminEndpoint, {
+  const searchQuery = `name:#${orderNum} OR name:${orderNum} OR order_number:${orderNum}`;
+  let response: Response;
+  try {
+    response = await fetch(adminEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -119,153 +141,85 @@ export async function fetchShopifyOrderTracking(
       },
       body: JSON.stringify({ query, variables: { query: searchQuery } }),
     });
+  } catch (error) {
+    console.error("Shopify order tracking request failed.", error);
+    throw new OrderTrackingUnavailableError();
+  }
 
-    if (!response.ok) {
-      throw new Error(`Shopify Admin API query failed (${response.status})`);
+  if (!response.ok) {
+    console.error("Shopify order tracking returned HTTP status", response.status);
+    throw new OrderTrackingUnavailableError();
+  }
+
+  let payload: any;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    console.error("Shopify order tracking returned invalid JSON.", error);
+    throw new OrderTrackingUnavailableError();
+  }
+  if (payload.errors?.length || !payload.data?.orders) {
+    console.error("Shopify order tracking GraphQL request failed.", payload.errors?.map((item: any) => item.message));
+    throw new OrderTrackingUnavailableError();
+  }
+
+  const matchedOrders: any[] = payload.data.orders.nodes ?? [];
+  const normalizedOrderNumber = orderNum.toLowerCase();
+  const verifiedOrder = matchedOrders.find((order) => {
+    const orderName = String(order.name || "").replace(/^#/, "").toLowerCase();
+    const orderNumber = String(order.orderNumber ?? "").toLowerCase();
+    const exactOrderMatch = orderName === normalizedOrderNumber || orderNumber === normalizedOrderNumber;
+    if (!exactOrderMatch) return false;
+
+    if (isEmail) {
+      return String(order.email || "").trim().toLowerCase() === normalizedContact;
     }
+    const orderPhones = [order.phone, order.shippingAddress?.phone]
+      .filter((phone): phone is string => typeof phone === "string" && phone.length > 0)
+      .map(normalizePhone);
+    return orderPhones.includes(normalizedContact);
+  });
 
-    const payload = (await response.json()) as any;
-    if (payload.errors?.length) {
-      throw new Error(payload.errors[0].message || "Shopify Admin API returned an error.");
-    }
+  // Return the same not-found result for an absent order and a contact mismatch.
+  if (!verifiedOrder) return null;
 
-    const matchedOrders: any[] = payload.data?.orders?.nodes ?? [];
-    if (!matchedOrders.length) {
-      return null;
-    }
+  const totalPrice = verifiedOrder.totalPriceSet?.shopMoney || { amount: "0.00", currencyCode: "USD" };
+  const fulfillmentStatuses: string[] = (verifiedOrder.fulfillments ?? [])
+    .map((fulfillment: any) => String(fulfillment.displayStatus || "").toUpperCase())
+    .filter(Boolean);
+  const statusPriority = ["DELIVERED", "OUT_FOR_DELIVERY", "IN_TRANSIT", "PICKED_UP", "READY_FOR_PICKUP", "CONFIRMED", "LABEL_PRINTED", "LABEL_PURCHASED", "SUBMITTED"];
+  const trackingStatus = statusPriority.find((status) => fulfillmentStatuses.includes(status)) ?? null;
+  const deliveredAt = (verifiedOrder.fulfillments ?? []).find((fulfillment: any) => fulfillment.deliveredAt)?.deliveredAt ?? null;
 
-    // Secure verification: Verify that the provided email or phone matches the order record
-    const verifiedOrder = matchedOrders.find((o) => {
-      const orderEmail = (o.email || "").toLowerCase();
-      const orderPhone = normalizeContact(o.phone || "");
-      return (orderEmail && orderEmail === contact) || (orderPhone && orderPhone === contact);
-    });
-
-    if (!verifiedOrder) {
-      throw new Error("Verification failed. The email or phone number does not match this order.");
-    }
-
-    const totalPrice = verifiedOrder.totalPriceSet?.shopMoney || { amount: "0.00", currencyCode: "USD" };
-
-    return {
-      id: verifiedOrder.id,
-      name: verifiedOrder.name,
-      orderNumber: verifiedOrder.orderNumber ?? verifiedOrder.name,
-      processedAt: verifiedOrder.processedAt,
-      financialStatus: verifiedOrder.displayFinancialStatus || "PAID",
-      fulfillmentStatus: verifiedOrder.displayFulfillmentStatus || "IN_PROGRESS",
-      statusUrl: verifiedOrder.statusPageUrl || null,
-      totalPrice,
-      shippingAddress: verifiedOrder.shippingAddress || null,
-      lineItems: (verifiedOrder.lineItems?.nodes ?? []).map((li: any) => ({
-        title: li.title,
-        quantity: li.quantity,
-        price: li.originalTotalSet?.shopMoney || { amount: "0.00", currencyCode: "USD" },
-        image: li.variant?.image?.url ?? null,
-        variantTitle: li.variant?.title ?? "",
+  return {
+    id: verifiedOrder.id,
+    name: verifiedOrder.name,
+    orderNumber: verifiedOrder.orderNumber ?? verifiedOrder.name,
+    processedAt: verifiedOrder.processedAt,
+    financialStatus: verifiedOrder.displayFinancialStatus || "PAID",
+    fulfillmentStatus: verifiedOrder.displayFulfillmentStatus || "IN_PROGRESS",
+    trackingStatus,
+    deliveredAt,
+    statusUrl: verifiedOrder.statusPageUrl || null,
+    totalPrice,
+    shippingAddress: verifiedOrder.shippingAddress || null,
+    lineItems: (verifiedOrder.lineItems?.nodes ?? []).map((item: any) => ({
+      title: item.title,
+      quantity: item.quantity,
+      price: item.originalTotalSet?.shopMoney || { amount: "0.00", currencyCode: "USD" },
+      image: item.variant?.image?.url ?? null,
+      variantTitle: item.variant?.title ?? "",
+    })),
+    fulfillments: (verifiedOrder.fulfillments ?? []).flatMap((fulfillment: any) =>
+      (fulfillment.trackingInfo ?? []).map((tracking: any) => ({
+        trackingNumber: tracking.number,
+        trackingUrl: tracking.url,
+        company: tracking.company,
+        status: fulfillment.displayStatus ?? null,
+        deliveredAt: fulfillment.deliveredAt ?? null,
       })),
-      fulfillments: (verifiedOrder.fulfillments ?? []).flatMap((f: any) =>
-        (f.trackingInfo ?? []).map((ti: any) => ({
-          trackingNumber: ti.number,
-          trackingUrl: ti.url,
-          company: ti.company,
-        }))
-      ),
-    };
-  }
-
-  // Secondary route: Storefront API node query if GID provided
-  if (storefrontToken && (orderInput.startsWith("gid://") || !isNaN(Number(orderNum)))) {
-    const storefrontEndpoint = `https://${domain}/api/${apiVersion}/graphql.json`;
-    const gid = orderInput.startsWith("gid://")
-      ? orderInput
-      : `gid://shopify/Order/${orderNum}`;
-
-    const query = `
-      query GetOrderDetails($id: ID!) {
-        node(id: $id) {
-          ... on Order {
-            id
-            name
-            orderNumber
-            processedAt
-            financialStatus
-            fulfillmentStatus
-            statusUrl
-            totalPrice { amount currencyCode }
-            shippingAddress {
-              firstName
-              lastName
-              address1
-              city
-              country
-            }
-            lineItems(first: 20) {
-              nodes {
-                title
-                quantity
-                originalTotalPrice { amount currencyCode }
-                variant {
-                  title
-                  image { url }
-                }
-              }
-            }
-            successfulFulfillments(first: 5) {
-              trackingInfo(first: 5) {
-                number
-                url
-                company
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    const response = await fetch(storefrontEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": storefrontToken,
-      },
-      body: JSON.stringify({ query, variables: { id: gid } }),
-    });
-
-    if (response.ok) {
-      const payload = (await response.json()) as any;
-      const o = payload.data?.node;
-      if (o && o.name) {
-        return {
-          id: o.id,
-          name: o.name,
-          orderNumber: o.orderNumber ?? o.name,
-          processedAt: o.processedAt,
-          financialStatus: o.financialStatus || "PAID",
-          fulfillmentStatus: o.fulfillmentStatus || "IN_PROGRESS",
-          statusUrl: o.statusUrl,
-          totalPrice: o.totalPrice,
-          shippingAddress: o.shippingAddress,
-          lineItems: (o.lineItems?.nodes ?? []).map((li: any) => ({
-            title: li.title,
-            quantity: li.quantity,
-            price: li.originalTotalPrice,
-            image: li.variant?.image?.url ?? null,
-            variantTitle: li.variant?.title ?? "",
-          })),
-          fulfillments: (o.successfulFulfillments ?? []).flatMap((f: any) =>
-            (f.trackingInfo ?? []).map((ti: any) => ({
-              trackingNumber: ti.number,
-              trackingUrl: ti.url,
-              company: ti.company,
-            }))
-          ),
-        };
-      }
-    }
-  }
-
-  return null;
+    ),
+  };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -277,19 +231,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     orderNumber?: string;
     emailOrPhone?: string;
   };
-
   const orderNumber = typeof body.orderNumber === "string" ? body.orderNumber : "";
   const emailOrPhone = typeof body.emailOrPhone === "string" ? body.emailOrPhone : "";
 
   try {
     const order = await fetchShopifyOrderTracking(orderNumber, emailOrPhone);
     if (!order) {
-      return res.status(404).json({ error: "Order not found. Please check your order details." });
+      return res.status(404).json({ error: "Order not found. Check the order number and contact details, then try again." });
     }
     return res.status(200).json({ order });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to lookup order";
-    const status = message.includes("Verification failed") ? 403 : message.includes("required") ? 400 : 500;
-    return res.status(status).json({ error: message });
+    if (error instanceof InvalidOrderLookupError) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error instanceof OrderTrackingUnavailableError) {
+      return res.status(503).json({ error: error.message });
+    }
+    console.error("Unexpected order tracking failure.", error);
+    return res.status(503).json({ error: "Order tracking is temporarily unavailable. Please try again later." });
   }
 }

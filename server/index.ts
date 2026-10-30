@@ -6,7 +6,7 @@ import { parseFirebaseServiceAccount } from "./firebaseAdmin.js";
 import { AdminAccountError, AdminAuthError, authenticateAdminAuthorization, requireSuperAdmin, type AdminPrincipal } from "./adminAuth.js";
 import { listAdminAccounts, promoteVerifiedFirebaseUser, revokeAdminAccount } from "./adminAccounts.js";
 import { generateCariReply, isHannaConfigured, type ShoppingCatalogContext, type ShoppingMessage } from "./hanna.js";
-import { fetchShopifyOrderTracking } from "../api/order-tracking.js";
+import { fetchShopifyOrderTracking, InvalidOrderLookupError, OrderTrackingUnavailableError } from "../api/order-tracking.js";
 import { fetchShopifyAdminOrders, fetchShopifyAdminMetrics } from "./shopifyAdmin.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -75,9 +75,16 @@ async function startServer() {
       }
       res.json({ order });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to lookup order";
-      const status = message.includes("Verification failed") ? 403 : message.includes("required") ? 400 : 500;
-      res.status(status).json({ error: message });
+      if (error instanceof InvalidOrderLookupError) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+      if (error instanceof OrderTrackingUnavailableError) {
+        res.status(503).json({ error: error.message });
+        return;
+      }
+      console.error("Unexpected order tracking failure.", error);
+      res.status(503).json({ error: "Order tracking is temporarily unavailable. Please try again later." });
     }
   });
   app.post("/api/chat", async (req, res) => {

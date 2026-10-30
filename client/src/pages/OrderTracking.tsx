@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { ArrowUpRight, CheckCircle2, Clock, MapPin, Package, Search, ExternalLink, Truck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { formatPrice, getOrderDetails, shopifyConfigured, type TrackedOrder } from "@/lib/store";
+import { formatPrice, getOrderDetails, type TrackedOrder } from "@/lib/store";
 import SEO from "@/components/SEO";
 
 export default function OrderTracking() {
@@ -9,6 +9,10 @@ export default function OrderTracking() {
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<TrackedOrder | null>(null);
+  const trackingStatus = order?.trackingStatus?.toUpperCase() || "";
+  const isDelivered = Boolean(order?.deliveredAt) || trackingStatus === "DELIVERED";
+  const isFulfilled = order?.fulfillmentStatus.toUpperCase() === "FULFILLED"
+    || ["IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "PICKED_UP"].includes(trackingStatus);
 
   const handleSearch = async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -89,7 +93,7 @@ export default function OrderTracking() {
           <div className="track-notice">
             <ShieldCheck size={16} />
             <span>
-              <strong>Real-Time Tracking Active:</strong> Enter your order number above to view live fulfillment status.
+              <strong>Secure order lookup:</strong> Enter the order number and the email address or phone number used at checkout.
             </span>
           </div>
         </div>
@@ -119,17 +123,17 @@ export default function OrderTracking() {
                 <span>Order Placed</span>
               </div>
               <div className="tracker-line is-complete" />
-              <div className="tracker-step is-complete">
+              <div className={`tracker-step ${isFulfilled ? "is-complete" : "is-active"}`}>
                 <div className="step-icon"><Package size={18} /></div>
                 <span>Processing</span>
               </div>
-              <div className="tracker-line is-complete" />
-              <div className={`tracker-step ${order.fulfillmentStatus === "IN_TRANSIT" || order.fulfillmentStatus === "FULFILLED" ? "is-complete" : "is-active"}`}>
+              <div className={`tracker-line ${isFulfilled ? "is-complete" : ""}`} />
+              <div className={`tracker-step ${isFulfilled ? "is-complete" : "is-active"}`}>
                 <div className="step-icon"><Truck size={18} /></div>
-                <span>In Transit</span>
+                <span>Fulfilled</span>
               </div>
-              <div className="tracker-line" />
-              <div className={`tracker-step ${order.fulfillmentStatus === "FULFILLED" ? "is-complete" : ""}`}>
+              <div className={`tracker-line ${isDelivered ? "is-complete" : ""}`} />
+              <div className={`tracker-step ${isDelivered ? "is-complete" : isFulfilled ? "is-active" : ""}`}>
                 <div className="step-icon"><MapPin size={18} /></div>
                 <span>Delivered</span>
               </div>
@@ -144,9 +148,10 @@ export default function OrderTracking() {
                     <div>
                       <strong>Carrier: {f.company || "Express Courier"}</strong>
                       <p>Tracking Number: <code>{f.trackingNumber || "N/A"}</code></p>
+                      {f.status && <p>Status: {f.status.replace(/_/g, " ")}</p>}
                     </div>
                     {f.trackingUrl && (
-                      <a href={f.trackingUrl} target="_blank" rel="noreferrer" className="button button-quiet button-sm">
+                      <a href={f.trackingUrl} target="_blank" rel="noopener noreferrer" className="button button-quiet button-sm">
                         Carrier Tracking <ExternalLink size={14} />
                       </a>
                     )}
@@ -199,7 +204,7 @@ export default function OrderTracking() {
             {/* External order status link */}
             {order.statusUrl && (
               <div className="external-status-action">
-                <a href={order.statusUrl} target="_blank" rel="noreferrer" className="button button-dark">
+                <a href={order.statusUrl} target="_blank" rel="noopener noreferrer" className="button button-dark">
                   View order status page <ExternalLink size={15} />
                 </a>
               </div>

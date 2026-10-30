@@ -1607,12 +1607,9 @@ html, body { background: var(--store-paper); }
   object-position: center 54%;
   opacity: 0;
   transform: scale(1.055);
-  animation: nexus-hero-crossfade 21s cubic-bezier(.22,.61,.36,1) infinite;
+  transition: opacity 1.1s cubic-bezier(.22,.61,.36,1), transform 7s cubic-bezier(.22,.61,.36,1);
   will-change: opacity, transform;
 }
-.nexus-hero-backdrop-image:nth-of-type(1) { animation-delay: -14s; }
-.nexus-hero-backdrop-image:nth-of-type(2) { animation-delay: -7s; }
-.nexus-hero-backdrop-image:nth-of-type(3) { animation-delay: 0s; }
 .nexus-hero-image-wash {
   position: absolute;
   z-index: 1;
@@ -1704,12 +1701,6 @@ html, body { background: var(--store-paper); }
   outline: 2px solid #85643a;
   outline-offset: 4px;
 }
-@keyframes nexus-hero-crossfade {
-  0% { opacity: 0; transform: scale(1.055) translateX(1%); }
-  7% { opacity: .84; transform: scale(1.04) translateX(0); }
-  29% { opacity: .84; transform: scale(1.01) translateX(-.4%); }
-  37%, 100% { opacity: 0; transform: scale(1) translateX(-.8%); }
-}
 @media (max-width: 700px) {
   .nexus-home-hero { min-height: min(650px, calc(100svh - 110px)); }
   .nexus-hero-backdrop-image { object-position: 63% center; }
@@ -1731,8 +1722,7 @@ html, body { background: var(--store-paper); }
   .nexus-hero-shop-button, .nexus-hero-cari-button { flex: 1 1 auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nexus-hero-backdrop-image { animation: none; opacity: 0; transform: none; }
-  .nexus-hero-backdrop-image:first-of-type { opacity: .84; }
+  .nexus-hero-backdrop-image { transition: none; }
   .nexus-hero-shop-button, .nexus-hero-cari-button { transition: none; }
 }
 

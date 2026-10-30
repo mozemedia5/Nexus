@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { addCartLines, createCart, removeCartLines, updateCart, type Product } from "@/lib/store";
+import { addCartLines, createCart, getAvailableVariant, removeCartLines, updateCart, type Product } from "@/lib/store";
 
 type CartLine = { id: string; quantity: number; product: { id: string; handle: string; name: string; image: { url: string; altText: string | null } | null; price: { amount: string; currencyCode: string }; variantTitle: string } };
 type ShopifyCart = { id: string; checkoutUrl: string; lines: { nodes: any[] }; cost: { subtotalAmount: { amount: string; currencyCode: string } } };
@@ -12,9 +12,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (cart) localStorage.setItem("liverton-shopify-cart", JSON.stringify(cart)); else localStorage.removeItem("liverton-shopify-cart"); }, [cart]);
   const lines = useMemo(() => normalizeCart(cart), [cart]); const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
   const run = async (operation: () => Promise<ShopifyCart>) => { setBusy(true); setError(null); try { setCart(await operation()); } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to update your bag."); } finally { setBusy(false); } };
-  const addItem = async (product: Product, variantId = product.variants[0]?.id, quantity = 1) => { if (!variantId) { setError("This product has no available variant."); return; } setIsOpen(true); if (cart && lines.some((line) => line.product.id === variantId)) { await run(() => updateCart(cart.id, lines.map((line) => ({ id: line.id, quantity: line.product.id === variantId ? line.quantity + quantity : line.quantity })))); } else if (cart) { await run(() => addCartLines(cart.id, [{ merchandiseId: variantId, quantity }])); } else { await run(() => createCart(variantId, quantity)); } };
+  const addItem = async (product: Product, variantId?: string, quantity = 1) => {
+    const selectedVariant = variantId
+      ? product.variants.find((variant) => variant.id === variantId && variant.availableForSale)
+      : getAvailableVariant(product);
+    if (!selectedVariant) {
+      setError("This product is not currently available.");
+      setIsOpen(true);
+      return;
+    }
+    const selectedVariantId = selectedVariant.id;
+    setIsOpen(true);
+    if (cart && lines.some((line) => line.product.id === selectedVariantId)) {
+      await run(() => updateCart(cart.id, lines.map((line) => ({
+        id: line.id,
+        quantity: line.product.id === selectedVariantId ? line.quantity + quantity : line.quantity,
+      }))));
+    } else if (cart) {
+      await run(() => addCartLines(cart.id, [{ merchandiseId: selectedVariantId, quantity }]));
+    } else {
+      await run(() => createCart(selectedVariantId, quantity));
+    }
+  };
   const addItems = async (products: Product[]): Promise<boolean> => {
-    const merchandise = products.map((product) => product.variants.find((variant) => variant.availableForSale) ?? product.variants[0]).filter((variant) => variant?.id).map((variant) => ({ merchandiseId: variant.id, quantity: 1 }));
+    const merchandise = products.flatMap((product) => {
+      const variant = getAvailableVariant(product);
+      return variant ? [{ merchandiseId: variant.id, quantity: 1 }] : [];
+    });
     if (!merchandise.length) return false;
     setIsOpen(true); setBusy(true); setError(null);
     try {

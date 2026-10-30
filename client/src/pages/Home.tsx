@@ -11,6 +11,8 @@ const heroBackgrounds = [
   "/nexus-hero-workspace-web.jpg",
   "/nexus-hero-home-web.jpg",
   "/nexus-hero-everyday-web.jpg",
+  "/nexus-hero-reading-web.jpg",
+  "/nexus-hero-kitchen-web.jpg",
 ];
 
 function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[] }) {
@@ -69,10 +71,19 @@ function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[]
 }
 
 export default function Home() {
+  const [heroImageIndex, setHeroImageIndex] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [newestProducts, setNewestProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => {
+      setHeroImageIndex((current) => (current + 1) % heroBackgrounds.length);
+    }, 7000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -125,6 +136,10 @@ export default function Home() {
               alt=""
               loading={index === 0 ? "eager" : "lazy"}
               fetchPriority={index === 0 ? "high" : "auto"}
+              style={{
+                opacity: heroImageIndex === index ? 0.84 : 0,
+                transform: heroImageIndex === index ? "scale(1)" : "scale(1.055)",
+              }}
             />
           ))}
           <div className="nexus-hero-image-wash" />

@@ -24,6 +24,12 @@ export type Product = {
   variants: ProductVariant[];
 };
 
+export function getAvailableVariant(product: Product): ProductVariant | null {
+  return product.variants
+    .filter((variant) => variant.availableForSale)
+    .sort((left, right) => Number(left.price.amount) - Number(right.price.amount))[0] ?? null;
+}
+
 export type Collection = { id: string; handle: string; title: string; description: string; image: ShopifyImage | null };
 
 export type TrackedOrder = {
@@ -33,6 +39,8 @@ export type TrackedOrder = {
   processedAt: string;
   financialStatus: string;
   fulfillmentStatus: string;
+  trackingStatus?: string | null;
+  deliveredAt?: string | null;
   statusUrl?: string | null;
   totalPrice: { amount: string; currencyCode: string };
   shippingAddress?: {
@@ -53,6 +61,8 @@ export type TrackedOrder = {
     trackingNumber?: string | null;
     trackingUrl?: string | null;
     company?: string | null;
+    status?: string | null;
+    deliveredAt?: string | null;
   }[];
 };
 

@@ -43,6 +43,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   const [session, setSession] = useState<AdminSession | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
+  const [authError, setAuthError] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const firebaseStatus = getFirebaseStatus();
@@ -61,16 +62,23 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return onAuthStateChanged(auth, (user) => {
       if (!user) {
         setSession(null);
+        setAuthError("");
         setAuthChecking(false);
         return;
       }
       setAuthChecking(true);
       void verifyAdminSession(user)
         .then((verified) => {
-          if (auth.currentUser?.uid === user.uid) setSession(verified);
+          if (auth.currentUser?.uid === user.uid) {
+            setSession(verified);
+            setAuthError(verified ? "" : "This Firebase account does not have Nexus administrator access.");
+          }
         })
-        .catch(() => {
-          if (auth.currentUser?.uid === user.uid) setSession(null);
+        .catch((error) => {
+          if (auth.currentUser?.uid === user.uid) {
+            setSession(null);
+            setAuthError(error instanceof Error ? error.message : "Administrator session could not be verified.");
+          }
         })
         .finally(() => setAuthChecking(false));
     });
@@ -127,6 +135,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       return;
     }
     setAuthChecking(true);
+    setAuthError("");
     try {
       const credential = await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
       const verified = await verifyAdminSession(credential.user);
@@ -147,6 +156,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           ? "Too many sign-in attempts. Try again later."
           : error instanceof Error ? error.message : "Administrator sign-in failed.";
       toast.error(message);
+      setAuthError(message);
     } finally {
       setAuthChecking(false);
     }
@@ -286,6 +296,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <span>{authChecking ? "Verifying…" : "Sign in securely"}</span>
               <ArrowRight size={16} />
             </button>
+            {authError && <p role="alert" className="text-xs text-rose-500">{authError}</p>}
           </form>
 
           <div

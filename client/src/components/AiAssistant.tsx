@@ -12,6 +12,7 @@ import {
   type Collection,
   type Product,
   formatPrice,
+  getAvailableVariant,
   getAllProducts,
 } from "@/lib/store";
 
@@ -151,7 +152,7 @@ function parseAssistantPayload(content: string): AssistantPayload {
 
 export default function AiAssistant() {
   const [location] = useLocation();
-  const { addItem, addItems } = useCart();
+  const { addItem, addItems, busy: cartBusy } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [actionCandidate, setActionCandidate] = useState<CariActionCandidate | null>(null);
   const [adminEmails, setAdminEmails] = useState<string[] | null>(null);
@@ -427,19 +428,20 @@ export default function AiAssistant() {
     setActionCandidate(null);
     if (kind === "list") addToShoppingList({ handle: product.handle, name: product.name, price: formatPrice(product.price), image: product.image?.url || product.images[0]?.url });
     else {
-      if (!product.availableForSale) { toast.error(`${product.name} is not available in the current store catalog.`); return; }
-      await addItem(product);
+      const variant = getAvailableVariant(product);
+      if (!variant) { toast.error(`${product.name} is not available in the current store catalog.`); return; }
+      await addItem(product, variant.id);
       toast.success(`${product.name} added to cart.`);
     }
   };
   const handleAddToCart = async (rec: { handle: string; name: string }) => {
-    const liveProd = products.find((p) => p.handle === rec.handle && p.availableForSale);
-    if (liveProd) requestProductAction(liveProd, "cart");
+    const liveProd = products.find((p) => p.handle === rec.handle);
+    if (liveProd && getAvailableVariant(liveProd)) requestProductAction(liveProd, "cart");
     else toast.error(`${rec.name} is not available in the current store catalog.`);
   };
 
   const handleBuyAll = async () => {
-    const matched = shoppingList.map((item) => products.find((product) => product.handle === item.handle) || products.find((product) => product.name.toLowerCase() === item.name.toLowerCase())).filter((product): product is Product => Boolean(product?.availableForSale));
+    const matched = listPurchases.map(({ product }) => product);
     if (!matched.length) {
       toast.error("There are no catalog products in this list to add to Cart yet.");
       return;
@@ -462,6 +464,20 @@ export default function AiAssistant() {
     () => assistantCatalog(products, collections, location, shoppingList),
     [products, collections, location, shoppingList],
   );
+
+  const listPurchases = useMemo(() => shoppingList.flatMap((item) => {
+    const product = products.find((candidate) => candidate.handle === item.handle)
+      || products.find((candidate) => candidate.name.toLowerCase() === item.name.trim().toLowerCase());
+    const variant = product ? getAvailableVariant(product) : null;
+    return product && variant ? [{ itemId: item.id, product, variant }] : [];
+  }), [shoppingList, products]);
+
+  const shoppingListSubtotal = useMemo(() => {
+    if (!listPurchases.length) return null;
+    const currencyCode = listPurchases[0].variant.price.currencyCode;
+    const amount = listPurchases.reduce((total, entry) => total + Number(entry.variant.price.amount), 0);
+    return { amount: amount.toFixed(2), currencyCode };
+  }, [listPurchases]);
 
   const activeSuggestions = useMemo(() => {
     if (messages.length <= 1) return DEFAULT_SUGGESTIONS;
@@ -660,7 +676,7 @@ export default function AiAssistant() {
                     </span>
                     {shoppingList.length > 0 && (
                       <div className="flex items-center gap-2">
-                        <button type="button" onClick={handleBuyAll} className="shopping-list-buy-all"><ShoppingCart size={13} /> Buy all</button>
+                        <button type="button" onClick={handleBuyAll} disabled={!listPurchases.length || cartBusy} className="shopping-list-buy-all"><ShoppingCart size={13} /> Add all to Cart</button>
                       <button
                         type="button"
                         onClick={() => {
@@ -692,29 +708,36 @@ export default function AiAssistant() {
                         <button type="submit" disabled={!newListItem.trim()}>Add</button>
                       </form>
                       {shoppingList.map((item) => {
-                        const matchedProd = products.find((p) => p.handle === item.handle);
+                        const matchedProd = products.find((p) => p.handle === item.handle)
+                          || products.find((p) => p.name.toLowerCase() === item.name.trim().toLowerCase());
+                        const matchedVariant = matchedProd ? getAvailableVariant(matchedProd) : null;
                         const imgUrl = item.image || matchedProd?.image?.url;
                         return (
                           <div key={item.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                             {imgUrl ? <img src={imgUrl} alt={item.name} className="w-12 h-12 object-cover rounded-md" /> : <div className="shopping-list-item-placeholder"><ListChecks size={17} /></div>}
                             <div className="flex-1 min-w-0">
                               <input className="shopping-list-item-name" value={item.name} onChange={(event) => setShoppingList((previous) => previous.map((saved) => saved.id === item.id ? { ...saved, name: event.target.value } : saved))} aria-label={`Edit ${item.name}`} />
-                              {item.price && <span className="text-xs text-amber-600 font-bold">{item.price}</span>}
+                              <span className={`text-xs font-bold ${matchedVariant ? "text-amber-600" : "text-slate-500 dark:text-slate-400"}`}>
+                                {matchedVariant ? formatPrice(matchedVariant.price) : catalogLoading ? "Loading live price…" : matchedProd ? "Currently unavailable" : "Not in live catalog"}
+                              </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <button
                                 type="button"
-                                onClick={() => handleAddToCart({ handle: item.handle, name: item.name })}
-                                className="p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-xs flex items-center gap-1"
-                                title="Add to Cart"
+                                onClick={() => matchedProd && handleAddToCart({ handle: matchedProd.handle, name: matchedProd.name })}
+                                disabled={!matchedVariant || cartBusy}
+                                className="px-2 py-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-[11px] flex items-center gap-1 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                aria-label={`Add ${item.name} to cart`}
+                                title={matchedVariant ? "Add to Cart" : "This item is not currently purchasable"}
                               >
-                                <ShoppingCart size={13} />
+                                <ShoppingCart size={13} /> <span>Add to cart</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => removeFromShoppingList(item.id)}
                                 className="p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-950 text-red-500"
                                 title="Remove item"
+                                aria-label={`Remove ${item.name} from shopping list`}
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -722,6 +745,27 @@ export default function AiAssistant() {
                           </div>
                         );
                       })}
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Estimated subtotal</span>
+                          <strong className="text-sm text-slate-900 dark:text-white">
+                            {catalogLoading ? "Loading live prices…" : shoppingListSubtotal ? formatPrice(shoppingListSubtotal) : "No live prices available"}
+                          </strong>
+                        </div>
+                        <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                          One of each available catalog item; shipping and taxes are calculated at checkout.
+                          {shoppingList.length > listPurchases.length ? " Custom or unavailable items are excluded." : ""}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleBuyAll}
+                          disabled={!listPurchases.length || cartBusy}
+                          className="mt-3 w-full rounded-md bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <ShoppingCart size={14} />
+                          {cartBusy ? "Adding to Cart…" : "Add available items to Cart"}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -772,7 +816,7 @@ export default function AiAssistant() {
                                         <Sparkles size={11} /> Recommended Items
                                       </span>
                                       {recommendations.map((rec: any, idx: number) => {
-                                        const matchedProd = products.find((p) => p.handle === rec.handle && p.availableForSale);
+                                        const matchedProd = products.find((p) => p.handle === rec.handle && getAvailableVariant(p));
                                         if (!matchedProd) return null;
                                         const imgUrl = matchedProd.image?.url || matchedProd.images[0]?.url;
                                         return (
