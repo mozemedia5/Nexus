@@ -39,7 +39,11 @@ export default function ProductCard({ product, compact = false }: { product: Pro
   };
 
   const handleAdd = async () => {
-    await addItem(product, variant?.id);
+    const added = await addItem(product, variant?.id);
+    if (!added) {
+      toast.error(`Could not add ${product.name}. Check the Cart message and try again.`);
+      return;
+    }
     trackInteraction("add_to_cart");
     toast("Added to Cart", { description: product.name });
   };

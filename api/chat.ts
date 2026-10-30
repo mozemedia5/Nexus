@@ -1,4 +1,9 @@
-import { generateCariReply, type ShoppingCatalogContext, type ShoppingMessage } from "../server/hanna.js";
+import {
+  generateCariReply,
+  type CariAttachment,
+  type ShoppingCatalogContext,
+  type ShoppingMessage,
+} from "../server/hanna.js";
 
 type VercelRequest = {
   method?: string;
@@ -10,12 +15,29 @@ type VercelResponse = {
   json: (body: unknown) => VercelResponse;
 };
 
-function isMessage(value: unknown): value is { role: "user" | "assistant"; content: string; imageUrls?: string[] } {
+type ApiMessage = {
+  role: "user" | "assistant";
+  content: string;
+  attachments?: unknown;
+  imageUrls?: unknown;
+};
+
+function isMessage(value: unknown): value is ApiMessage {
   if (!value || typeof value !== "object") return false;
-  const candidate = value as { role?: unknown; content?: unknown };
+  const candidate = value as Partial<ApiMessage>;
   return (
     (candidate.role === "user" || candidate.role === "assistant") &&
     typeof candidate.content === "string"
+  );
+}
+
+function isCariAttachment(value: unknown): value is CariAttachment {
+  if (!value || typeof value !== "object") return false;
+  const attachment = value as Partial<CariAttachment>;
+  return (
+    typeof attachment.url === "string" &&
+    typeof attachment.mimeType === "string" &&
+    (attachment.resourceType === "image" || attachment.resourceType === "raw")
   );
 }
 
@@ -33,16 +55,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "messages must be an array" });
   }
 
-  const messages: ShoppingMessage[] = body.messages
-    .filter(isMessage)
-    .slice(-80)
-    .map((message) => ({
-      role: message.role,
-      content: message.content.slice(0, 4000),
-      imageUrls: Array.isArray((message as { imageUrls?: unknown }).imageUrls)
-        ? ((message as { imageUrls: unknown[] }).imageUrls).filter((url): url is string => typeof url === "string").slice(0, 4)
-        : undefined,
-    }));
+  const rawMessages = body.messages.filter(isMessage).slice(-80);
+  for (const message of rawMessages) {
+    if (
+      message.attachments !== undefined &&
+      (!Array.isArray(message.attachments) ||
+        message.attachments.length > 4 ||
+        !message.attachments.every(isCariAttachment))
+    ) {
+      return res.status(400).json({ error: "attachments must contain up to 4 valid Cari uploads" });
+    }
+  }
+
+  const messages: ShoppingMessage[] = rawMessages.map((message) => ({
+    role: message.role,
+    content: message.content.slice(0, 4000),
+    attachments: Array.isArray(message.attachments)
+      ? (message.attachments as CariAttachment[])
+      : undefined,
+    imageUrls: Array.isArray(message.imageUrls)
+      ? message.imageUrls.filter((url): url is string => typeof url === "string").slice(0, 4)
+      : undefined,
+  }));
 
   const rawCatalog = body.catalog && typeof body.catalog === "object" ? body.catalog : {};
   const catalog = rawCatalog as ShoppingCatalogContext;

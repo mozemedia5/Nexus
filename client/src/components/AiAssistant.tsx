@@ -424,14 +424,16 @@ export default function AiAssistant() {
   };
   const confirmProductAction = async () => {
     if (!actionCandidate) return;
+    if (cartBusy) return;
     const { product, kind } = actionCandidate;
     setActionCandidate(null);
     if (kind === "list") addToShoppingList({ handle: product.handle, name: product.name, price: formatPrice(product.price), image: product.image?.url || product.images[0]?.url });
     else {
       const variant = getAvailableVariant(product);
       if (!variant) { toast.error(`${product.name} is not available in the current store catalog.`); return; }
-      await addItem(product, variant.id);
-      toast.success(`${product.name} added to cart.`);
+      const added = await addItem(product, variant.id);
+      if (added) toast.success(`${product.name} added to cart.`);
+      else toast.error(`Could not add ${product.name}. Check the Cart message and try again.`);
     }
   };
   const handleAddToCart = async (rec: { handle: string; name: string }) => {
@@ -840,8 +842,8 @@ export default function AiAssistant() {
                                               <Link href={`/products/${matchedProd.handle}`} className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300" title="View details">
                                                 <ArrowUpRight size={14} />
                                               </Link>
-                                              <button type="button" onClick={() => requestProductAction(matchedProd, "cart", msg.id)} className="p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-xs flex items-center gap-1" title="Request adding to cart">
-                                                <ShoppingCart size={13} />
+                                              <button type="button" onClick={() => requestProductAction(matchedProd, "cart", msg.id)} disabled={cartBusy} className="px-2 py-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 font-medium text-[11px] flex items-center gap-1 whitespace-nowrap disabled:opacity-50" title="Add this product to your cart">
+                                                <ShoppingCart size={13} /> <span>Add to Cart</span>
                                               </button>
                                             </div>
                                           </div>

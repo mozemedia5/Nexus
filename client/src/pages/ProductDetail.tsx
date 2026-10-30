@@ -68,7 +68,11 @@ export default function ProductDetail() {
     } else await copyProductLink();
   };
   const add = async () => {
-    await addItem(product, variant?.id, quantity);
+    const added = await addItem(product, variant?.id, quantity);
+    if (!added) {
+      toast.error(`Could not add ${product.name}. Check the Cart message and try again.`);
+      return;
+    }
     try {
       fetch("/api/user/interactions", {
         method: "POST",
@@ -276,7 +280,7 @@ export default function ProductDetail() {
             </button>
           </div>
           <p className="detail-note text-xs text-muted-foreground border-t border-border/50 pt-4">
-            Worldwide global delivery. Fast dispatch and direct secure secure checkout.
+            Shopify calculates available shipping rates at checkout using your delivery address and the product's shipping profile.
           </p>
         </div>
       </div>
