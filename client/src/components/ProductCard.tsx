@@ -9,7 +9,7 @@ import { getFirebaseAuth } from "@/lib/firebase";
 export default function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
   const { addItem } = useCart();
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const variant = product.variants.find((item) => item.availableForSale) ?? product.variants[0];
+  const variant = product.variants.find((item) => item.availableForSale);
   const trackInteraction = (action: "click" | "like" | "add_to_cart") => {
     try {
       const userEmail = getFirebaseAuth()?.currentUser?.email || "";
@@ -130,6 +130,16 @@ export default function ProductCard({ product, compact = false }: { product: Pro
             </span>
           )}
         </div>
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={!variant || !product.availableForSale}
+          className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:hover:bg-slate-600"
+          aria-label={variant ? `Add ${product.name} to Cart` : `${product.name} is sold out`}
+        >
+          <Plus size={14} aria-hidden="true" />
+          <span>{variant && product.availableForSale ? "Add to Cart" : "Sold Out"}</span>
+        </button>
       </div>
     </article>
   );
@@ -139,7 +149,7 @@ export function CategoryPills({ active, onChange, categories = [] }: { active: s
   return (
     <div className="category-pills" role="tablist" aria-label="Filter collections">
       <button className={active === "all" ? "is-active" : ""} type="button" role="tab" aria-selected={active === "all"} onClick={() => onChange("all")}>
-        All products
+        All
       </button>
       {categories.map((category) => (
         <button key={category.handle} className={active === category.handle ? "is-active" : ""} type="button" role="tab" aria-selected={active === category.handle} onClick={() => onChange(category.handle)}>

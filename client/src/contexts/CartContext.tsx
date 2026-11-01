@@ -47,6 +47,26 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+function isMissingCartError(cause: unknown) {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  return /cart.{0,60}(does not exist|not found|invalid)|does not exist/i.test(message);
+}
+
+function mergeCartLines(
+  existing: ShopifyCart | null,
+  incoming: { merchandiseId: string; quantity: number }[],
+) {
+  const quantities = new Map<string, number>();
+  for (const line of existing?.lines?.nodes ?? []) {
+    const id = line.merchandise?.id;
+    if (id) quantities.set(id, (quantities.get(id) ?? 0) + line.quantity);
+  }
+  for (const line of incoming) {
+    quantities.set(line.merchandiseId, (quantities.get(line.merchandiseId) ?? 0) + line.quantity);
+  }
+  return Array.from(quantities.entries()).map(([merchandiseId, quantity]) => ({ merchandiseId, quantity }));
+}
+
 function normalizeCart(cart: ShopifyCart | null): CartLine[] {
   return (cart?.lines?.nodes ?? []).map((line: any) => ({
     id: line.id,
@@ -87,13 +107,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const lines = useMemo(() => normalizeCart(cart), [cart]);
   const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
 
-  const run = async (operation: () => Promise<ShopifyCart>): Promise<boolean> => {
+  const run = async (
+    operation: () => Promise<ShopifyCart>,
+    recoverMissingCart?: () => Promise<ShopifyCart>,
+  ): Promise<boolean> => {
     setBusy(true);
     setError(null);
     try {
       setCart(await operation());
       return true;
     } catch (cause) {
+      if (isMissingCartError(cause)) {
+        if (recoverMissingCart) {
+          try {
+            setCart(await recoverMissingCart());
+            return true;
+          } catch (recoveryCause) {
+            setCart(null);
+            setError(recoveryCause instanceof Error ? recoveryCause.message : "Unable to restore your cart. Please try again.");
+            return false;
+          }
+        }
+        setCart(null);
+      }
       setError(cause instanceof Error ? cause.message : "Unable to update your bag.");
       return false;
     } finally {
@@ -118,14 +154,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const selectedVariantId = selectedVariant.id;
     setIsOpen(true);
+    const recoverMissingCart = () => createCart(mergeCartLines(cart, [{ merchandiseId: selectedVariantId, quantity }]));
     if (cart && lines.some((line) => line.product.id === selectedVariantId)) {
       return run(() => updateCart(cart.id, lines.map((line) => ({
         id: line.id,
         quantity: line.product.id === selectedVariantId ? line.quantity + quantity : line.quantity,
-      }))));
+      }))), recoverMissingCart);
     }
     if (cart) {
-      return run(() => addCartLines(cart.id, [{ merchandiseId: selectedVariantId, quantity }]));
+      return run(() => addCartLines(cart.id, [{ merchandiseId: selectedVariantId, quantity }]), recoverMissingCart);
     }
     return run(() => createCart(selectedVariantId, quantity));
   };
@@ -151,6 +188,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCart(nextCart);
       return true;
     } catch (cause) {
+      if (isMissingCartError(cause) && cart) {
+        try {
+          const recovered = await createCart(mergeCartLines(cart, merchandise));
+          setCart(recovered);
+          return true;
+        } catch (recoveryCause) {
+          setCart(null);
+          setError(recoveryCause instanceof Error ? recoveryCause.message : "Unable to restore your cart. Please try again.");
+          return false;
+        }
+      }
+      if (isMissingCartError(cause)) setCart(null);
       setError(cause instanceof Error ? cause.message : "Unable to add the shopping list to your cart.");
       return false;
     } finally {

@@ -257,7 +257,7 @@ export async function getProduct(handle: string): Promise<Product | null> {
 }
 
 export async function getCollections(first = 30): Promise<Collection[]> {
-  const cacheKey = `collections_${first}`;
+  const cacheKey = `collections_v2_${first}`;
   const cached = getCached<Collection[]>(cacheKey);
   if (cached) return cached;
 
@@ -269,7 +269,7 @@ export async function getCollections(first = 30): Promise<Collection[]> {
       `query Collections($first: Int!) { collections(first: $first) { nodes { id handle title description image { url altText width height } } } }`,
       { first }
     );
-    const items = data.collections.nodes as Collection[];
+    const items = data.collections.nodes.filter((collection: Collection) => collection.handle !== "frontpage") as Collection[];
     setCached(cacheKey, items);
     return items;
   } catch (err) {
@@ -322,8 +322,14 @@ export async function getOrderDetails(orderInput: string, emailOrPhone: string):
   }
 }
 
-export async function createCart(variantId: string, quantity = 1) {
-  const data = await shopifyFetch<{ cartCreate: { cart: { id: string; checkoutUrl: string; lines: { nodes: any[] }; cost: { subtotalAmount: { amount: string; currencyCode: string } } }; userErrors: { message: string }[] } }>(`mutation CartCreate($input: CartInput!) { cartCreate(input: $input) { cart { id checkoutUrl lines(first: 50) { nodes { id quantity merchandise { ... on ProductVariant { id title product { title handle featuredImage { url altText } } price { amount currencyCode } } } } } cost { subtotalAmount { amount currencyCode } } } userErrors { message } } }`, { input: { lines: [{ merchandiseId: variantId, quantity }] } });
+export async function createCart(
+  variantOrLines: string | { merchandiseId: string; quantity: number }[],
+  quantity = 1,
+) {
+  const lines = typeof variantOrLines === "string"
+    ? [{ merchandiseId: variantOrLines, quantity }]
+    : variantOrLines;
+  const data = await shopifyFetch<{ cartCreate: { cart: { id: string; checkoutUrl: string; lines: { nodes: any[] }; cost: { subtotalAmount: { amount: string; currencyCode: string } } }; userErrors: { message: string }[] } }>(`mutation CartCreate($input: CartInput!) { cartCreate(input: $input) { cart { id checkoutUrl lines(first: 50) { nodes { id quantity merchandise { ... on ProductVariant { id title product { title handle featuredImage { url altText } } price { amount currencyCode } } } } } cost { subtotalAmount { amount currencyCode } } } userErrors { message } } }`, { input: { lines } });
   const error = data.cartCreate.userErrors[0];
   if (error) throw new Error(error.message);
   return data.cartCreate.cart;
