@@ -355,3 +355,82 @@ export async function removeCartLines(cartId: string, lineIds: string[]) {
   if (error) throw new Error(error.message);
   return data.cartLinesRemove.cart;
 }
+
+
+export type ShippingRate = {
+  id: string;
+  deliveryGroupId: string;
+  title: string;
+  amount: string;
+  currencyCode: string;
+};
+
+const CART_REFRESH_FIELDS = `
+  id checkoutUrl
+  lines(first: 50) { nodes { id quantity merchandise { ... on ProductVariant { id title product { title handle featuredImage { url altText } } price { amount currencyCode } } } }
+  cost { subtotalAmount { amount currencyCode } }
+`;
+
+/** Rehydrate a saved cart from Shopify so stale browser data cannot masquerade as a current cart. */
+export async function getCart(cartId: string) {
+  const data = await shopifyFetch<{ cart: any | null }>(
+    `query Cart($cartId: ID!) { cart(id: $cartId) { ${CART_REFRESH_FIELDS} } }`,
+    { cartId },
+  );
+  if (!data.cart) throw new Error("This cart no longer exists. Add your items again to create a fresh cart.");
+  return data.cart;
+}
+
+/** Ask Shopify for delivery options after the visitor provides a destination country and postal code. */
+export async function estimateCartShipping(
+  cartId: string,
+  address: { countryCode: string; postalCode: string },
+): Promise<ShippingRate[]> {
+  const countryCode = address.countryCode.trim().toUpperCase();
+  const postalCode = address.postalCode.trim();
+  if (!/^[A-Z]{2}$/.test(countryCode)) throw new Error("Choose a valid destination country.");
+  if (!postalCode) throw new Error("Enter a postal or ZIP code to fetch delivery rates.");
+
+  const data = await shopifyFetch<any>(
+    `mutation CartDeliveryAddressesReplace($cartId: ID!, $addresses: [CartSelectableAddressInput!]!) {
+      cartDeliveryAddressesReplace(cartId: $cartId, addresses: $addresses) {
+        cart { id deliveryGroups(first: 10) { nodes { id deliveryOptions { handle title estimatedCost { amount currencyCode } } } } }
+        userErrors { message }
+      }
+    }`,
+    {
+      cartId,
+      addresses: [{ address: { deliveryAddress: { countryCode, zip: postalCode } }, selected: true, oneTimeUse: true }],
+    },
+  );
+  const result = data.cartDeliveryAddressesReplace;
+  if (result.userErrors?.length) throw new Error(result.userErrors[0].message);
+
+  const groups: Array<{ id: string; deliveryOptions?: Array<{ handle: string; title: string; estimatedCost?: { amount: string; currencyCode: string } | null }> }> = result.cart?.deliveryGroups?.nodes ?? [];
+  const options: ShippingRate[] = groups.flatMap((group) =>
+    (group.deliveryOptions ?? []).flatMap((option) => {
+      const amount = option.estimatedCost?.amount;
+      const currencyCode = option.estimatedCost?.currencyCode;
+      if (amount == null || !currencyCode) return [];
+      return [{ id: option.handle, deliveryGroupId: group.id, title: option.title, amount, currencyCode }];
+    }),
+  );
+  return options.sort((left, right) => Number(left.amount) - Number(right.amount));
+}
+
+/** Persist a selected Shopify delivery option so the checkout starts with the visitor's chosen rate. */
+export async function selectCartShippingOption(cartId: string, rate: ShippingRate) {
+  const data = await shopifyFetch<any>(
+    `mutation CartSelectedDeliveryOptionsUpdate($cartId: ID!, $selectedDeliveryOptions: [CartSelectedDeliveryOptionInput!]!) {
+      cartSelectedDeliveryOptionsUpdate(cartId: $cartId, selectedDeliveryOptions: $selectedDeliveryOptions) {
+        userErrors { message }
+      }
+    }`,
+    {
+      cartId,
+      selectedDeliveryOptions: [{ deliveryGroupId: rate.deliveryGroupId, deliveryOptionHandle: rate.id }],
+    },
+  );
+  const errors = data.cartSelectedDeliveryOptionsUpdate.userErrors ?? [];
+  if (errors.length) throw new Error(errors[0].message);
+}

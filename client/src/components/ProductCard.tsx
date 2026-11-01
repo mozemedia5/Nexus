@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { formatPrice, type Product } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
 import { getFirebaseAuth } from "@/lib/firebase";
+import { rememberProductEvent } from "@/lib/browserIdentity";
 
 export default function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
   const { addItem } = useCart();
@@ -13,28 +14,26 @@ export default function ProductCard({ product, compact = false }: { product: Pro
   const trackInteraction = (action: "click" | "like" | "add_to_cart") => {
     try {
       const userEmail = getFirebaseAuth()?.currentUser?.email || "";
-
-      fetch("/api/user/interactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userEmail,
-          action,
-          productTitle: product.name,
-          category: product.categoryLabel,
-        }),
-      }).catch(() => {});
-
-      const saved = localStorage.getItem("nexus_user_interactions_v1");
-      const list = saved ? JSON.parse(saved) : [];
-      list.unshift({
-        userEmail: userEmail || "guest",
+      rememberProductEvent({
         action,
+        productHandle: product.handle,
         productTitle: product.name,
         category: product.categoryLabel,
-        timestamp: new Date().toISOString(),
       });
-      localStorage.setItem("nexus_user_interactions_v1", JSON.stringify(list.slice(0, 50)));
+      // Persist server-side analytics only for an identified account; guest history stays in this browser.
+      if (userEmail) {
+        fetch("/api/user/interactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userEmail,
+            action,
+            productTitle: product.name,
+            productHandle: product.handle,
+            category: product.categoryLabel,
+          }),
+        }).catch(() => {});
+      }
     } catch {}
   };
 

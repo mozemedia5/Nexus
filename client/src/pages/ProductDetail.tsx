@@ -7,6 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import SEO from "@/components/SEO";
 import ProductInterestPrompt from "@/components/ProductInterestPrompt";
 import { useStoreAccount } from "@/hooks/useStoreAccount";
+import { rememberProductEvent } from "@/lib/browserIdentity";
 
 export default function ProductDetail() {
   const [, params] = useRoute("/products/:handle");
@@ -29,6 +30,11 @@ export default function ProductDetail() {
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load this product."));
   }, [params?.handle]);
+
+  useEffect(() => {
+    if (!product) return;
+    rememberProductEvent({ action: "view", productHandle: product.handle, productTitle: product.name, category: product.categoryLabel });
+  }, [product?.handle]);
 
   if (error)
     return (
@@ -73,7 +79,12 @@ export default function ProductDetail() {
       toast.error(`Could not add ${product.name}. Check the Cart message and try again.`);
       return;
     }
+    rememberProductEvent({ action: "add_to_cart", productHandle: product.handle, productTitle: product.name, category: product.categoryLabel });
     try {
+      if (!profile?.email) {
+        toast.success("Added to Cart", { description: `${product.name} (x${quantity})` });
+        return;
+      }
       fetch("/api/user/interactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

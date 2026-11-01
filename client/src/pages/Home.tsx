@@ -3,8 +3,8 @@ import { ArrowUpRight, Cpu, Heart, PackageCheck, ShieldCheck, Zap, Megaphone, Ta
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
 import SEO from "@/components/SEO";
-import { getCollections, getProducts, type Collection, type Product } from "@/lib/store";
-import { usePersonalization } from "@/hooks/usePersonalization";
+import { getCollections, getProduct, getProducts, type Collection, type Product } from "@/lib/store";
+import { getRecentProductHandles } from "@/lib/browserIdentity";
 import { getActiveCampaigns } from "@/pages/Admin";
 
 const heroBackgrounds = [
@@ -78,6 +78,7 @@ export default function Home() {
   const [heroImageIndex, setHeroImageIndex] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [newestProducts, setNewestProducts] = useState<Product[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [error, setError] = useState("");
 
@@ -101,6 +102,14 @@ export default function Home() {
         setCollections(groups);
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load catalogue."));
+  }, []);
+
+  useEffect(() => {
+    const handles = getRecentProductHandles(4);
+    if (!handles.length) return;
+    void Promise.all(handles.map((handle) => getProduct(handle))).then((items) => {
+      setRecentlyViewed(items.filter((item): item is Product => Boolean(item)));
+    });
   }, []);
 
   const featuredOfficeProducts = useMemo(() => {
@@ -170,6 +179,22 @@ export default function Home() {
         </div>
       </section>
 
+      {recentlyViewed.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 py-8" aria-labelledby="recently-viewed-heading">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+            <div>
+              <span className="text-xs font-semibold tracking-wide text-amber-600 dark:text-amber-400 block mb-0.5">Saved in this browser</span>
+              <h2 id="recently-viewed-heading" className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">Continue browsing</h2>
+            </div>
+            <Link href="/products" className="text-xs font-semibold tracking-wide text-slate-900 dark:text-white hover:text-amber-600 flex items-center gap-1 transition-colors">
+              Browse catalogue <ArrowUpRight size={14} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {recentlyViewed.map((product) => <ProductCard key={`recent-${product.id}`} product={product} />)}
+          </div>
+        </section>
+      )}
       {/* Auto-scrolling Product Carousel */}
       {carouselImages.length > 0 && (
         <section className="max-w-7xl mx-auto px-6 py-10">
