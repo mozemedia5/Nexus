@@ -13,6 +13,10 @@ const heroBackgrounds = [
   "/nexus-hero-everyday-web.jpg",
   "/nexus-hero-reading-web.jpg",
   "/nexus-hero-kitchen-web.jpg",
+  "/nexus-hero-smart-home.webp",
+  "/nexus-hero-home-care.webp",
+  "/nexus-hero-workspace-print.webp",
+  "/nexus-hero-tech-accessories.webp",
 ];
 
 function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[] }) {
