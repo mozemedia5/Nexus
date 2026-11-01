@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
-import { defineConfig, type Plugin, type ViteDevServer } from "vite";
+import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 // =============================================================================
@@ -15,7 +15,6 @@ const PROJECT_ROOT = import.meta.dirname;
 const LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
 const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024; // 1MB per log file
 const TRIM_TARGET_BYTES = Math.floor(MAX_LOG_SIZE_BYTES * 0.6); // Trim to 60% to avoid constant re-trimming
-
 type LogSource = "browserConsole" | "networkRequests" | "sessionReplay";
 
 function ensureLogDir() {
@@ -56,7 +55,7 @@ function writeToLogFile(source: LogSource, entries: unknown[]) {
   const logPath = path.join(LOG_DIR, `${source}.log`);
 
   // Format entries with timestamps
-  const lines = entries.map((entry) => {
+  const lines = entries.map(entry => {
     const ts = new Date().toISOString();
     return `[${ts}] ${JSON.stringify(entry)}`;
   });
@@ -132,7 +131,7 @@ function vitePluginManusDebugCollector(): Plugin {
         }
 
         let body = "";
-        req.on("data", (chunk) => {
+        req.on("data", chunk => {
           body += chunk.toString();
         });
 
@@ -162,7 +161,10 @@ function vitePluginStorageProxy(): Plugin {
           return;
         }
 
-        const forgeBaseUrl = (process.env.BUILT_IN_FORGE_API_URL || "").replace(/\/+$/, "");
+        const forgeBaseUrl = (process.env.BUILT_IN_FORGE_API_URL || "").replace(
+          /\/+$/,
+          ""
+        );
         const forgeKey = process.env.BUILT_IN_FORGE_API_KEY;
 
         if (!forgeBaseUrl || !forgeKey) {
@@ -172,7 +174,10 @@ function vitePluginStorageProxy(): Plugin {
         }
 
         try {
-          const forgeUrl = new URL("v1/storage/presign/get", forgeBaseUrl + "/");
+          const forgeUrl = new URL(
+            "v1/storage/presign/get",
+            forgeBaseUrl + "/"
+          );
           forgeUrl.searchParams.set("path", key);
 
           const forgeResp = await fetch(forgeUrl, {
@@ -203,61 +208,109 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  vitePluginManusRuntime(),
+  vitePluginManusDebugCollector(),
+  vitePluginStorageProxy(),
+];
 
-export default defineConfig({
-  plugins,
-  define: {
-    "import.meta.env.SHOPIFY_STORE_DOMAIN": JSON.stringify(
-      process.env.SHOPIFY_STORE_DOMAIN || process.env.VITE_SHOPIFY_STORE_DOMAIN || ""
-    ),
-    "import.meta.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN": JSON.stringify(
-      process.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
-        process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
-        process.env.VITE_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
-        process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
-        ""
-    ),
-    "import.meta.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN": JSON.stringify(
-      process.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
-        process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
-        process.env.VITE_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN ||
-        process.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
-        ""
-    ),
-    "import.meta.env.SHOPIFY_API_VERSION": JSON.stringify(
-      process.env.SHOPIFY_API_VERSION || process.env.VITE_SHOPIFY_API_VERSION || "2026-07"
-    ),
-  },
-  resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
-      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+const publicClientEnvNames = [
+  "VITE_APP_ID",
+  "VITE_FIREBASE_API_KEY",
+  "VITE_FIREBASE_AUTH_DOMAIN",
+  "VITE_FIREBASE_PROJECT_ID",
+  "VITE_FIREBASE_STORAGE_BUCKET",
+  "VITE_FIREBASE_MESSAGING_SENDER_ID",
+  "VITE_FIREBASE_APP_ID",
+  "VITE_FIREBASE_CONFIG_JSON",
+  "VITE_FRONTEND_FORGE_API_KEY",
+  "VITE_FRONTEND_FORGE_API_URL",
+  "VITE_OAUTH_PORTAL_URL",
+  "VITE_SHOPIFY_STORE_DOMAIN",
+  "VITE_SHOPIFY_API_VERSION",
+] as const;
+
+export default defineConfig(({ mode }) => {
+  const loadedEnv = loadEnv(mode, PROJECT_ROOT, "");
+  const getEnv = (name: string) => process.env[name] ?? loadedEnv[name] ?? "";
+  const publicStorefrontToken =
+    getEnv("SHOPIFY_STOREFRONT_API_ACCESS_TOKEN") ||
+    getEnv("SHOPIFY_STOREFRONT_ACCESS_TOKEN");
+  const serverOnlyShopifyTokens = [
+    getEnv("SHOPIFY_ADMIN_ACCESS_TOKEN"),
+    getEnv("SHOPIFY_STOREFRONT_PRIVATE_ACCESS_TOKEN"),
+    getEnv("SHOPIFY_PRIVATE_STOREFRONT_ACCESS_TOKEN"),
+  ].filter(Boolean);
+  if (
+    publicStorefrontToken &&
+    serverOnlyShopifyTokens.includes(publicStorefrontToken)
+  ) {
+    throw new Error(
+      "A server-only Shopify token is configured as the client Storefront token. Use a public Storefront API access token instead."
+    );
+  }
+  const publicClientDefines = Object.fromEntries(
+    publicClientEnvNames.map(name => [
+      `import.meta.env.${name}`,
+      JSON.stringify(getEnv(name)),
+    ])
+  );
+
+  return {
+    plugins,
+    // Do not automatically expose arbitrary VITE_* values; only the explicit
+    // public browser variables below are defined into the client bundle.
+    envPrefix: "__NEXUS_EXPLICIT_PUBLIC_ENV_ONLY__",
+    define: {
+      ...publicClientDefines,
+      "import.meta.env.SHOPIFY_STORE_DOMAIN": JSON.stringify(
+        getEnv("SHOPIFY_STORE_DOMAIN") || getEnv("VITE_SHOPIFY_STORE_DOMAIN")
+      ),
+      "import.meta.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN": JSON.stringify(
+        publicStorefrontToken
+      ),
+      "import.meta.env.SHOPIFY_STOREFRONT_API_ACCESS_TOKEN": JSON.stringify(
+        publicStorefrontToken
+      ),
+      "import.meta.env.SHOPIFY_API_VERSION": JSON.stringify(
+        getEnv("SHOPIFY_API_VERSION") ||
+          getEnv("VITE_SHOPIFY_API_VERSION") ||
+          "2026-07"
+      ),
     },
-  },
-  envDir: path.resolve(import.meta.dirname),
-  root: path.resolve(import.meta.dirname, "client"),
-  build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true,
-  },
-  server: {
-    port: 3000,
-    strictPort: false, // Will find next available port if 3000 is busy
-    host: true,
-    allowedHosts: [
-      ".manuspre.computer",
-      ".manus.computer",
-      ".manus-asia.computer",
-      ".manuscomputer.ai",
-      ".manusvm.computer",
-      "localhost",
-      "127.0.0.1",
-    ],
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
+    resolve: {
+      alias: {
+        "@": path.resolve(import.meta.dirname, "client", "src"),
+        "@shared": path.resolve(import.meta.dirname, "shared"),
+        "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+      },
     },
-  },
+    envDir: path.resolve(import.meta.dirname),
+    root: path.resolve(import.meta.dirname, "client"),
+    build: {
+      outDir: path.resolve(import.meta.dirname, "dist/public"),
+      emptyOutDir: true,
+    },
+    server: {
+      port: 3000,
+      strictPort: false, // Will find next available port if 3000 is busy
+      host: true,
+      allowedHosts: [
+        ".manuspre.computer",
+        ".manus.computer",
+        ".manus-asia.computer",
+        ".manuscomputer.ai",
+        ".manusvm.computer",
+        "localhost",
+        "127.0.0.1",
+      ],
+      fs: {
+        strict: true,
+        deny: ["**/.*"],
+      },
+    },
+  };
 });

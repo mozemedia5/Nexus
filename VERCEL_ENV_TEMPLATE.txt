@@ -1,9 +1,10 @@
 # Nexus Production Environment Variables Template for Vercel
 # Store these in Vercel Project Settings -> Environment Variables (Production and Preview).
 
-# Shopify Configuration
+# Shopify Configuration (the two Storefront values below are PUBLIC tokens and are embedded in the browser bundle)
 # Note: SHOPIFY_STORE_DOMAIN, SHOPIFY_STOREFRONT_API_ACCESS_TOKEN (or SHOPIFY_STOREFRONT_ACCESS_TOKEN), and SHOPIFY_API_VERSION
 # are injected into client bundle via Vite define without requiring a VITE_ prefix.
+# Never assign a private Storefront token or SHOPIFY_ADMIN_ACCESS_TOKEN to either client Storefront variable.
 SHOPIFY_STORE_DOMAIN=
 SHOPIFY_STOREFRONT_API_ACCESS_TOKEN=
 SHOPIFY_STOREFRONT_ACCESS_TOKEN=
@@ -12,7 +13,7 @@ SHOPIFY_API_VERSION=2026-07
 # Shopify Admin API Token (Server-only for protected order lookup)
 SHOPIFY_ADMIN_ACCESS_TOKEN=
 
-# Firebase Client Configuration (The ONLY VITE_-prefixed variable)
+# Firebase Client Configuration (public browser configuration)
 # Store as one-line JSON string containing apiKey, authDomain, projectId, appId
 VITE_FIREBASE_CONFIG_JSON=
 

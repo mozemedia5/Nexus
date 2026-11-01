@@ -2,14 +2,20 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowUpRight, Plus, Camera, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { formatPrice, type Product } from "@/lib/store";
+import { formatPrice, getAvailableVariant, type Product } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
 import { getFirebaseAuth } from "@/lib/firebase";
 
-export default function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
-  const { addItem } = useCart();
+export default function ProductCard({
+  product,
+  compact = false,
+}: {
+  product: Product;
+  compact?: boolean;
+}) {
+  const { addItem, busy } = useCart();
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const variant = product.variants.find((item) => item.availableForSale);
+  const variant = getAvailableVariant(product);
   const trackInteraction = (action: "click" | "like" | "add_to_cart") => {
     try {
       const userEmail = getFirebaseAuth()?.currentUser?.email || "";
@@ -34,14 +40,19 @@ export default function ProductCard({ product, compact = false }: { product: Pro
         category: product.categoryLabel,
         timestamp: new Date().toISOString(),
       });
-      localStorage.setItem("nexus_user_interactions_v1", JSON.stringify(list.slice(0, 50)));
+      localStorage.setItem(
+        "nexus_user_interactions_v1",
+        JSON.stringify(list.slice(0, 50))
+      );
     } catch {}
   };
 
   const handleAdd = async () => {
     const added = await addItem(product, variant?.id);
     if (!added) {
-      toast.error(`Could not add ${product.name}. Check the Cart message and try again.`);
+      toast.error(
+        `Could not add ${product.name}. Check the Cart message and try again.`
+      );
       return;
     }
     trackInteraction("add_to_cart");
@@ -51,9 +62,16 @@ export default function ProductCard({ product, compact = false }: { product: Pro
   const secondaryImage = product.images.length > 1 ? product.images[1] : null;
 
   return (
-    <article className={`group relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${compact ? "p-2" : ""}`}>
+    <article
+      className={`group relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${compact ? "p-2" : ""}`}
+    >
       <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center p-2">
-        <Link href={`/products/${product.handle}`} onClick={() => trackInteraction("click")} className="w-full h-full block relative" aria-label={`View ${product.name}`}>
+        <Link
+          href={`/products/${product.handle}`}
+          onClick={() => trackInteraction("click")}
+          className="w-full h-full block relative"
+          aria-label={`View ${product.name}`}
+        >
           <img
             src={mainImage?.url ?? "/logo.png"}
             alt={mainImage?.altText ?? product.name}
@@ -78,7 +96,7 @@ export default function ProductCard({ product, compact = false }: { product: Pro
           className="absolute bottom-3 right-3 w-9 h-9 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-slate-900 hover:text-white"
           type="button"
           onClick={handleAdd}
-          disabled={!product.availableForSale}
+          disabled={!variant || busy}
           aria-label={`Add ${product.name} to Cart`}
         >
           <Plus size={16} strokeWidth={1.75} />
@@ -86,7 +104,10 @@ export default function ProductCard({ product, compact = false }: { product: Pro
         {/* Image Analysis Badge */}
         <button
           type="button"
-          onClick={(e) => { e.preventDefault(); setShowAnalysis(!showAnalysis); }}
+          onClick={e => {
+            e.preventDefault();
+            setShowAnalysis(!showAnalysis);
+          }}
           className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-amber-500 hover:text-white shadow-sm"
           title="Analyze this image"
           aria-label="Analyze product image"
@@ -98,9 +119,18 @@ export default function ProductCard({ product, compact = false }: { product: Pro
             <div className="text-center text-white">
               <Sparkles size={20} className="mx-auto mb-2 text-amber-400" />
               <p className="text-[11px] font-medium leading-relaxed">
-                This product features a {product.categoryLabel.toLowerCase()} design with premium build quality, optimized for modern smart home and workspace environments.
+                This product features a {product.categoryLabel.toLowerCase()}{" "}
+                design with premium build quality, optimized for modern smart
+                home and workspace environments.
               </p>
-              <button type="button" onClick={(e) => { e.preventDefault(); setShowAnalysis(false); }} className="mt-2 text-[10px] text-amber-400 underline">
+              <button
+                type="button"
+                onClick={e => {
+                  e.preventDefault();
+                  setShowAnalysis(false);
+                }}
+                className="mt-2 text-[10px] text-amber-400 underline"
+              >
                 Close
               </button>
             </div>
@@ -122,7 +152,7 @@ export default function ProductCard({ product, compact = false }: { product: Pro
 
         <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <span className="text-sm font-semibold text-slate-900 dark:text-white">
-            {formatPrice(product.price)}
+            {variant ? formatPrice(variant.price) : "Currently unavailable"}
           </span>
           {product.compareAtPrice && (
             <span className="text-xs line-through text-slate-400">
@@ -133,26 +163,61 @@ export default function ProductCard({ product, compact = false }: { product: Pro
         <button
           type="button"
           onClick={handleAdd}
-          disabled={!variant || !product.availableForSale}
+          disabled={!variant || busy}
           className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:hover:bg-slate-600"
-          aria-label={variant ? `Add ${product.name} to Cart` : `${product.name} is sold out`}
+          aria-label={
+            variant
+              ? `Add ${product.name} to Cart`
+              : `${product.name} is sold out`
+          }
         >
           <Plus size={14} aria-hidden="true" />
-          <span>{variant && product.availableForSale ? "Add to Cart" : "Sold Out"}</span>
+          <span>
+            {variant
+              ? busy
+                ? "Updating cart…"
+                : "Add to Cart"
+              : "Unavailable"}
+          </span>
         </button>
       </div>
     </article>
   );
 }
 
-export function CategoryPills({ active, onChange, categories = [] }: { active: string; onChange: (value: string) => void; categories?: { handle: string; title: string }[] }) {
+export function CategoryPills({
+  active,
+  onChange,
+  categories = [],
+}: {
+  active: string;
+  onChange: (value: string) => void;
+  categories?: { handle: string; title: string }[];
+}) {
   return (
-    <div className="category-pills" role="tablist" aria-label="Filter collections">
-      <button className={active === "all" ? "is-active" : ""} type="button" role="tab" aria-selected={active === "all"} onClick={() => onChange("all")}>
+    <div
+      className="category-pills"
+      role="tablist"
+      aria-label="Filter collections"
+    >
+      <button
+        className={active === "all" ? "is-active" : ""}
+        type="button"
+        role="tab"
+        aria-selected={active === "all"}
+        onClick={() => onChange("all")}
+      >
         All
       </button>
-      {categories.map((category) => (
-        <button key={category.handle} className={active === category.handle ? "is-active" : ""} type="button" role="tab" aria-selected={active === category.handle} onClick={() => onChange(category.handle)}>
+      {categories.map(category => (
+        <button
+          key={category.handle}
+          className={active === category.handle ? "is-active" : ""}
+          type="button"
+          role="tab"
+          aria-selected={active === category.handle}
+          onClick={() => onChange(category.handle)}
+        >
           {category.title}
         </button>
       ))}
