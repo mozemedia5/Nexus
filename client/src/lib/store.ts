@@ -77,6 +77,7 @@ const token =
   "";
 const apiVersion = (import.meta.env.SHOPIFY_API_VERSION || import.meta.env.VITE_SHOPIFY_API_VERSION) ?? "2026-07";
 
+export const shopifyStoreDomain = domain;
 export const shopifyConfigured = Boolean(domain && token);
 export const shopifyEndpoint = domain ? `https://${domain}/api/${apiVersion}/graphql.json` : "";
 

@@ -5,6 +5,7 @@ import {
   getAvailableVariant,
   getCart,
   removeCartLines,
+  shopifyStoreDomain,
   updateCart,
   type Product,
 } from "@/lib/store";
@@ -295,8 +296,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     try {
       const url = new URL(checkoutUrl ?? "");
-      const storeHost = window.location.hostname;
-      const isShopifyHost = url.hostname === storeHost || url.hostname.endsWith(".myshopify.com") || url.hostname === "checkout.shopify.com";
+      const isShopifyHost = url.hostname === shopifyStoreDomain || url.hostname.endsWith(".myshopify.com") || url.hostname === "checkout.shopify.com";
       if (url.protocol !== "https:" || !isShopifyHost) throw new Error("invalid Shopify checkout URL");
       window.location.assign(url.href);
     } catch {
