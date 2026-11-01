@@ -3,6 +3,7 @@ import {
   addCartLines,
   createCart,
   getAvailableVariant,
+  getCart,
   removeCartLines,
   updateCart,
   type Product,
@@ -44,14 +45,13 @@ type CartContextValue = {
   closeCart: () => void;
   toggleCart: () => void;
 };
-
+const STORAGE_KEY = "liverton-shopify-cart";
 const CartContext = createContext<CartContextValue | null>(null);
 
 function isMissingCartError(cause: unknown) {
   const message = cause instanceof Error ? cause.message : String(cause);
   return /cart.{0,60}(does not exist|not found|invalid)|does not exist/i.test(message);
 }
-
 function mergeCartLines(
   existing: ShopifyCart | null,
   incoming: { merchandiseId: string; quantity: number }[],
@@ -59,14 +59,15 @@ function mergeCartLines(
   const quantities = new Map<string, number>();
   for (const line of existing?.lines?.nodes ?? []) {
     const id = line.merchandise?.id;
-    if (id) quantities.set(id, (quantities.get(id) ?? 0) + line.quantity);
+    if (id && Number.isInteger(line.quantity) && line.quantity > 0) {
+      quantities.set(id, (quantities.get(id) ?? 0) + line.quantity);
+    }
   }
   for (const line of incoming) {
     quantities.set(line.merchandiseId, (quantities.get(line.merchandiseId) ?? 0) + line.quantity);
   }
   return Array.from(quantities.entries()).map(([merchandiseId, quantity]) => ({ merchandiseId, quantity }));
 }
-
 function normalizeCart(cart: ShopifyCart | null): CartLine[] {
   return (cart?.lines?.nodes ?? []).map((line: any) => ({
     id: line.id,
@@ -81,31 +82,79 @@ function normalizeCart(cart: ShopifyCart | null): CartLine[] {
     },
   }));
 }
+function validQuantity(quantity: number) {
+  return Number.isInteger(quantity) && quantity >= 1 && quantity <= 250;
+}
+function hasInvalidOrZeroPrice(lines: CartLine[]) {
+  return lines.some((line) => !Number.isFinite(Number(line.product.price.amount)) || Number(line.product.price.amount) <= 0);
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<ShopifyCart | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
+  // Restore by ID from Shopify; localStorage is only a pointer, never cart data authority.
   useEffect(() => {
-    const saved = localStorage.getItem("liverton-shopify-cart");
-    if (saved) {
+    let active = true;
+    const restore = async () => {
       try {
-        setCart(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem("liverton-shopify-cart");
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return;
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(saved);
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+          setError("Your saved cart data was invalid and has been cleared. Please add your items again.");
+          return;
+        }
+        const cartId = (parsed as { id?: unknown } | null)?.id;
+        if (typeof cartId !== "string" || !cartId) {
+          localStorage.removeItem(STORAGE_KEY);
+          setError("Your saved cart data was incomplete and has been cleared. Please add your items again.");
+          return;
+        }
+        const restored = await getCart(cartId);
+        if (!active) return;
+        if (!restored || restored.lines.nodes.length === 0) {
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+        setCart(restored);
+        if (hasInvalidOrZeroPrice(normalizeCart(restored))) {
+          setError("Shopify returned a zero or invalid item price. Checkout is disabled until the item is corrected.");
+        }
+      } catch (cause) {
+        if (!active) return;
+        localStorage.removeItem(STORAGE_KEY);
+        if (!isMissingCartError(cause)) {
+          setError(cause instanceof Error ? cause.message : "Unable to restore your cart. Please add your items again.");
+        }
+      } finally {
+        if (active) setHydrated(true);
       }
-    }
+    };
+    void restore();
+    return () => { active = false; };
   }, []);
 
+  // Do not persist or clear anything until the initial localStorage restoration has finished.
   useEffect(() => {
-    if (cart) localStorage.setItem("liverton-shopify-cart", JSON.stringify(cart));
-    else localStorage.removeItem("liverton-shopify-cart");
-  }, [cart]);
+    if (!hydrated) return;
+    try {
+      if (cart) localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: cart.id }));
+      else localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      setError("Your cart is active, but this browser could not save it for your next visit.");
+    }
+  }, [cart, hydrated]);
 
   const lines = useMemo(() => normalizeCart(cart), [cart]);
   const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const zeroOrInvalidPrice = hasInvalidOrZeroPrice(lines);
 
   const run = async (
     operation: () => Promise<ShopifyCart>,
@@ -114,22 +163,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setBusy(true);
     setError(null);
     try {
-      setCart(await operation());
+      const next = await operation();
+      setCart(next);
+      if (hasInvalidOrZeroPrice(normalizeCart(next))) {
+        setError("Shopify returned a zero or invalid item price. Checkout is disabled until the item is corrected.");
+      }
       return true;
     } catch (cause) {
-      if (isMissingCartError(cause)) {
-        if (recoverMissingCart) {
-          try {
-            setCart(await recoverMissingCart());
-            return true;
-          } catch (recoveryCause) {
-            setCart(null);
-            setError(recoveryCause instanceof Error ? recoveryCause.message : "Unable to restore your cart. Please try again.");
-            return false;
-          }
+      if (isMissingCartError(cause) && recoverMissingCart) {
+        try {
+          const recovered = await recoverMissingCart();
+          setCart(recovered);
+          return true;
+        } catch (recoveryCause) {
+          setCart(null);
+          setError(recoveryCause instanceof Error ? recoveryCause.message : "Unable to restore your cart. Please try again.");
+          return false;
         }
-        setCart(null);
       }
+      if (isMissingCartError(cause)) setCart(null);
       setError(cause instanceof Error ? cause.message : "Unable to update your bag.");
       return false;
     } finally {
@@ -138,6 +190,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const addItem = async (product: Product, variantId?: string, quantity = 1): Promise<boolean> => {
+    if (!validQuantity(quantity)) {
+      setError("Choose a whole-number quantity between 1 and 250.");
+      setIsOpen(true);
+      return false;
+    }
     const selectedVariant = variantId
       ? product.variants.find((variant) => variant.id === variantId && variant.availableForSale)
       : getAvailableVariant(product);
@@ -146,12 +203,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setIsOpen(true);
       return false;
     }
+    if (!Number.isFinite(Number(selectedVariant.price?.amount)) || !selectedVariant.price.currencyCode) {
+      setError("Shopify did not return a valid price for this variant. It was not added to your cart.");
+      setIsOpen(true);
+      return false;
+    }
     if (busy) {
       setError("Your cart is updating. Please wait and try again.");
       setIsOpen(true);
       return false;
     }
-
     const selectedVariantId = selectedVariant.id;
     setIsOpen(true);
     const recoverMissingCart = () => createCart(mergeCartLines(cart, [{ merchandiseId: selectedVariantId, quantity }]));
@@ -170,10 +231,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItems = async (products: Product[]): Promise<boolean> => {
     const merchandise = products.flatMap((product) => {
       const variant = getAvailableVariant(product);
-      return variant ? [{ merchandiseId: variant.id, quantity: 1 }] : [];
+      if (!variant || !Number.isFinite(Number(variant.price?.amount)) || !variant.price.currencyCode) return [];
+      return [{ merchandiseId: variant.id, quantity: 1 }];
     });
     if (!merchandise.length || busy) return false;
-
     setIsOpen(true);
     setBusy(true);
     setError(null);
@@ -182,10 +243,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (cart) {
         nextCart = await addCartLines(cart.id, merchandise);
       } else {
-        nextCart = await createCart(merchandise[0].merchandiseId, merchandise[0].quantity);
-        if (merchandise.length > 1) nextCart = await addCartLines(nextCart.id, merchandise.slice(1));
+        nextCart = await createCart(merchandise);
       }
       setCart(nextCart);
+      if (hasInvalidOrZeroPrice(normalizeCart(nextCart))) {
+        setError("Shopify returned a zero or invalid item price. Checkout is disabled until the item is corrected.");
+      }
       return true;
     } catch (cause) {
       if (isMissingCartError(cause) && cart) {
@@ -210,50 +273,59 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQuantity = async (lineId: string, quantity: number) => {
     if (!cart) return;
     if (quantity <= 0) return removeItem(lineId);
+    if (!validQuantity(quantity)) {
+      setError("Choose a whole-number quantity between 1 and 250.");
+      return;
+    }
     await run(() => updateCart(cart.id, lines.map((line) => ({
       id: line.id,
       quantity: line.id === lineId ? quantity : line.quantity,
     }))));
   };
-
   const removeItem = async (lineId: string) => {
     if (cart) await run(() => removeCartLines(cart.id, [lineId]));
   };
-
   const checkout = () => {
     const checkoutUrl = cart?.checkoutUrl;
-    if (!checkoutUrl) {
-      setError("Unable to proceed to checkout. Please check your cart items or refresh.");
+    if (!cart || lines.length === 0 || zeroOrInvalidPrice) {
+      setError(zeroOrInvalidPrice
+        ? "Checkout is disabled because Shopify returned a zero or invalid item price. Please contact the store for help."
+        : "Your cart is empty. Add a product before checkout.");
       return;
     }
-    window.location.href = checkoutUrl;
+    try {
+      const url = new URL(checkoutUrl ?? "");
+      const storeHost = window.location.hostname;
+      const isShopifyHost = url.hostname === storeHost || url.hostname.endsWith(".myshopify.com") || url.hostname === "checkout.shopify.com";
+      if (url.protocol !== "https:" || !isShopifyHost) throw new Error("invalid Shopify checkout URL");
+      window.location.assign(url.href);
+    } catch {
+      setError("Shopify did not return a valid secure checkout URL. Please refresh your cart and try again.");
+    }
   };
 
   return (
-    <CartContext.Provider
-      value={{
-        cart,
-        lines,
-        itemCount,
-        subtotal: cart?.cost?.subtotalAmount ?? null,
-        isOpen,
-        busy,
-        error,
-        addItem,
-        addItems,
-        updateQuantity,
-        removeItem,
-        checkout,
-        openCart: () => setIsOpen(true),
-        closeCart: () => setIsOpen(false),
-        toggleCart: () => setIsOpen((value) => !value),
-      }}
-    >
+    <CartContext.Provider value={{
+      cart,
+      lines,
+      itemCount,
+      subtotal: cart?.cost?.subtotalAmount ?? null,
+      isOpen,
+      busy,
+      error,
+      addItem,
+      addItems,
+      updateQuantity,
+      removeItem,
+      checkout,
+      openCart: () => setIsOpen(true),
+      closeCart: () => setIsOpen(false),
+      toggleCart: () => setIsOpen((value) => !value),
+    }}>
       {children}
     </CartContext.Provider>
   );
 }
-
 export function useCart() {
   const value = useContext(CartContext);
   if (!value) throw new Error("useCart must be used inside CartProvider");
