@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   addCartLines,
+  addQuantities,
   cartQuantities,
   createCart,
   getAvailableVariant,
@@ -162,6 +163,20 @@ function cartErrorMessage(cause: unknown, fallback: string) {
   return cause instanceof Error && cause.message ? cause.message : fallback;
 }
 
+export function mergeAvailableCartLines(
+  availableSavedLines: { merchandiseId: string; quantity: number }[],
+  additions: { merchandiseId: string; quantity: number }[]
+) {
+  const savedQuantities = new Map(
+    availableSavedLines.map(line => [line.merchandiseId, line.quantity])
+  );
+  const merged = addQuantities(savedQuantities, additions);
+  return Array.from(merged.entries()).map(([merchandiseId, quantity]) => ({
+    merchandiseId,
+    quantity,
+  }));
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<ShopifyCartResponse | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -169,15 +184,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const operationLock = useRef(false);
+  const preserveSnapshotRef = useRef(false);
 
   // The stored cart ID is authoritative only after Shopify confirms it. The line snapshot
   // contains variant IDs and quantities solely to rebuild a cart after Shopify expires it.
   useEffect(() => {
     let active = true;
     const restore = async () => {
+      let hadSavedSnapshot = false;
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (!saved) return;
+        hadSavedSnapshot = true;
         let snapshot: CartSnapshot;
         try {
           snapshot = parseCartSnapshot(saved);
@@ -200,6 +218,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               if (restored.lines.nodes.length) setCart(restored);
               else {
                 localStorage.removeItem(STORAGE_KEY);
+                preserveSnapshotRef.current = false;
                 setCart(null);
               }
               return;
@@ -220,6 +239,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             );
           const recovered = await createCart(validLines);
           if (!active) return;
+          preserveSnapshotRef.current = false;
           setCart(recovered);
           setError(
             validLines.length !== snapshot.lines.length
@@ -229,9 +249,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           return;
         }
         localStorage.removeItem(STORAGE_KEY);
+        preserveSnapshotRef.current = false;
       } catch (cause) {
         if (!active) return;
-        localStorage.removeItem(STORAGE_KEY);
+        // A transient Shopify/network error does not prove this snapshot is invalid.
+        preserveSnapshotRef.current = hadSavedSnapshot;
         setError(
           cartErrorMessage(
             cause,
@@ -260,6 +282,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           JSON.stringify({ id: cart.id, lines })
         );
       } else {
+        if (preserveSnapshotRef.current) return;
         localStorage.removeItem(STORAGE_KEY);
       }
     } catch {
@@ -296,18 +319,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const next = await operation();
+      preserveSnapshotRef.current = false;
       setCart(next);
       return true;
     } catch (cause) {
       if (isMissingCartError(cause) && recoverMissingCart) {
         try {
           const recovered = await recoverMissingCart();
+          preserveSnapshotRef.current = false;
           setCart(recovered);
           setError(
             "Your previous cart expired. Available items were restored with current Shopify prices."
           );
           return true;
         } catch (recoveryCause) {
+          preserveSnapshotRef.current = true;
           setCart(null);
           setError(
             cartErrorMessage(
@@ -318,13 +344,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
           return false;
         }
       }
-      if (isMissingCartError(cause)) setCart(null);
+      if (isMissingCartError(cause)) {
+        preserveSnapshotRef.current = true;
+        setCart(null);
+      }
       setError(cartErrorMessage(cause, "Unable to update your bag."));
       return false;
     } finally {
       operationLock.current = false;
       setBusy(false);
     }
+  };
+
+  const createCartWithSavedItems = async (
+    additions: { merchandiseId: string; quantity: number }[]
+  ) => {
+    if (!preserveSnapshotRef.current) return createCart(additions);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      preserveSnapshotRef.current = false;
+      return createCart(additions);
+    }
+    let snapshot: CartSnapshot;
+    try {
+      snapshot = parseCartSnapshot(saved);
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+      preserveSnapshotRef.current = false;
+      return createCart(additions);
+    }
+    const availableLines = await getPurchasableCartLines(snapshot.lines);
+    return createCart(mergeAvailableCartLines(availableLines, additions));
   };
 
   const addItem = async (
@@ -359,7 +409,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
       return run(() => addCartLines(cart.id, additions, cart), recover);
     }
-    return run(() => createCart(additions));
+    return run(() => createCartWithSavedItems(additions));
   };
 
   const addItems = async (products: Product[]): Promise<boolean> => {
@@ -396,7 +446,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
       return run(() => addCartLines(cart.id, linesToAdd, cart), recover);
     }
-    return run(() => createCart(linesToAdd));
+    return run(() => createCartWithSavedItems(linesToAdd));
   };
 
   const updateQuantity = async (lineId: string, quantity: number) => {

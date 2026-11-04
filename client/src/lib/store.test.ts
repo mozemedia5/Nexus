@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCartSnapshot } from "@/contexts/CartContext";
+import { mergeAvailableCartLines, parseCartSnapshot } from "@/contexts/CartContext";
 import {
   addQuantities,
   assertCartQuantities,
@@ -145,6 +145,25 @@ describe("Shopify variant validation and product normalization", () => {
 });
 
 describe("Shopify cart response validation", () => {
+  it("preserves available saved lines while merging a new product after a restore outage", () => {
+    expect(
+      mergeAvailableCartLines(
+        [
+          { merchandiseId: variantGid(1), quantity: 2 },
+          { merchandiseId: variantGid(2), quantity: 1 },
+        ],
+        [
+          { merchandiseId: variantGid(1), quantity: 1 },
+          { merchandiseId: variantGid(3), quantity: 1 },
+        ]
+      )
+    ).toEqual([
+      { merchandiseId: variantGid(1), quantity: 3 },
+      { merchandiseId: variantGid(2), quantity: 1 },
+      { merchandiseId: variantGid(3), quantity: 1 },
+    ]);
+  });
+
   it("rejects a zero-quantity line even when Shopify says the mutation succeeded", () => {
     const cart = cartFixture({
       lines: { nodes: [{ ...cartFixture().lines.nodes[0], quantity: 0 }] },

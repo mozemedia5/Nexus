@@ -5,7 +5,7 @@ import { isCloudinaryConfigured, createCloudinaryUploadSignature, createCariUplo
 import { parseFirebaseServiceAccount } from "./firebaseAdmin.js";
 import { AdminAccountError, AdminAuthError, authenticateAdminAuthorization, requireSuperAdmin, type AdminPrincipal } from "./adminAuth.js";
 import { listAdminAccounts, promoteVerifiedFirebaseUser, revokeAdminAccount } from "./adminAccounts.js";
-import { generateCariReply, isHannaConfigured, type ShoppingCatalogContext, type ShoppingMessage } from "./hanna.js";
+import { CariProviderError, generateCariReply, isHannaConfigured, type ShoppingCatalogContext, type ShoppingMessage } from "./hanna.js";
 import { fetchShopifyOrderTracking, InvalidOrderLookupError, OrderTrackingUnavailableError } from "../api/order-tracking.js";
 import { fetchShopifyAdminOrders, fetchShopifyAdminMetrics } from "./shopifyAdmin.js";
 import path from "path";
@@ -142,7 +142,13 @@ async function startServer() {
       res.json({ reply });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Shopping assistant unavailable";
-      const status = message.includes("no larger than 10 MB") ? 413 : message.includes("not configured") || message.includes("needs a shopper") ? 412 : 502;
+      const status = message.includes("no larger than 10 MB")
+        ? 413
+        : error instanceof CariProviderError
+          ? error.statusCode
+          : message.includes("not configured") || message.includes("needs a shopper")
+            ? 412
+            : 502;
       res.status(status).json({ error: message });
     }
   });

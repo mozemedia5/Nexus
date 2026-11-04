@@ -57,10 +57,10 @@ function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[]
       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
       {images.length > 1 && (
         <>
-          <button type="button" onClick={() => go(-1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 dark:bg-slate-800/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md" aria-label="Previous image">
+          <button type="button" onClick={() => go(-1)} className="home-carousel-arrow absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-800/90 text-slate-900 dark:text-white flex items-center justify-center shadow-md" aria-label="Previous image">
             <ChevronLeft size={16} />
           </button>
-          <button type="button" onClick={() => go(1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 dark:bg-slate-800/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md" aria-label="Next image">
+          <button type="button" onClick={() => go(1)} className="home-carousel-arrow absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-800/90 text-slate-900 dark:text-white flex items-center justify-center shadow-md" aria-label="Next image">
             <ChevronRight size={16} />
           </button>
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">

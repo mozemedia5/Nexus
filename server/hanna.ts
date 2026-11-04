@@ -75,6 +75,24 @@ const MAX_MESSAGE_CHARS = 4_000;
 const MAX_OUTPUT_TOKENS = 4_096;
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
+export class CariProviderError extends Error {
+  readonly statusCode = 503;
+
+  constructor(upstreamStatus: number | null) {
+    const message = upstreamStatus === 401 || upstreamStatus === 403
+      ? "Cari's AI connection was rejected. Please contact the store administrator."
+      : upstreamStatus === 404
+        ? "Cari's configured AI model is unavailable. Please contact the store administrator."
+        : upstreamStatus === 429
+          ? "Cari has reached a temporary request limit. Please try again shortly."
+          : upstreamStatus === 400
+            ? "Cari could not process this request. Please try again with a shorter message."
+            : "Cari is temporarily busy or unavailable. Please try again in a few moments.";
+    super(message);
+    this.name = "CariProviderError";
+  }
+}
+
 const CARI_SYSTEM_INSTRUCTION = `You are Cari, the warm, knowledgeable, and practical shopping assistant for Nexus.
 
 YOUR MISSION
@@ -323,6 +341,7 @@ export async function generateCariReply(
   // Implement retry for transient errors like 503 (service unavailable / overloaded)
   let response: Response | null = null;
   let lastError = "";
+  let lastStatus: number | null = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
@@ -338,7 +357,6 @@ export async function generateCariReply(
           },
           contents,
           generationConfig: {
-            temperature: 0.25,
             maxOutputTokens: MAX_OUTPUT_TOKENS,
           },
         }),
@@ -346,6 +364,7 @@ export async function generateCariReply(
       });
 
       if (response.ok) break;
+      lastStatus = response.status;
 
       const payload = (await response.json().catch(() => ({}))) as GeminiResponse;
       lastError = payload.error?.message ?? `Status ${response.status}`;
@@ -376,7 +395,7 @@ export async function generateCariReply(
 
   if (!response || !response.ok) {
     console.error("[Cari] Gemini request failed finally:", lastError);
-    throw new Error("Cari is temporarily busy or unavailable. Please try again in a few moments.");
+    throw new CariProviderError(lastStatus);
   }
 
   const payload = (await response.json().catch(() => ({}))) as GeminiResponse;

@@ -1,4 +1,5 @@
 import {
+  CariProviderError,
   generateCariReply,
   type CariAttachment,
   type ShoppingCatalogContext,
@@ -91,7 +92,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ reply });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Shopping assistant unavailable";
-    const status = message.includes("not configured") || message.includes("needs a shopper") ? 412 : 502;
+    const status = error instanceof CariProviderError
+      ? error.statusCode
+      : message.includes("not configured") || message.includes("needs a shopper")
+        ? 412
+        : 502;
     return res.status(status).json({ error: message });
   }
 }

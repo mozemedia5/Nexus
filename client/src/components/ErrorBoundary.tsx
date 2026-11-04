@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertTriangle, Home, RotateCcw } from "lucide-react";
 import { Component, ReactNode } from "react";
 
 interface Props {
@@ -33,11 +33,9 @@ class ErrorBoundary extends Component<Props, State> {
 
             <h2 className="text-xl mb-4">An unexpected error occurred.</h2>
 
-            <div className="p-4 w-full rounded bg-muted overflow-auto mb-6">
-              <pre className="text-sm text-muted-foreground whitespace-break-spaces">
-                {this.state.error?.stack}
-              </pre>
-            </div>
+            <p className="mb-6 text-center text-muted-foreground">
+              Something went wrong while loading this page. Your cart and account data have not been changed. Please try again or return to the home page.
+            </p>
 
             <button
               onClick={() => window.location.reload()}
@@ -48,7 +46,14 @@ class ErrorBoundary extends Component<Props, State> {
               )}
             >
               <RotateCcw size={16} />
-              Reload Page
+              Try Again
+            </button>
+            <button
+              onClick={() => { window.location.assign("/"); }}
+              className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted"
+            >
+              <Home size={16} />
+              Return Home
             </button>
           </div>
         </div>

@@ -419,7 +419,11 @@ export async function getProduct(handle: string): Promise<Product | null> {
     return null;
   } catch (err) {
     console.error("Shopify fetch failed for product:", err);
-    return null;
+    throw new Error(
+      err instanceof Error && err.message
+        ? err.message
+        : "Unable to load this product. Please try again."
+    );
   }
 }
 

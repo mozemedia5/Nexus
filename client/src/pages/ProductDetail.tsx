@@ -22,11 +22,13 @@ import {
 import { useCart } from "@/contexts/CartContext";
 import SEO from "@/components/SEO";
 import ProductInterestPrompt from "@/components/ProductInterestPrompt";
+import ProductReviews from "@/components/ProductReviews";
 import { useStoreAccount } from "@/hooks/useStoreAccount";
 
 export default function ProductDetail() {
   const [, params] = useRoute("/products/:handle");
   const [product, setProduct] = useState<Product | null>(null);
+  const [loadingProduct, setLoadingProduct] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selected, setSelected] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -38,18 +40,25 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!params?.handle) return;
+    let active = true;
+    setLoadingProduct(true);
+    setError("");
+    setProduct(null);
     getProduct(params.handle)
       .then(item => {
+        if (!active) return;
+        if (!item) {
+          setError("This product could not be found or is not available right now.");
+          return;
+        }
         setProduct(item);
-        setSelected(item ? (getAvailableVariant(item)?.id ?? "") : "");
+        setSelected(getAvailableVariant(item)?.id ?? "");
       })
-      .catch(cause =>
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : "Unable to load this product."
-        )
-      );
+      .catch(cause => {
+        if (active) setError(cause instanceof Error ? cause.message : "Unable to load this product. Please try again.");
+      })
+      .finally(() => { if (active) setLoadingProduct(false); });
+    return () => { active = false; };
   }, [params?.handle]);
 
   if (error)
@@ -66,7 +75,9 @@ export default function ProductDetail() {
   if (!product)
     return (
       <div className="empty-state page-pad">
-        <h2>Loading product details...</h2>
+        <h2>{loadingProduct ? "Loading product details…" : "Product unavailable"}</h2>
+        {loadingProduct ? <div className="product-loading-skeleton" aria-label="Loading product"><i /><i /><i /></div> : <p>The product information could not be loaded.</p>}
+        {!loadingProduct && <Link href="/products" className="button button-dark mt-4">Return to catalogue</Link>}
       </div>
     );
 
@@ -183,16 +194,17 @@ export default function ProductDetail() {
           <div className="product-gallery flex flex-col gap-4">
             <div className="main-image-frame overflow-hidden rounded-xl bg-neutral-100 border border-border/50 aspect-square flex items-center justify-center relative group">
               <img
+                key={currentImage?.url ?? product.handle}
                 src={currentImage?.url ?? "/logo.png"}
                 alt={currentImage?.altText ?? product.name}
-                className="w-full h-full object-contain transition-all duration-300"
+                className="product-gallery-image w-full h-full object-contain"
               />
               {images.length > 1 && (
                 <>
                   <button
                     type="button"
                     onClick={() => goImage(-1)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                    className="product-gallery-arrow absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow-md"
                     aria-label="Previous image"
                   >
                     <ChevronLeft size={16} />
@@ -200,7 +212,7 @@ export default function ProductDetail() {
                   <button
                     type="button"
                     onClick={() => goImage(1)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                    className="product-gallery-arrow absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow-md"
                     aria-label="Next image"
                   >
                     <ChevronRight size={16} />
@@ -426,6 +438,9 @@ export default function ProductDetail() {
           </div>
         </div>
       </section>
+      <div className="section-pad max-w-7xl mx-auto">
+        <ProductReviews productHandle={product.handle} />
+      </div>
     </>
   );
 }
