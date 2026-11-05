@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Home, RotateCcw } from "lucide-react";
-import { Component, ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -8,17 +8,23 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
 }
 
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+  static getDerivedStateFromError(): State {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("[Nexus] Unhandled render error", error, {
+      componentStack: errorInfo.componentStack,
+      path: window.location.pathname,
+    });
   }
 
   render() {
@@ -34,7 +40,9 @@ class ErrorBoundary extends Component<Props, State> {
             <h2 className="text-xl mb-4">An unexpected error occurred.</h2>
 
             <p className="mb-6 text-center text-muted-foreground">
-              Something went wrong while loading this page. Your cart and account data have not been changed. Please try again or return to the home page.
+              Something went wrong while loading this page. Your cart and
+              account data have not been changed. Please try again or return to
+              the home page.
             </p>
 
             <button
@@ -49,7 +57,9 @@ class ErrorBoundary extends Component<Props, State> {
               Try Again
             </button>
             <button
-              onClick={() => { window.location.assign("/"); }}
+              onClick={() => {
+                window.location.assign("/");
+              }}
               className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted"
             >
               <Home size={16} />

@@ -1,16 +1,20 @@
 # Nexus Cart and Page-Loading Audit
 
 **Repository:** `mozemedia5/Nexus` (local checkout at the time of review)
-**Audit date:** 4 November 2026
+**Audit date:** 5 November 2026
 **Scope:** Shopify Storefront cart flow, cart persistence/recovery, product purchase controls, data loading/error handling, and verification status.
 
 ## Findings at a glance
 
 The cart is implemented as a Shopify Storefront API cart, not as a browser-only mock. Product adds require a real Shopify ProductVariant GID and a variant Shopify currently reports for sale; cart creation and changes are sent to Shopify, returned line quantities are checked against the requested change, and checkout redirects to a validated HTTPS Shopify host. The code has unit coverage for these core rules.
 
-I found and fixed a concrete cart-retention defect: when Shopify could not be reached while restoring a saved cart, the provider removed the saved cart snapshot. I also fixed a product detail loader that could remain on “Loading product details…” forever when Shopify returned no product or the request failed. The app-level error page no longer displays a raw JavaScript stack trace.
+I found and fixed a concrete cart-retention defect: when Shopify could not be reached while restoring a saved cart, the provider removed the saved cart snapshot. I also fixed a product detail loader that could remain on “Loading product details…” forever when Shopify returned no product or the request failed. The app-level error page no longer displays a raw JavaScript stack trace; it now logs the caught exception, component stack, and current path to the browser console for diagnosis.
 
-The user-reported live cart cannot be declared fully working yet. The sandbox has no Shopify Storefront domain/token configured, and Vercel access was not authorized, so I could not verify the production environment variables, inspect current function logs, add an actual live product, or complete checkout. Those are material verification gaps, not evidence that the production cart is broken.
+The user-reported live cart cannot be declared fully working yet. The sandbox has no Shopify Storefront domain/token configured, and Vercel access was not connected, so I could not verify production environment variables, inspect current function logs, add an actual live product, or complete checkout. Those are material verification gaps, not evidence that the production cart is broken.
+
+The current source contains no reference to a missing `ye` function, and its routes, imports, typecheck, and production build pass. The exact production render exception therefore remains unconfirmed; the improved error-boundary logging will expose its stack and route in the browser console if it recurs.
+
+The repository had 13 file-based Vercel API entrypoints. Four Cloudinary endpoints now dispatch through one handler, and explicit Vercel rewrites preserve all four existing public URLs. The checked-in API entrypoint count is now 10.
 
 ## Cart flow traced
 
@@ -74,17 +78,26 @@ After Vercel access is available, the production verification checklist is:
 
 ## Validation run
 
-- `pnpm test`: **passed** — 11 tests covering product/variant validation, cart response validation, GraphQL/user errors, duplicate quantity handling, update/remove quantity expectations, expired-cart revalidation, and merging saved products after a restore outage.
+- `pnpm test`: **passed** — 18 tests covering product/variant validation, cart response validation, GraphQL/user errors, duplicate quantity handling, update/remove quantity expectations, expired-cart revalidation, saved-cart merging, Cloudinary API dispatch and authorization, route rewrites, and the 10-function ceiling.
 - `pnpm check`: **passed** — TypeScript.
 - `pnpm build`: **passed**. Vite still reports a large JavaScript chunk warning; this did not fail the build.
 - `git diff --check`: **passed**.
 - Production Shopify cart/checkout: **not run** because the sandbox has no Shopify Storefront credentials and Vercel was not authorized.
 
-## Files changed in the local checkout
+## Files changed for the earlier cart and loading fixes
 
 - `client/src/contexts/CartContext.tsx` — preserve/merge cart snapshot through transient Shopify restore errors.
 - `client/src/lib/store.ts` — propagate product fetch errors to the product detail screen.
 - `client/src/pages/ProductDetail.tsx` — finite loading, missing-product and error states.
 - `client/src/components/ErrorBoundary.tsx` — safe fallback without raw stack trace.
 
-Other changes included with this update add the Vercel interactions/reviews handlers, Gemini error handling, review UI, and gallery/loading presentation improvements. GitHub source is being updated separately from production verification; Vercel was not accessible for confirming environment values or the live deployment.
+Other earlier changes add the Vercel interactions/reviews handlers, Gemini error handling, review UI, and gallery/loading presentation improvements.
+
+## Follow-up code changes on 5 November 2026
+
+- `api/cloudinary-router.ts` consolidates the four Cloudinary handlers while retaining per-action method, authorization, capability, validation, status, and cache behavior.
+- `vercel.json` rewrites the original four Cloudinary URLs to the consolidated handler and leaves the SPA fallback last.
+- `client/src/components/ErrorBoundary.tsx` logs render exceptions and component context without showing stack traces to shoppers.
+- `client/src/lib/cloudinaryRouter.test.ts` verifies dispatcher behavior, the rewrite map, and the function-count ceiling.
+
+The production Shopify cart, live Vercel deployment, and deployment logs still need verification against connected production services. The production build also continues to report an oversized JavaScript chunk warning; this is a performance warning and did not fail the build.
