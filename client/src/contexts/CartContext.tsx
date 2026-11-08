@@ -35,6 +35,7 @@ type CartLine = {
     name: string;
     image: { url: string; altText: string | null } | null;
     price: Money;
+    total: Money;
     variantTitle: string;
   };
 };
@@ -124,6 +125,7 @@ function normalizeCart(cart: ShopifyCartResponse | null): CartLine[] {
       name: line.merchandise.product.title,
       image: line.merchandise.product.featuredImage,
       price: line.cost?.amountPerQuantity ?? line.merchandise.price,
+      total: line.cost?.totalAmount ?? line.merchandise.price,
       variantTitle: line.merchandise.title,
     },
   }));

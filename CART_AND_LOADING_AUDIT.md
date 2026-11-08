@@ -101,3 +101,20 @@ Other earlier changes add the Vercel interactions/reviews handlers, Gemini error
 - `client/src/lib/cloudinaryRouter.test.ts` verifies dispatcher behavior, the rewrite map, and the function-count ceiling.
 
 The production Shopify cart, live Vercel deployment, and deployment logs still need verification against connected production services. The production build also continues to report an oversized JavaScript chunk warning; this is a performance warning and did not fail the build.
+
+## Production cart incident follow-up — 8 November 2026
+
+### Confirmed production response
+
+The production catalogue exposed live Shopify products, so I tested an actual published product through the production storefront and captured the live Storefront API response (not a mock). For the first product, Shopify reported the variant as available with 228 units available and a catalog price of USD 88.69. The storefront sent a cart-create request with quantity 1. Shopify returned HTTP 200, no top-level GraphQL errors, and an empty `userErrors` array, but the cart response contained quantity 0, a line total of USD 0.00, and a subtotal of USD 0.00. A subsequent `cartLinesAdd` of quantity 1 to that test cart also returned quantity 0 and USD 0.00 with no errors. No checkout or payment was submitted.
+
+This confirms the live response fails the strict positive-quantity/price validation, so rejecting it is correct. It does **not** confirm a base-versus-presentment currency mismatch: the observed variant price, line unit price, line total, and subtotal were all USD. The production API response is internally inconsistent with both the requested quantity and the variant's availability/price. The live cart cannot be reported as fixed until Shopify returns a valid cart line or its underlying Storefront API/store configuration is corrected.
+
+### Code and tests added in this follow-up
+
+- `client/src/lib/store.ts` now accepts differing catalog/base and presentment currencies, while requiring valid positive decimal money values, supported currency codes, valid variant IDs, positive integer cart quantities, presentment-consistent line prices/totals, complete cart data, and a secure Shopify checkout URL. It logs sanitized GraphQL, mutation, and invalid-cart diagnostics without logging credentials, cart IDs, or request variables.
+- `client/src/contexts/CartContext.tsx` uses Shopify's returned line total for the line display.
+- `client/src/components/CartDrawer.tsx` distinguishes a failed cart action from a confirmed empty cart.
+- `client/src/lib/store.test.ts` covers USD catalog/cart pricing, USD-to-CAD/EUR presentment, malformed money, missing/cross-currency line prices, invalid quantities, and GraphQL/user errors.
+
+Current local validation: `pnpm test` passes (22 tests across 2 files), `pnpm check` passes, and the production build completes. Formatting was applied; a final full verification is pending after the last diagnostic edit. Vercel OAuth authorization is still pending, so deployment status must not be represented as verified until authorization and deployment checks complete.

@@ -17,6 +17,10 @@ export type ProductVariant = {
 export type Money = { amount: string; currencyCode: string };
 
 const PRODUCT_VARIANT_GID = /^gid:\/\/shopify\/ProductVariant\/\d+$/;
+const SUPPORTED_CURRENCY_CODES =
+  typeof Intl.supportedValuesOf === "function"
+    ? new Set(Intl.supportedValuesOf("currency"))
+    : null;
 
 export function isValidShopifyVariantId(value: unknown): value is string {
   return typeof value === "string" && PRODUCT_VARIANT_GID.test(value);
@@ -31,6 +35,7 @@ export function isValidMoney(
   const amount = Number(money.amount);
   if (
     typeof money.amount !== "string" ||
+    !/^\d+(?:\.\d+)?$/.test(money.amount) ||
     !Number.isFinite(amount) ||
     (requirePositive ? amount <= 0 : amount < 0)
   )
@@ -38,7 +43,9 @@ export function isValidMoney(
   if (
     typeof money.currencyCode !== "string" ||
     !/^[A-Z]{3}$/.test(money.currencyCode) ||
-    money.currencyCode === "XXX"
+    money.currencyCode === "XXX" ||
+    (SUPPORTED_CURRENCY_CODES !== null &&
+      !SUPPORTED_CURRENCY_CODES.has(money.currencyCode))
   )
     return false;
   try {
@@ -206,6 +213,8 @@ async function shopifyFetch<T>(
 ): Promise<T> {
   if (!shopifyConfigured)
     throw new Error("Product catalog service is not configured.");
+  const operation =
+    query.match(/\b(?:query|mutation)\s+(\w+)/)?.[1] ?? "StorefrontRequest";
   const response = await fetch(shopifyEndpoint, {
     method: "POST",
     headers: {
@@ -215,13 +224,53 @@ async function shopifyFetch<T>(
     },
     body: JSON.stringify({ query, variables }),
   });
-  if (!response.ok)
-    throw new Error(`Store catalog request failed (${response.status})`);
-  const payload = await response.json();
-  assertGraphqlErrors(payload.errors);
-  if (!payload.data)
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    console.error("[Nexus Shopify] Invalid JSON response", {
+      operation,
+      status: response.status,
+    });
+    throw new Error(
+      "Shopify returned an unreadable response. Please try again."
+    );
+  }
+  if (!payload || typeof payload !== "object") {
+    console.error("[Nexus Shopify] Incomplete response", {
+      operation,
+      status: response.status,
+    });
     throw new Error("Shopify returned an empty response. Please try again.");
-  return payload.data as T;
+  }
+  const result = payload as { data?: unknown; errors?: unknown };
+  try {
+    assertGraphqlErrors(
+      result.errors as Parameters<typeof assertGraphqlErrors>[0]
+    );
+  } catch (error) {
+    console.error("[Nexus Shopify] GraphQL operation failed", {
+      operation,
+      status: response.status,
+      errors: Array.isArray(result.errors)
+        ? result.errors.map((item: any) => ({
+            code: item?.extensions?.code,
+            message: item?.message,
+          }))
+        : "malformed errors field",
+    });
+    throw error;
+  }
+  if (!response.ok) {
+    console.error("[Nexus Shopify] HTTP request failed", {
+      operation,
+      status: response.status,
+    });
+    throw new Error(`Store catalog request failed (${response.status})`);
+  }
+  if (!result.data)
+    throw new Error("Shopify returned an empty response. Please try again.");
+  return result.data as T;
 }
 
 export function assertGraphqlErrors(
@@ -230,10 +279,18 @@ export function assertGraphqlErrors(
     | null
     | undefined
 ): void {
+  if (errors !== undefined && errors !== null && !Array.isArray(errors)) {
+    throw new Error("Shopify returned malformed GraphQL error data.");
+  }
   const messages = (errors ?? [])
     .map(error => {
-      const message = error?.message?.trim();
-      const code = error?.extensions?.code?.trim();
+      if (!error || typeof error !== "object") return undefined;
+      const message =
+        typeof error.message === "string" ? error.message.trim() : "";
+      const code =
+        typeof error.extensions?.code === "string"
+          ? error.extensions.code.trim()
+          : "";
       return message ? `${code ? `${code}: ` : ""}${message}` : code;
     })
     .filter((message): message is string => Boolean(message));
@@ -579,25 +636,53 @@ export function assertShopifyCart(
     );
   }
   for (const line of cart.lines.nodes) {
-    const price = line?.merchandise?.price;
+    const variantPrice = line?.merchandise?.price;
+    const linePrice = line?.cost?.amountPerQuantity;
+    const lineTotal = line?.cost?.totalAmount;
     if (
       typeof line?.id !== "string" ||
+      !line.id.startsWith("gid://shopify/CartLine/") ||
       !Number.isInteger(line.quantity) ||
       line.quantity < 1 ||
       line.quantity > 250 ||
       !isValidShopifyVariantId(line.merchandise?.id) ||
       !line.merchandise?.product?.title ||
       !line.merchandise.product.handle ||
-      !isValidMoney(price) ||
-      price.currencyCode !== cart.cost.subtotalAmount.currencyCode ||
-      (line.cost?.amountPerQuantity &&
-        (!isValidMoney(line.cost.amountPerQuantity) ||
-          line.cost.amountPerQuantity.currencyCode !== price.currencyCode))
+      !isValidMoney(variantPrice) ||
+      !isValidMoney(linePrice) ||
+      !isValidMoney(lineTotal) ||
+      linePrice.currencyCode !== cart.cost.subtotalAmount.currencyCode ||
+      lineTotal.currencyCode !== cart.cost.subtotalAmount.currencyCode
     ) {
+      console.error("[Nexus Shopify] Invalid cart line rejected", {
+        quantity: line?.quantity,
+        variantPrice: line?.merchandise?.price,
+        lineUnitPrice: line?.cost?.amountPerQuantity,
+        lineTotal: line?.cost?.totalAmount,
+        subtotal: cart.cost.subtotalAmount,
+        hasValidVariantId: isValidShopifyVariantId(line?.merchandise?.id),
+      });
       throw new Error(
         "Shopify returned a cart item with an invalid quantity or price. It was not saved; please try again or contact the store."
       );
     }
+  }
+  try {
+    const checkoutUrl = new URL(cart.checkoutUrl);
+    if (
+      checkoutUrl.protocol !== "https:" ||
+      !(
+        checkoutUrl.hostname === domain ||
+        checkoutUrl.hostname === "checkout.shopify.com" ||
+        checkoutUrl.hostname.endsWith(".myshopify.com")
+      )
+    ) {
+      throw new Error("invalid checkout URL");
+    }
+  } catch {
+    throw new Error(
+      "Shopify returned incomplete cart data. Please refresh and try again."
+    );
   }
   return cart;
 }
@@ -630,17 +715,30 @@ export function assertUserErrors(
   operation: string,
   errors: { message?: string; code?: string }[] | null | undefined
 ): void {
+  if (errors !== undefined && errors !== null && !Array.isArray(errors)) {
+    throw new Error(`${operation}: Shopify returned malformed error data.`);
+  }
   const messages = (errors ?? [])
     .map(error => {
-      const message = error?.message?.trim();
-      const code = error?.code?.trim();
+      if (!error || typeof error !== "object") return undefined;
+      const message =
+        typeof error.message === "string" ? error.message.trim() : "";
+      const code = typeof error.code === "string" ? error.code.trim() : "";
       return message ? `${code ? `${code}: ` : ""}${message}` : code;
     })
     .filter((message): message is string => Boolean(message));
-  if (messages.length)
+  if (messages.length) {
+    console.error("[Nexus Shopify] Mutation userErrors", {
+      operation,
+      errors: errors?.map(error => ({
+        code: error?.code,
+        message: error?.message,
+      })),
+    });
     throw new Error(
       `${operation}: ${Array.from(new Set(messages)).join("; ")}`
     );
+  }
 }
 
 export function cartQuantities(
@@ -797,7 +895,7 @@ export async function createCart(
       userErrors: { message: string }[];
     };
   }>(
-    `mutation CartCreate($input: CartInput!) { cartCreate(input: $input) { cart { ${CART_FIELDS} } userErrors { message } } }`,
+    `mutation CartCreate($input: CartInput!) { cartCreate(input: $input) { cart { ${CART_FIELDS} } userErrors { message code } } }`,
     { input: { lines: normalizedLines } }
   );
   if (!data.cartCreate)
@@ -833,7 +931,7 @@ export async function addCartLines(
       userErrors: { message: string }[];
     };
   }>(
-    `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $cartId, lines: $lines) { cart { ${CART_FIELDS} } userErrors { message } } }`,
+    `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $cartId, lines: $lines) { cart { ${CART_FIELDS} } userErrors { message code } } }`,
     { cartId, lines: normalizedLines }
   );
   if (!data.cartLinesAdd)
@@ -870,7 +968,7 @@ export async function updateCart(
       userErrors: { message: string }[];
     };
   }>(
-    `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) { cartLinesUpdate(cartId: $cartId, lines: $lines) { cart { ${CART_FIELDS} } userErrors { message } } }`,
+    `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) { cartLinesUpdate(cartId: $cartId, lines: $lines) { cart { ${CART_FIELDS} } userErrors { message code } } }`,
     { cartId, lines }
   );
   if (!data.cartLinesUpdate)
@@ -897,7 +995,7 @@ export async function removeCartLines(
       userErrors: { message: string }[];
     };
   }>(
-    `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) { cartLinesRemove(cartId: $cartId, lineIds: $lineIds) { cart { ${CART_FIELDS} } userErrors { message } } }`,
+    `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) { cartLinesRemove(cartId: $cartId, lineIds: $lineIds) { cart { ${CART_FIELDS} } userErrors { message code } } }`,
     { cartId, lineIds }
   );
   if (!data.cartLinesRemove)

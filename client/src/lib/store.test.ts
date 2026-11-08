@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { mergeAvailableCartLines, parseCartSnapshot } from "@/contexts/CartContext";
+import {
+  mergeAvailableCartLines,
+  parseCartSnapshot,
+} from "@/contexts/CartContext";
 import {
   addQuantities,
   assertCartQuantities,
@@ -70,6 +73,10 @@ function cartFixture(
               featuredImage: null,
             },
           },
+          cost: {
+            amountPerQuantity: { amount: "20.00", currencyCode: "USD" },
+            totalAmount: { amount: "40.00", currencyCode: "USD" },
+          },
         },
       ],
     },
@@ -92,6 +99,16 @@ describe("Shopify variant validation and product normalization", () => {
     expect(
       isPurchasableVariant(
         variant(4, { price: { amount: "NaN", currencyCode: "USD" } })
+      )
+    ).toBe(false);
+    expect(
+      isPurchasableVariant(
+        variant(7, { price: { amount: "1e2", currencyCode: "USD" } })
+      )
+    ).toBe(false);
+    expect(
+      isPurchasableVariant(
+        variant(8, { price: { amount: "10.00", currencyCode: "ZZZ" } })
       )
     ).toBe(false);
     expect(
@@ -145,6 +162,59 @@ describe("Shopify variant validation and product normalization", () => {
 });
 
 describe("Shopify cart response validation", () => {
+  it("accepts matching USD product and cart presentment prices", () => {
+    expect(assertShopifyCart(cartFixture())).toBeTruthy();
+  });
+
+  it.each(["CAD", "EUR"])(
+    "accepts a USD catalog variant returned in %s presentment currency",
+    currencyCode => {
+      const cart = cartFixture({
+        lines: {
+          nodes: [
+            {
+              ...cartFixture().lines.nodes[0],
+              cost: {
+                amountPerQuantity: { amount: "27.00", currencyCode },
+                totalAmount: { amount: "54.00", currencyCode },
+              },
+            },
+          ],
+        },
+        cost: { subtotalAmount: { amount: "54.00", currencyCode } },
+      });
+      expect(assertShopifyCart(cart)).toBe(cart);
+    }
+  );
+
+  it("rejects missing or cross-currency presentment line prices", () => {
+    const line = cartFixture().lines.nodes[0];
+    expect(() =>
+      assertShopifyCart(
+        cartFixture({
+          lines: { nodes: [{ ...line, cost: undefined }] },
+        })
+      )
+    ).toThrow(/invalid quantity or price/i);
+    expect(() =>
+      assertShopifyCart(
+        cartFixture({
+          lines: {
+            nodes: [
+              {
+                ...line,
+                cost: {
+                  amountPerQuantity: { amount: "20.00", currencyCode: "CAD" },
+                  totalAmount: { amount: "40.00", currencyCode: "CAD" },
+                },
+              },
+            ],
+          },
+        })
+      )
+    ).toThrow(/invalid quantity or price/i);
+  });
+
   it("preserves available saved lines while merging a new product after a restore outage", () => {
     expect(
       mergeAvailableCartLines(
@@ -263,6 +333,10 @@ describe("Shopify cart response validation", () => {
                 handle: "other-product",
                 featuredImage: null,
               },
+            },
+            cost: {
+              amountPerQuantity: { amount: "5.00", currencyCode: "USD" },
+              totalAmount: { amount: "5.00", currencyCode: "USD" },
             },
           },
         ],

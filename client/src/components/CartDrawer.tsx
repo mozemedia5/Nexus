@@ -48,8 +48,20 @@ export default function CartDrawer() {
           {lines.length === 0 ? (
             <div className="cart-empty">
               <span className="empty-mark">N</span>
-              <h3>Your Cart is empty</h3>
-              <p>Explore Smart Home and Workspace finds from Nexus.</p>
+              {error ? (
+                <>
+                  <h3>Cart action not completed</h3>
+                  <p role="status">
+                    Review the message below and retry the action before
+                    checking out.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3>Your Cart is empty</h3>
+                  <p>Explore Smart Home and Workspace finds from Nexus.</p>
+                </>
+              )}
               <button
                 type="button"
                 className="button button-dark"
@@ -121,12 +133,7 @@ export default function CartDrawer() {
                         </button>
                       </div>
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        {formatPrice({
-                          amount: (
-                            Number(line.product.price.amount) * line.quantity
-                          ).toString(),
-                          currencyCode: line.product.price.currencyCode,
-                        })}
+                        {formatPrice(line.product.total)}
                       </span>
                     </div>
                   </div>
