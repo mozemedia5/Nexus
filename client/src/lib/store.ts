@@ -166,6 +166,140 @@ export const shopifyConfigured = Boolean(domain && token);
 export const shopifyEndpoint = domain
   ? `https://${domain}/api/${apiVersion}/graphql.json`
   : "";
+type StorefrontRequester = <T>(
+  query: string,
+  variables?: Record<string, unknown>,
+  countryCode?: string
+) => Promise<T>;
+
+let storefrontCountryCodePromise: Promise<string> | null = null;
+
+export async function getShopifyCountryCode(): Promise<string> {
+  if (!shopifyConfigured)
+    throw new Error("Product catalog service is not configured.");
+  if (!storefrontCountryCodePromise) {
+    storefrontCountryCodePromise = shopifyFetch<{
+      localization?: { country?: { isoCode?: string } };
+    }>(`query NexusLocalization { localization { country { isoCode } } }`)
+      .then(data => {
+        const countryCode = data.localization?.country?.isoCode;
+        if (!countryCode || !/^[A-Z]{2}$/.test(countryCode)) {
+          throw new Error(
+            "Shopify did not return a valid active market country."
+          );
+        }
+        return countryCode;
+      })
+      .catch(error => {
+        storefrontCountryCodePromise = null;
+        throw error;
+      });
+  }
+  return storefrontCountryCodePromise;
+}
+
+export function applyShopifyCountryContext(
+  query: string,
+  countryCode: string
+): string {
+  if (!/^[A-Z]{2}$/.test(countryCode)) {
+    throw new Error(
+      "Shopify market country must be a two-letter country code."
+    );
+  }
+  const operationHeader = /^(\s*query\s+\w+(?:\s*\([^)]*\))?)/;
+  if (!operationHeader.test(query)) {
+    throw new Error("Country context can only be applied to a named query.");
+  }
+  return query.replace(
+    operationHeader,
+    `$1 @inContext(country: ${countryCode})`
+  );
+}
+
+function cartDiagnosticsEnabled(): boolean {
+  try {
+    return (
+      typeof localStorage !== "undefined" &&
+      localStorage.getItem("nexus_shopify_cart_debug") === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function cartIdFingerprint(cartId: unknown): Promise<string | null> {
+  if (typeof cartId !== "string" || !cartId) return null;
+  try {
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(cartId)
+    );
+    return Array.from(new Uint8Array(digest))
+      .slice(0, 6)
+      .map(byte => byte.toString(16).padStart(2, "0"))
+      .join("");
+  } catch {
+    return "redacted";
+  }
+}
+
+async function logCartMutationDiagnostics(
+  operation: string,
+  variables: Record<string, unknown>,
+  status: number,
+  payload: { data?: any; errors?: any }
+): Promise<void> {
+  if (!cartDiagnosticsEnabled()) return;
+  const responseField =
+    operation === "CartCreate" ? "cartCreate" : "cartLinesAdd";
+  const mutation = payload.data?.[responseField];
+  const cart = mutation?.cart;
+  const input = variables.input as
+    | {
+        lines?: { merchandiseId?: string; quantity?: number }[];
+        buyerIdentity?: { countryCode?: string };
+      }
+    | undefined;
+  const requestLines =
+    operation === "CartCreate"
+      ? (input?.lines ?? [])
+      : ((variables.lines as
+          | { merchandiseId?: string; quantity?: number }[]
+          | undefined) ?? []);
+  console.info("[Nexus Shopify] Cart mutation diagnostic", {
+    operation,
+    requestedLines: requestLines.map(line => ({
+      variantId: line.merchandiseId,
+      quantity: line.quantity,
+    })),
+    buyerCountryCode: input?.buyerIdentity?.countryCode ?? null,
+    httpStatus: status,
+    graphqlErrors: Array.isArray(payload.errors)
+      ? payload.errors.map(error => ({
+          code: error?.extensions?.code,
+          message: error?.message,
+        }))
+      : [],
+    userErrors: Array.isArray(mutation?.userErrors)
+      ? mutation.userErrors.map((error: any) => ({
+          code: error?.code,
+          message: error?.message,
+        }))
+      : [],
+    cartIdFingerprint: await cartIdFingerprint(cart?.id),
+    returnedLineCount: Array.isArray(cart?.lines?.nodes)
+      ? cart.lines.nodes.length
+      : null,
+    returnedLines: Array.isArray(cart?.lines?.nodes)
+      ? cart.lines.nodes.map((line: ShopifyCartLine) => ({
+          variantId: line.merchandise?.id,
+          quantity: line.quantity,
+        }))
+      : [],
+    subtotal: cart?.cost?.subtotalAmount ?? null,
+  });
+}
 
 const PRODUCT_FIELDS = `
   id handle title description descriptionHtml availableForSale tags productType
@@ -209,12 +343,17 @@ function setCached<T>(key: string, data: T): void {
 
 async function shopifyFetch<T>(
   query: string,
-  variables: Record<string, unknown> = {}
+  variables: Record<string, unknown> = {},
+  countryCode?: string
 ): Promise<T> {
   if (!shopifyConfigured)
     throw new Error("Product catalog service is not configured.");
+  const requestQuery = countryCode
+    ? applyShopifyCountryContext(query, countryCode)
+    : query;
   const operation =
-    query.match(/\b(?:query|mutation)\s+(\w+)/)?.[1] ?? "StorefrontRequest";
+    requestQuery.match(/\b(?:query|mutation)\s+(\w+)/)?.[1] ??
+    "StorefrontRequest";
   const response = await fetch(shopifyEndpoint, {
     method: "POST",
     headers: {
@@ -222,7 +361,7 @@ async function shopifyFetch<T>(
       Accept: "application/json",
       "X-Shopify-Storefront-Access-Token": token,
     },
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({ query: requestQuery, variables }),
   });
   let payload: unknown;
   try {
@@ -244,6 +383,14 @@ async function shopifyFetch<T>(
     throw new Error("Shopify returned an empty response. Please try again.");
   }
   const result = payload as { data?: unknown; errors?: unknown };
+  if (operation === "CartCreate" || operation === "CartLinesAdd") {
+    await logCartMutationDiagnostics(
+      operation,
+      variables,
+      response.status,
+      result as { data?: any; errors?: any }
+    );
+  }
   try {
     assertGraphqlErrors(
       result.errors as Parameters<typeof assertGraphqlErrors>[0]
@@ -386,21 +533,22 @@ export async function getProducts(
     fresh?: boolean;
   } = {}
 ): Promise<Product[]> {
-  const cacheKey = `products_v2_${options.first ?? 24}_${options.query || ""}_${options.sortKey || "BEST_SELLING"}`;
-  const cached = options.fresh ? null : getCached<Product[]>(cacheKey);
-  if (cached) return cached;
-
   if (!shopifyConfigured) {
     return [];
   }
   try {
+    const countryCode = await getShopifyCountryCode();
+    const cacheKey = `products_v3_${countryCode}_${options.first ?? 24}_${options.query || ""}_${options.sortKey || "BEST_SELLING"}`;
+    const cached = options.fresh ? null : getCached<Product[]>(cacheKey);
+    if (cached) return cached;
     const data = await shopifyFetch<{ products: { nodes: any[] } }>(
       `query Products($first: Int!, $query: String, $sortKey: ProductSortKeys) { products(first: $first, query: $query, sortKey: $sortKey) { nodes { ${PRODUCT_FIELDS} } } }`,
       {
         first: options.first ?? 24,
         query: options.query || null,
         sortKey: options.sortKey || "BEST_SELLING",
-      }
+      },
+      countryCode
     );
     const items = data.products.nodes.map(normalizeProduct);
     if (!options.fresh) setCached(cacheKey, items);
@@ -412,9 +560,6 @@ export async function getProducts(
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  const cacheKey = "products_all_shopify_v2";
-  const cached = getCached<Product[]>(cacheKey);
-  if (cached) return cached;
   if (!shopifyConfigured) return [];
 
   const allProducts: Product[] = [];
@@ -423,6 +568,10 @@ export async function getAllProducts(): Promise<Product[]> {
   let pageCount = 0;
 
   try {
+    const countryCode = await getShopifyCountryCode();
+    const cacheKey = `products_all_shopify_v3_${countryCode}`;
+    const cached = getCached<Product[]>(cacheKey);
+    if (cached) return cached;
     while (hasNextPage && pageCount < 100) {
       const data: {
         products: {
@@ -436,7 +585,8 @@ export async function getAllProducts(): Promise<Product[]> {
         };
       }>(
         `query AllProducts($first: Int!, $after: String) { products(first: $first, after: $after, sortKey: TITLE) { edges { cursor node { ${PRODUCT_FIELDS} } } pageInfo { hasNextPage } } }`,
-        { first: 250, after: cursor }
+        { first: 250, after: cursor },
+        countryCode
       );
       const edges: Array<{ cursor: string; node: any }> =
         data.products.edges ?? [];
@@ -456,17 +606,18 @@ export async function getAllProducts(): Promise<Product[]> {
 }
 
 export async function getProduct(handle: string): Promise<Product | null> {
-  const cacheKey = `product_v2_${handle}`;
-  const cached = getCached<Product | null>(cacheKey);
-  if (cached) return cached;
-
   if (!shopifyConfigured) {
     return null;
   }
   try {
+    const countryCode = await getShopifyCountryCode();
+    const cacheKey = `product_v3_${countryCode}_${handle}`;
+    const cached = getCached<Product | null>(cacheKey);
+    if (cached) return cached;
     const data = await shopifyFetch<{ productByHandle: any }>(
       `query Product($handle: String!) { productByHandle(handle: $handle) { ${PRODUCT_FIELDS} } }`,
-      { handle }
+      { handle },
+      countryCode
     );
     if (data.productByHandle) {
       const res = normalizeProduct(data.productByHandle);
@@ -512,19 +663,20 @@ export async function getCollectionProducts(
   handle: string,
   first = 250
 ): Promise<Product[]> {
-  const cacheKey = `col_products_v2_${handle}_${first}`;
-  const cached = getCached<Product[]>(cacheKey);
-  if (cached) return cached;
-
   if (!shopifyConfigured) {
     return [];
   }
   try {
+    const countryCode = await getShopifyCountryCode();
+    const cacheKey = `col_products_v3_${countryCode}_${handle}_${first}`;
+    const cached = getCached<Product[]>(cacheKey);
+    if (cached) return cached;
     const data = await shopifyFetch<{
       collection: { products: { nodes: any[] } } | null;
     }>(
       `query Collection($handle: String!, $first: Int!) { collection(handle: $handle) { products(first: $first) { nodes { ${PRODUCT_FIELDS} } } } }`,
-      { handle, first }
+      { handle, first },
+      countryCode
     );
     const items = data.collection?.products.nodes.map(normalizeProduct) ?? [];
     setCached(cacheKey, items);
@@ -575,6 +727,7 @@ export async function getOrderDetails(
 const CART_FIELDS = `
   id
   checkoutUrl
+  buyerIdentity { countryCode }
   lines(first: 100) {
     nodes {
       id
@@ -615,6 +768,7 @@ export type ShopifyCartLine = {
 export type ShopifyCartResponse = {
   id: string;
   checkoutUrl: string;
+  buyerIdentity?: { countryCode?: string | null } | null;
   lines: { nodes: ShopifyCartLine[] };
   cost: { subtotalAmount: Money };
 };
@@ -859,9 +1013,11 @@ export async function getPurchasableCartLines(
   const requested = addQuantities(new Map(), lines);
   if (requested.size === 0) return [];
   const ids = Array.from(requested.keys());
+  const countryCode = await getShopifyCountryCode();
   const data = await shopifyFetch<{ nodes: (ProductVariant | null)[] }>(
     `query CartRecoveryVariants($ids: [ID!]!) { nodes(ids: $ids) { ... on ProductVariant { id title availableForSale price { amount currencyCode } } } }`,
-    { ids }
+    { ids },
+    countryCode
   );
   const normalized = Array.from(requested.entries()).map(
     ([merchandiseId, quantity]) => ({ merchandiseId, quantity })
@@ -872,6 +1028,31 @@ export async function getPurchasableCartLines(
 export async function createCart(
   variantOrLines: string | { merchandiseId: string; quantity: number }[],
   quantity = 1
+): Promise<ShopifyCartResponse> {
+  const countryCode = await getShopifyCountryCode();
+  return createCartForCountry(variantOrLines, countryCode, quantity);
+}
+
+export function buildShopifyCartInput(
+  lines: { merchandiseId: string; quantity: number }[],
+  countryCode: string
+) {
+  if (!/^[A-Z]{2}$/.test(countryCode)) {
+    throw new Error(
+      "Shopify market country must be a two-letter country code."
+    );
+  }
+  return {
+    lines,
+    buyerIdentity: { countryCode },
+  };
+}
+
+export async function createCartForCountry(
+  variantOrLines: string | { merchandiseId: string; quantity: number }[],
+  countryCode: string,
+  quantity = 1,
+  request: StorefrontRequester = shopifyFetch
 ): Promise<ShopifyCartResponse> {
   const lines =
     typeof variantOrLines === "string"
@@ -889,14 +1070,14 @@ export async function createCart(
       "Choose a valid product quantity before adding it to your cart."
     );
   }
-  const data = await shopifyFetch<{
+  const data = await request<{
     cartCreate: {
       cart: ShopifyCartResponse | null;
-      userErrors: { message: string }[];
+      userErrors: { message: string; code?: string }[];
     };
   }>(
     `mutation CartCreate($input: CartInput!) { cartCreate(input: $input) { cart { ${CART_FIELDS} } userErrors { message code } } }`,
-    { input: { lines: normalizedLines } }
+    { input: buildShopifyCartInput(normalizedLines, countryCode) }
   );
   if (!data.cartCreate)
     throw new Error("Shopify did not return a cart-create result.");
@@ -913,7 +1094,9 @@ export async function createCart(
 export async function addCartLines(
   cartId: string,
   lines: { merchandiseId: string; quantity: number }[],
-  currentCart: ShopifyCartResponse
+  currentCart: ShopifyCartResponse,
+  request: StorefrontRequester = shopifyFetch,
+  activeCountryCode?: string
 ): Promise<ShopifyCartResponse> {
   const additions = addQuantities(new Map(), lines);
   const normalizedLines = Array.from(additions.entries()).map(
@@ -925,10 +1108,22 @@ export async function addCartLines(
     );
   }
   const expected = addQuantities(cartQuantities(currentCart), normalizedLines);
-  const data = await shopifyFetch<{
+  const countryCode = activeCountryCode ?? (await getShopifyCountryCode());
+  if (currentCart.buyerIdentity?.countryCode !== countryCode) {
+    return createCartForCountry(
+      Array.from(expected.entries()).map(([merchandiseId, quantity]) => ({
+        merchandiseId,
+        quantity,
+      })),
+      countryCode,
+      1,
+      request
+    );
+  }
+  const data = await request<{
     cartLinesAdd: {
       cart: ShopifyCartResponse | null;
-      userErrors: { message: string }[];
+      userErrors: { message: string; code?: string }[];
     };
   }>(
     `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $cartId, lines: $lines) { cart { ${CART_FIELDS} } userErrors { message code } } }`,

@@ -118,3 +118,40 @@ This confirms the live response fails the strict positive-quantity/price validat
 - `client/src/lib/store.test.ts` covers USD catalog/cart pricing, USD-to-CAD/EUR presentment, malformed money, missing/cross-currency line prices, invalid quantities, and GraphQL/user errors.
 
 Current local validation: `pnpm test` passes (22 tests across 2 files), `pnpm check` passes, and the production build completes. Formatting was applied; a final full verification is pending after the last diagnostic edit. Vercel OAuth authorization is still pending, so deployment status must not be represented as verified until authorization and deployment checks complete.
+
+
+## Verified fix and production A/B result — 8 November 2026
+
+### Root cause confirmed against the live Storefront API
+
+The earlier live response was not caused by a malformed variant GID, quantity, API version, token rejection, or currency parse. The exact production request used variant `gid://shopify/ProductVariant/68091620917617` and quantity `1`, to the configured Shopify shop, API version `2026-07`. It returned HTTP 200, no GraphQL errors, and no `userErrors`, but Shopify returned a cart containing one zero-quantity line, a USD 0.00 line total, and USD 0.00 subtotal.
+
+I replayed that same `cartCreate` operation, same variant, quantity, shop endpoint, API version, and Storefront token directly from the production browser, changing only the buyer-country input. With no `buyerIdentity`, the response reproduced the zero-quantity/zero-total line. With `buyerIdentity.countryCode: US`, Shopify returned quantity `1`, line total USD 88.69, and subtotal USD 88.69. Both responses were HTTP 200 with no GraphQL or mutation errors. The live localization query reported the active country/currency as US/USD. This A/B test isolates the request defect: the storefront omitted the buyer country, so Shopify did not contextualize the cart for the active market. The client was right to reject the original response; it was not safe to treat it as a successful cart.
+
+The same diagnostic also showed that Shopify returned quantity 1 for this variant under CA, FR, and DE buyer contexts, but returned quantity 0 under UG and GB. No market or product configuration was changed. The code now scopes product/availability queries to Shopify's active country and will continue rejecting any market-specific zero-quantity response; if this SKU is expected to be sold in Uganda or Great Britain, Shopify's product/market availability must be checked separately.
+
+### Code fix
+
+- `getShopifyCountryCode()` reads Shopify's active `localization.country.isoCode` and validates it as a two-letter code.
+- Product, catalogue, collection-product, and expired-cart-revalidation queries use `@inContext(country: <active code>)`; country is part of their cache keys to avoid reusing another market's prices or availability.
+- New carts include `buyerIdentity: { countryCode }` in the Shopify `CartInput`, as required to contextualize international cart prices and product availability.
+- Carts created before the fix are rebuilt with their existing quantities plus the requested addition when their stored buyer country is missing or differs from the active country. The returned cart is still checked against every expected variant and quantity.
+- Opt-in diagnostic logging for `CartCreate` and `CartLinesAdd` is enabled only when a developer sets `localStorage.nexus_shopify_cart_debug` to `1`. It records operation, variant IDs/quantities, status, errors, line count, line quantities, subtotal/currency, and only a short SHA-256 fingerprint for the secret-bearing Shopify cart ID. It never logs access tokens, raw cart IDs, customer fields, checkout URLs, or raw request variables. The flag is off by default.
+- No market configuration, product prices, discounts, shipping rates, storefront design, or Vercel API entrypoints were changed; the API entrypoint count remains 10.
+
+### Shopify references
+
+- [Shopify Storefront API 2026-07 `cartCreate`](https://shopify.dev/docs/api/storefront/2026-07/mutations/cartCreate) — `CartInput` supports buyer identity for international pricing.
+- [Create and update a cart with the Storefront API](https://shopify.dev/docs/storefronts/headless/building-with-the-storefront-api/cart/manage) — the cart guide describes `buyerIdentity.countryCode` and notes that the Cart ID contains a secret key that must not be exposed.
+- [Support international pricing on storefronts](https://shopify.dev/docs/storefronts/headless/building-with-the-storefront-api/markets/international-pricing) — product queries use `@inContext(country:)`; cart mutations use explicit `buyerIdentity`, which contextualizes variant prices and country availability.
+
+### Final verification record
+
+- **Live baseline and direct A/B:** confirmed above against the production Storefront endpoint with the same variant and token; no checkout/payment action.
+- **Regression tests:** `pnpm test` passed — 32 tests across 2 files, including country-specific cart creation, active-market query context, legacy-cart migration, multi-quantity totals, adding a second product, invalid variant/quantity rejection, zero-line responses, and currency/user-error validation.
+- **TypeScript:** `pnpm check` passed with no diagnostics.
+- **Production build:** `pnpm build` passed. Vite reports the existing Firebase chunking notices and a large JavaScript chunk warning; neither failed the build.
+- **Formatting/patch checks:** Prettier check and `git diff --check` passed.
+- **Function count:** remains exactly 10 Vercel API entrypoints.
+- **Production environment:** the live bundle and successful Storefront responses establish the effective shop host, API version `2026-07`, and a functioning public Storefront credential. Vercel's environment-variable settings themselves could not be inspected because the Vercel connector was unauthenticated; no credential was replaced.
+- **Deployment and post-deploy live add:** pending the requested push and deployment verification; do not treat the direct A/B replay above as the post-fix storefront verification.

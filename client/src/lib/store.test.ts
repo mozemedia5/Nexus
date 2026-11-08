@@ -4,11 +4,15 @@ import {
   parseCartSnapshot,
 } from "@/contexts/CartContext";
 import {
+  addCartLines,
   addQuantities,
+  applyShopifyCountryContext,
   assertCartQuantities,
   assertGraphqlErrors,
   assertShopifyCart,
   assertUserErrors,
+  buildShopifyCartInput,
+  createCartForCountry,
   filterPurchasableCartLines,
   formatPrice,
   getAvailableVariant,
@@ -58,6 +62,7 @@ function cartFixture(
   return {
     id: "gid://shopify/Cart/test?key=cart-key",
     checkoutUrl: "https://sg1f51-1y.myshopify.com/checkouts/test",
+    buyerIdentity: { countryCode: "US" },
     lines: {
       nodes: [
         {
@@ -386,5 +391,251 @@ describe("Shopify cart response validation", () => {
       variant(41, { availableForSale: false }),
     ]);
     expect(lines).toEqual([{ merchandiseId: variantGid(40), quantity: 2 }]);
+  });
+});
+
+describe("Shopify country-aware cart mutations", () => {
+  it.each(["US", "UG", "CA", "FR"])(
+    "includes the active %s buyer country when creating a cart",
+    async countryCode => {
+      const line = {
+        ...cartFixture().lines.nodes[0],
+        quantity: 1,
+        cost: {
+          amountPerQuantity: { amount: "20.00", currencyCode: "USD" },
+          totalAmount: { amount: "20.00", currencyCode: "USD" },
+        },
+      };
+      const responseCart = cartFixture({
+        buyerIdentity: { countryCode },
+        lines: { nodes: [line] },
+        cost: { subtotalAmount: { amount: "20.00", currencyCode: "USD" } },
+      });
+      let requestQuery = "";
+      let requestVariables: Record<string, unknown> = {};
+      const request = async <T>(
+        query: string,
+        variables: Record<string, unknown> = {}
+      ): Promise<T> => {
+        requestQuery = query;
+        requestVariables = variables;
+        return {
+          cartCreate: { cart: responseCart, userErrors: [] },
+        } as T;
+      };
+
+      const result = await createCartForCountry(
+        variantGid(1),
+        countryCode,
+        1,
+        request
+      );
+
+      expect(requestQuery).toContain("mutation CartCreate");
+      expect(requestVariables).toEqual({
+        input: {
+          lines: [{ merchandiseId: variantGid(1), quantity: 1 }],
+          buyerIdentity: { countryCode },
+        },
+      });
+      expect(result.lines.nodes[0].quantity).toBe(1);
+      expect(result.lines.nodes[0].cost.totalAmount).toEqual({
+        amount: "20.00",
+        currencyCode: "USD",
+      });
+      expect(result.cost.subtotalAmount).toEqual({
+        amount: "20.00",
+        currencyCode: "USD",
+      });
+    }
+  );
+
+  it("rejects malformed country codes and applies Shopify's country directive safely", () => {
+    expect(buildShopifyCartInput([], "UG")).toEqual({
+      lines: [],
+      buyerIdentity: { countryCode: "UG" },
+    });
+    expect(() => buildShopifyCartInput([], "USA")).toThrow(/two-letter/i);
+    expect(
+      applyShopifyCountryContext(
+        "query Product($handle: String!) { productByHandle(handle: $handle) { id } }",
+        "UG"
+      )
+    ).toBe(
+      "query Product($handle: String!) @inContext(country: UG) { productByHandle(handle: $handle) { id } }"
+    );
+    expect(() =>
+      applyShopifyCountryContext("query Product { shop { name } }", "UGA")
+    ).toThrow(/two-letter/i);
+  });
+
+  it("creates multi-quantity carts with matching line totals and subtotal", async () => {
+    const line = {
+      ...cartFixture().lines.nodes[0],
+      quantity: 3,
+      cost: {
+        amountPerQuantity: { amount: "20.00", currencyCode: "USD" },
+        totalAmount: { amount: "60.00", currencyCode: "USD" },
+      },
+    };
+    const responseCart = cartFixture({
+      lines: { nodes: [line] },
+      cost: { subtotalAmount: { amount: "60.00", currencyCode: "USD" } },
+    });
+    const request = async <T>(): Promise<T> =>
+      ({ cartCreate: { cart: responseCart, userErrors: [] } }) as T;
+
+    const result = await createCartForCountry(variantGid(1), "US", 3, request);
+    expect(result.lines.nodes[0].quantity).toBe(3);
+    expect(result.lines.nodes[0].cost.totalAmount.amount).toBe("60.00");
+    expect(result.cost.subtotalAmount.amount).toBe("60.00");
+  });
+
+  it("rejects invalid variant IDs and nonpositive quantities before any mutation request", async () => {
+    let requestCount = 0;
+    const request = async <T>(): Promise<T> => {
+      requestCount += 1;
+      throw new Error("request must not run");
+    };
+
+    await expect(
+      createCartForCountry("gid://shopify/Product/1", "US", 1, request)
+    ).rejects.toThrow(/valid product/i);
+    await expect(
+      createCartForCountry(variantGid(1), "US", 0, request)
+    ).rejects.toThrow(/quantity/i);
+    await expect(
+      createCartForCountry(variantGid(1), "US", 1.5, request)
+    ).rejects.toThrow(/quantity/i);
+    expect(requestCount).toBe(0);
+  });
+
+  it("adds a second product to an existing market-aware cart and validates the whole cart", async () => {
+    const current = cartFixture();
+    const firstLine = current.lines.nodes[0];
+    const secondLine: typeof firstLine = {
+      ...firstLine,
+      id: "gid://shopify/CartLine/2",
+      quantity: 1,
+      merchandise: {
+        ...firstLine.merchandise,
+        id: variantGid(2),
+        title: "Option 2",
+        price: { amount: "5.00", currencyCode: "USD" },
+      },
+      cost: {
+        amountPerQuantity: { amount: "5.00", currencyCode: "USD" },
+        totalAmount: { amount: "5.00", currencyCode: "USD" },
+      },
+    };
+    const updated = cartFixture({
+      lines: { nodes: [firstLine, secondLine] },
+      cost: { subtotalAmount: { amount: "45.00", currencyCode: "USD" } },
+    });
+    let requestVariables: Record<string, unknown> = {};
+    const request = async <T>(
+      _query: string,
+      variables: Record<string, unknown> = {}
+    ): Promise<T> => {
+      requestVariables = variables;
+      return { cartLinesAdd: { cart: updated, userErrors: [] } } as T;
+    };
+
+    const result = await addCartLines(
+      current.id,
+      [{ merchandiseId: variantGid(2), quantity: 1 }],
+      current,
+      request,
+      "US"
+    );
+
+    expect(requestVariables).toEqual({
+      cartId: current.id,
+      lines: [{ merchandiseId: variantGid(2), quantity: 1 }],
+    });
+    expect(result.lines.nodes).toHaveLength(2);
+    expect(result.cost.subtotalAmount).toEqual({
+      amount: "45.00",
+      currencyCode: "USD",
+    });
+  });
+
+  it("rebuilds a pre-market cart into the active country before adding lines", async () => {
+    const current = cartFixture({ buyerIdentity: null });
+    const firstLine = current.lines.nodes[0];
+    const secondLine: typeof firstLine = {
+      ...firstLine,
+      id: "gid://shopify/CartLine/2",
+      quantity: 1,
+      merchandise: {
+        ...firstLine.merchandise,
+        id: variantGid(2),
+        title: "Option 2",
+        price: { amount: "5.00", currencyCode: "USD" },
+      },
+      cost: {
+        amountPerQuantity: { amount: "5.00", currencyCode: "USD" },
+        totalAmount: { amount: "5.00", currencyCode: "USD" },
+      },
+    };
+    const updated = cartFixture({
+      buyerIdentity: { countryCode: "UG" },
+      lines: { nodes: [firstLine, secondLine] },
+      cost: { subtotalAmount: { amount: "45.00", currencyCode: "USD" } },
+    });
+    let requestQuery = "";
+    let requestVariables: Record<string, unknown> = {};
+    const request = async <T>(
+      query: string,
+      variables: Record<string, unknown> = {}
+    ): Promise<T> => {
+      requestQuery = query;
+      requestVariables = variables;
+      return { cartCreate: { cart: updated, userErrors: [] } } as T;
+    };
+
+    const result = await addCartLines(
+      current.id,
+      [{ merchandiseId: variantGid(2), quantity: 1 }],
+      current,
+      request,
+      "UG"
+    );
+
+    expect(requestQuery).toContain("mutation CartCreate");
+    expect(requestVariables).toEqual({
+      input: {
+        lines: [
+          { merchandiseId: variantGid(1), quantity: 2 },
+          { merchandiseId: variantGid(2), quantity: 1 },
+        ],
+        buyerIdentity: { countryCode: "UG" },
+      },
+    });
+    expect(result.buyerIdentity?.countryCode).toBe("UG");
+    expect(result.lines.nodes).toHaveLength(2);
+  });
+
+  it("does not treat a zero-line cart or Shopify user error as a successful add", async () => {
+    const emptyCart = cartFixture({
+      lines: { nodes: [] },
+      cost: { subtotalAmount: { amount: "0.00", currencyCode: "USD" } },
+    });
+    const emptyRequest = async <T>(): Promise<T> =>
+      ({ cartCreate: { cart: emptyCart, userErrors: [] } }) as T;
+    await expect(
+      createCartForCountry(variantGid(1), "US", 1, emptyRequest)
+    ).rejects.toThrow(/does not match/i);
+
+    const errorRequest = async <T>(): Promise<T> =>
+      ({
+        cartCreate: {
+          cart: null,
+          userErrors: [{ code: "INVALID", message: "market unavailable" }],
+        },
+      }) as T;
+    await expect(
+      createCartForCountry(variantGid(1), "UG", 1, errorRequest)
+    ).rejects.toThrow("market unavailable");
   });
 });
