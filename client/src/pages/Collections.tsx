@@ -288,9 +288,6 @@ export default function Collections() {
               </button>
             )}
 
-            <span className="catalogue-count text-xs font-semibold text-slate-500 ml-2">
-              {loading ? "Loading..." : `${filteredProducts.length} products`}
-            </span>
           </div>
         </div>
 

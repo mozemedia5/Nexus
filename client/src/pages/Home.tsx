@@ -147,6 +147,28 @@ export default function Home() {
             />
           ))}
           <div className="nexus-hero-image-wash" />
+          <div className="nexus-hero-gallery" aria-hidden="true">
+            {[1, 2].map((offset) => {
+              const activeIndex = (heroImageIndex + offset) % heroBackgrounds.length;
+              return (
+                <div key={offset} className={`nexus-hero-gallery-card nexus-hero-gallery-card-${offset}`}>
+                  {heroBackgrounds.map((image, index) => (
+                    <img
+                      key={`${offset}-${image}`}
+                      src={image}
+                      alt=""
+                      className="nexus-hero-gallery-image"
+                      loading="lazy"
+                      style={{
+                        opacity: activeIndex === index ? 1 : 0,
+                        transform: activeIndex === index ? "scale(1)" : "scale(1.06)",
+                      }}
+                    />
+                  ))}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="nexus-hero-inner">

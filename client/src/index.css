@@ -1664,6 +1664,50 @@ html, body { background: var(--store-paper); }
     linear-gradient(90deg, rgba(249, 247, 241, .99) 0%, rgba(249, 247, 241, .96) 26%, rgba(249, 247, 241, .84) 45%, rgba(249, 247, 241, .35) 68%, rgba(249, 247, 241, .08) 100%),
     linear-gradient(0deg, rgba(249, 247, 241, .22) 0%, transparent 48%, rgba(249, 247, 241, .12) 100%);
 }
+.nexus-hero-gallery {
+  position: absolute;
+  z-index: 1;
+  right: clamp(1.35rem, 5vw, 5.75rem);
+  top: 50%;
+  width: min(29vw, 390px);
+  height: min(57vw, 530px);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.nexus-hero-gallery-card {
+  position: absolute;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .62);
+  border-radius: 24px;
+  background: #d9c6a8;
+  box-shadow: 0 26px 70px rgba(71, 55, 32, .22), 0 2px 0 rgba(255, 255, 255, .56) inset;
+  transform: rotate(3deg);
+}
+.nexus-hero-gallery-card-1 {
+  inset: 5% 0 15% 18%;
+  z-index: 2;
+}
+.nexus-hero-gallery-card-2 {
+  inset: 18% 18% 0 0;
+  z-index: 1;
+  transform: rotate(-5deg);
+  opacity: .88;
+}
+.nexus-hero-gallery-card::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(180deg, rgba(255, 250, 239, .04), rgba(48, 38, 25, .2));
+}
+.nexus-hero-gallery-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 1.25s cubic-bezier(.22, .61, .36, 1), transform 6.5s cubic-bezier(.22, .61, .36, 1);
+  will-change: opacity, transform;
+}
 .nexus-hero-inner {
   position: relative;
   z-index: 2;
@@ -1750,6 +1794,10 @@ html, body { background: var(--store-paper); }
 @media (max-width: 700px) {
   .nexus-home-hero { min-height: min(650px, calc(100svh - 110px)); }
   .nexus-hero-backdrop-image { object-position: 63% center; }
+  .nexus-hero-gallery { right: -.5rem; top: 17%; width: 47vw; height: 50vw; transform: none; opacity: .72; }
+  .nexus-hero-gallery-card { border-radius: 18px; }
+  .nexus-hero-gallery-card-1 { inset: 0 0 22% 18%; }
+  .nexus-hero-gallery-card-2 { inset: 20% 18% 0 0; }
   .nexus-hero-image-wash {
     background:
       linear-gradient(90deg, rgba(249, 247, 241, .97) 0%, rgba(249, 247, 241, .91) 38%, rgba(249, 247, 241, .69) 72%, rgba(249, 247, 241, .44) 100%),
@@ -1768,7 +1816,7 @@ html, body { background: var(--store-paper); }
   .nexus-hero-shop-button, .nexus-hero-cari-button { flex: 1 1 auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nexus-hero-backdrop-image { transition: none; }
+  .nexus-hero-backdrop-image, .nexus-hero-gallery-image { transition: none; }
   .nexus-hero-shop-button, .nexus-hero-cari-button { transition: none; }
 }
 
