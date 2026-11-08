@@ -289,37 +289,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Support & Fulfillment FAQ */}
-      <section className="max-w-4xl mx-auto px-6 py-10">
-        <div className="text-center mb-8">
-          <span className="text-xs font-semibold tracking-wide text-amber-600 block mb-0.5">
-            Support &amp; Fulfillment
-          </span>
-          <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Frequently Asked Questions
-          </h2>
-        </div>
-        <div className="space-y-3">
-          <details className="group bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 transition-all">
-            <summary className="font-semibold text-slate-900 dark:text-white cursor-pointer list-none flex justify-between items-center text-sm tracking-wide">
-              How do I track my order?
-              <ArrowUpRight size={14} className="transition-transform group-open:rotate-90" />
-            </summary>
-            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Track your order status in real time by visiting our <Link href="/track-order" className="underline font-bold text-slate-900 dark:text-white">Order Tracking page</Link> using your order ID and verification contact.
-            </p>
-          </details>
-          <details className="group bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 transition-all">
-            <summary className="font-semibold text-slate-900 dark:text-white cursor-pointer list-none flex justify-between items-center text-sm tracking-wide">
-              What products does Nexus specialize in?
-              <ArrowUpRight size={14} className="transition-transform group-open:rotate-90" />
-            </summary>
-            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-Our catalog features products and collections currently available from Nexus. Browse the live catalogue to see what is available today.
-            </p>
-          </details>
-        </div>
-      </section>
     </>
   );
 }

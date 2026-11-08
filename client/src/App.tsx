@@ -17,6 +17,7 @@ import NotFound from "@/pages/NotFound";
 import ProductDetail from "@/pages/ProductDetail";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import FAQ from "@/pages/FAQ";
 import AdminLayout from "@/components/AdminLayout";
 import Admin from "@/pages/Admin";
 import Login from "@/pages/Login";
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/register" component={() => <SiteLayout><Register /></SiteLayout>} />
       <Route path="/terms" component={() => <SiteLayout><Terms /></SiteLayout>} />
       <Route path="/privacy" component={() => <SiteLayout><Privacy /></SiteLayout>} />
+      <Route path="/faq" component={() => <SiteLayout><FAQ /></SiteLayout>} />
       <Route path="/404" component={NotFoundRoute} />
       <Route component={NotFoundRoute} />
     </Switch>

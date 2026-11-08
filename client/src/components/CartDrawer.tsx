@@ -153,9 +153,12 @@ export default function CartDrawer() {
               <span>Subtotal</span>
               <strong>{formatPrice(subtotal)}</strong>
             </div>
-            <p className="text-xs text-slate-500 my-2">
-              Taxes and shipping are calculated at checkout.
-            </p>
+            <div className="my-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-slate-700">
+              <div className="flex justify-between gap-3"><span>Shipping cost</span><strong>Shopify calculates at checkout</strong></div>
+              <div className="flex justify-between gap-3 mt-2"><span>Estimated delivery</span><strong>Shopify provides after address</strong></div>
+              <p className="mt-2 text-[11px] text-slate-500">Your final rate and delivery estimate depend on the delivery address, product, and shipping method selected in Shopify checkout.</p>
+            </div>
+            <p className="text-xs text-slate-500 my-2">Shopify sends the purchase confirmation to the checkout email. When the order ships, the tracking number and carrier updates are available in the app and through Shopify email notifications.</p>
             <button
               type="button"
               className="button button-brass button-wide py-3 font-medium text-sm flex items-center justify-center gap-2"
@@ -169,7 +172,7 @@ export default function CartDrawer() {
                 )
               }
             >
-              <Lock size={14} /> {busy ? "Updating…" : "Checkout"}{" "}
+              <Lock size={14} /> {busy ? "Updating…" : "Secure Shopify checkout"}{" "}
               <ArrowUpRight size={12} />
             </button>
           </div>

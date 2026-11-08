@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { useCart } from "@/contexts/CartContext";
 import { getAdminAuthHeaders } from "@/lib/firebase";
-import { createCariUploadSession, uploadToCloudinary } from "@/lib/cloudinary";
+import { cleanupCloudinarySessionImages, createCariUploadSession, uploadToCloudinary } from "@/lib/cloudinary";
 import {
   getCollections,
   shopifyConfigured,
@@ -591,6 +591,12 @@ export default function AiAssistant() {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setLoading(false);
+      if (attachments.length && sessionId && cleanupToken) {
+        void cleanupCloudinarySessionImages(sessionId, cleanupToken).catch(() => {});
+        try { sessionStorage.removeItem("nexus_cari_session_id"); sessionStorage.removeItem("nexus_cari_cleanup_token"); } catch {}
+        setSessionId("");
+        setCleanupToken("");
+      }
     }
   };
 

@@ -431,10 +431,12 @@ export default function ProductDetail() {
                     : "Add to Cart"}
               </button>
             </div>
-            <p className="detail-note text-xs text-muted-foreground border-t border-border/50 pt-4">
-              Shopify calculates available shipping rates at checkout using your
-              delivery address and the product's shipping profile.
-            </p>
+            <div className="detail-note border-t border-border/50 pt-4 space-y-2 text-xs text-muted-foreground">
+              <div className="flex justify-between gap-4"><span>Item price</span><strong className="text-foreground">{formatPrice(variant?.price ?? product.price)}</strong></div>
+              <div className="flex justify-between gap-4"><span>Shipping cost</span><strong className="text-foreground">Provided by Shopify at checkout</strong></div>
+              <div className="flex justify-between gap-4"><span>Delivery time</span><strong className="text-foreground">Estimated by Shopify after address</strong></div>
+              <p>Shopify calculates the available shipping rates and estimated delivery using your delivery address, product shipping profile, and selected method.</p>
+            </div>
           </div>
         </div>
       </section>

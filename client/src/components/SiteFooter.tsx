@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ArrowUpRight, Check } from "lucide-react";
+import { Link } from "wouter";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -97,6 +98,7 @@ export default function SiteFooter() {
       </div>
       <div className="footer-bottom">
         <span>© {currentYear} Nexus A Liverton Store. All rights reserved.</span>
+        <span className="flex gap-4"><Link href="/faq">FAQs</Link><Link href="/track-order">Track an order</Link></span>
       </div>
     </footer>
   );

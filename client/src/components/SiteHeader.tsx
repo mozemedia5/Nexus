@@ -7,6 +7,7 @@ import {
   Store,
   Tags,
   BookOpen,
+  CircleHelp,
   Menu,
   PackageCheck,
   ShoppingCart,
@@ -27,6 +28,7 @@ const links = [
   { href: "/", label: "Home", icon: House },
   { href: "/products", label: "All products", icon: Store },
   { href: "/about", label: "Our story", icon: BookOpen },
+  { href: "/faq", label: "FAQs", icon: CircleHelp },
 ];
 
 export default function SiteHeader() {

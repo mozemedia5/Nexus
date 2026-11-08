@@ -1,0 +1,20 @@
+{
+  "routes": [
+    { "path": "/", "title": "Home" },
+    { "path": "/products", "title": "All products" },
+    { "path": "/cari", "title": "Ask Cari" },
+    { "path": "/products/:handle", "title": "Product" },
+    { "path": "/products.html", "title": "All products" },
+    { "path": "/new-arrivals", "title": "New arrivals" },
+    { "path": "/smart-office", "title": "Smart office" },
+    { "path": "/about", "title": "Our story" },
+    { "path": "/about.html", "title": "Our story" },
+    { "path": "/track-order", "title": "Track an order" },
+    { "path": "/order-tracking", "title": "Track an order" },
+    { "path": "/login", "title": "Sign in" },
+    { "path": "/register", "title": "Register" },
+    { "path": "/terms", "title": "Terms" },
+    { "path": "/privacy", "title": "Privacy" },
+    { "path": "/faq", "title": "Frequently Asked Questions" }
+  ]
+}
