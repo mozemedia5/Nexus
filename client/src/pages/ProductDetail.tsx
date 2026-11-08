@@ -97,7 +97,7 @@ export default function ProductDetail() {
       setCopiedLink(true);
       window.setTimeout(() => setCopiedLink(false), 2200);
       toast.success("Product link copied", {
-        description: "This link uses the matching Shopify product handle.",
+        description: "This link uses the matching product handle.",
       });
     } catch {
       toast.error(
@@ -433,9 +433,9 @@ export default function ProductDetail() {
             </div>
             <div className="detail-note border-t border-border/50 pt-4 space-y-2 text-xs text-muted-foreground">
               <div className="flex justify-between gap-4"><span>Item price</span><strong className="text-foreground">{formatPrice(variant?.price ?? product.price)}</strong></div>
-              <div className="flex justify-between gap-4"><span>Shipping cost</span><strong className="text-foreground">Provided by Shopify at checkout</strong></div>
-              <div className="flex justify-between gap-4"><span>Delivery time</span><strong className="text-foreground">Estimated by Shopify after address</strong></div>
-              <p>Shopify calculates the available shipping rates and estimated delivery using your delivery address, product shipping profile, and selected method.</p>
+              <div className="flex justify-between gap-4"><span>Shipping cost</span><strong className="text-foreground">Provided by us at checkout</strong></div>
+              <div className="flex justify-between gap-4"><span>Delivery time</span><strong className="text-foreground">Estimated by us after address</strong></div>
+              <p>We calculate available shipping rates and estimated delivery using your delivery address, product shipping profile, and selected method.</p>
             </div>
           </div>
         </div>

@@ -125,7 +125,7 @@ export default function ProductReviews({ productHandle }: { productHandle: strin
             <label htmlFor="product-review-body">Your review</label>
             <textarea id="product-review-body" value={body} onChange={event => setBody(event.target.value)} maxLength={1500} required rows={4} placeholder="Tell us about your experience with this product." />
             <button type="submit" disabled={submitting}>{submitting ? "Verifying purchase…" : "Submit review"}</button>
-            <small>Only verified purchasers with a paid Shopify order can submit. Your review is checked against your signed-in email.</small>
+            <small>Only verified purchasers with a paid order can submit. Your review is checked against your signed-in email.</small>
           </form>
         ) : (
           <p className="product-reviews-signin"><Link href={`/login?returnTo=${encodeURIComponent(`/products/${productHandle}`)}`}>Sign in</Link> with the account used for your purchase to write a review.</p>

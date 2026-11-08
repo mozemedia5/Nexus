@@ -53,7 +53,7 @@ export default function OrderTracking() {
       <section className="page-intro section-pad">
         <span className="eyebrow">Nexus A Liverton Store / Customer Service</span>
         <h1>Order <em>Tracking.</em></h1>
-        <p>Check the live status of your Smart Home purchase in real time. Shopify fulfillment updates, carrier tracking numbers, and tracking links appear here as soon as Shopify provides them.</p>
+        <p>Check the live status of your Smart Home purchase in real time. Our fulfillment updates, carrier tracking numbers, and tracking links appear here as soon as we provide them.</p>
       </section>
 
       <section className="section-pad track-order-section">
@@ -93,7 +93,7 @@ export default function OrderTracking() {
           <div className="track-notice">
             <ShieldCheck size={16} />
             <span>
-              <strong>Secure Shopify order lookup:</strong> Enter the order number and the email address or phone number used at checkout. After fulfillment, this page shows the carrier, tracking number, live status, and Shopify status link.
+              <strong>Secure order lookup:</strong> Enter the order number and the email address or phone number used at checkout. After fulfillment, this page shows the carrier, tracking number, live status, and order status link.
             </span>
           </div>
         </div>
