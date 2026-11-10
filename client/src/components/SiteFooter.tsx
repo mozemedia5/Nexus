@@ -98,7 +98,7 @@ export default function SiteFooter() {
       </div>
       <div className="footer-bottom">
         <span>© {currentYear} Nexus A Liverton Store. All rights reserved.</span>
-        <span className="flex gap-4"><Link href="/faq">FAQs</Link><Link href="/track-order">Track an order</Link></span>
+        <span className="flex flex-wrap gap-4"><Link href="/faq">FAQs</Link><Link href="/track-order">Track an order</Link><Link href="/policies/refund-policy">Refund Policy</Link><Link href="/policies/shipping-policy">Shipping Policy</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></span>
       </div>
     </footer>
   );

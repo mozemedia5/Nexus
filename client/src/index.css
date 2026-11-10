@@ -273,6 +273,27 @@ img { display: block; max-width: 100%; }
 .page-intro h1 { max-width: 800px; margin: 0.5rem 0 1rem; font-family: "DM Serif Display", serif; font-size: clamp(2.2rem, 4.5vw, 3.8rem); font-weight: 400; letter-spacing: -0.04em; line-height: 1.1; }
 .page-intro h1 em { color: var(--brass); }
 .page-intro p { max-width: 610px; margin: 0; color: var(--ink-soft); font-size: clamp(1rem, 1.6vw, 1.22rem); }
+.policy-page-shell { max-width: 900px; margin: 0 auto; }
+.policy-page-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(48,43,37,.14); }
+.policy-live-badge, .policy-page-header a { display: inline-flex; align-items: center; gap: .4rem; color: var(--brass); font-size: .68rem; font-weight: 800; letter-spacing: .08em; }
+.policy-page-header a:hover { text-decoration: underline; }
+.policy-body { color: var(--ink-soft); font-size: .92rem; line-height: 1.75; }
+.policy-body h1, .policy-body h2, .policy-body h3, .policy-body h4 { margin: 2rem 0 .7rem; color: var(--ink); font-family: "Plus Jakarta Sans", "Inter", sans-serif; font-size: 1.05rem; font-weight: 750; letter-spacing: -.015em; }
+.policy-body h1:first-child, .policy-body h2:first-child, .policy-body h3:first-child { margin-top: 0; }
+.policy-body p { margin: 0 0 1rem; }
+.policy-body ul, .policy-body ol { margin: 0 0 1.1rem 1.2rem; padding-left: 1rem; }
+.policy-body li { margin: .35rem 0; }
+.policy-body a { color: var(--brass); text-decoration: underline; text-underline-offset: 3px; }
+.policy-body strong { color: var(--ink); font-weight: 750; }
+.policy-body blockquote { margin: 1.25rem 0; padding: .8rem 1rem; border-left: 3px solid var(--brass); background: rgba(164,123,66,.08); }
+.policy-empty-state { display: flex; align-items: flex-start; gap: .85rem; padding: 1.25rem; border: 1px solid rgba(48,43,37,.14); border-radius: 1rem; background: rgba(255,250,239,.58); color: var(--ink-soft); }
+.policy-empty-state svg { flex: 0 0 auto; color: var(--brass); }
+.policy-empty-state h2 { margin: 0 0 .35rem; color: var(--ink); font-size: 1rem; }
+.policy-empty-state p { margin: 0; font-size: .88rem; line-height: 1.65; }
+@media (max-width: 640px) {
+  .policy-page-header { align-items: flex-start; flex-direction: column; }
+  .policy-body { font-size: .88rem; }
+}
 .catalogue { border-top: 1px solid rgba(48,43,37,0.12); background: #fbf9f1; }
 .catalogue-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 2rem; margin-bottom: 3.3rem; }
 .category-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }

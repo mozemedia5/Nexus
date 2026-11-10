@@ -15,6 +15,10 @@
     { "path": "/register", "title": "Register" },
     { "path": "/terms", "title": "Terms" },
     { "path": "/privacy", "title": "Privacy" },
+    { "path": "/refund-policy", "title": "Refund Policy" },
+    { "path": "/shipping-policy", "title": "Shipping Policy" },
+    { "path": "/policies/refund-policy", "title": "Refund Policy" },
+    { "path": "/policies/shipping-policy", "title": "Shipping Policy" },
     { "path": "/faq", "title": "Frequently Asked Questions" }
   ]
 }

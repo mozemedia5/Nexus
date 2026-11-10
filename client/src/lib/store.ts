@@ -198,6 +198,52 @@ export async function getShopifyCountryCode(): Promise<string> {
   return storefrontCountryCodePromise;
 }
 
+export type StorePolicy = {
+  title: string;
+  body: string;
+  url: string;
+};
+
+export type StorePolicies = {
+  privacyPolicy: StorePolicy | null;
+  termsOfService: StorePolicy | null;
+  refundPolicy: StorePolicy | null;
+  shippingPolicy: StorePolicy | null;
+};
+
+const STORE_POLICIES_QUERY = `
+  query NexusStorePolicies {
+    shop {
+      privacyPolicy { title body url }
+      termsOfService { title body url }
+      refundPolicy { title body url }
+      shippingPolicy { title body url }
+    }
+  }
+`;
+
+let storePoliciesPromise: Promise<StorePolicies> | null = null;
+
+export async function getStorePolicies(): Promise<StorePolicies> {
+  if (!shopifyConfigured) {
+    throw new Error("Store policies are not configured yet.");
+  }
+  if (!storePoliciesPromise) {
+    storePoliciesPromise = shopifyFetch<{ shop: StorePolicies }>(STORE_POLICIES_QUERY)
+      .then(data => ({
+        privacyPolicy: data.shop?.privacyPolicy ?? null,
+        termsOfService: data.shop?.termsOfService ?? null,
+        refundPolicy: data.shop?.refundPolicy ?? null,
+        shippingPolicy: data.shop?.shippingPolicy ?? null,
+      }))
+      .catch(error => {
+        storePoliciesPromise = null;
+        throw error;
+      });
+  }
+  return storePoliciesPromise;
+}
+
 export function applyShopifyCountryContext(
   query: string,
   countryCode: string

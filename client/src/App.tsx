@@ -17,6 +17,7 @@ import NotFound from "@/pages/NotFound";
 import ProductDetail from "@/pages/ProductDetail";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import PolicyPage from "@/pages/PolicyPage";
 import FAQ from "@/pages/FAQ";
 import AdminLayout from "@/components/AdminLayout";
 import Admin from "@/pages/Admin";
@@ -34,6 +35,8 @@ function CollectionsRoute() { return <SiteLayout><Collections /></SiteLayout>; }
 function HeritageRoute() { return <SiteLayout><Heritage /></SiteLayout>; }
 function OrderTrackingRoute() { return <SiteLayout><OrderTracking /></SiteLayout>; }
 function NotFoundRoute() { return <SiteLayout><NotFound /></SiteLayout>; }
+function RefundPolicyRoute() { return <SiteLayout><PolicyPage policyKey="refundPolicy" fallbackTitle="Refund Policy" description="Read the current refund and return policy published in our store settings." canonicalPath="/policies/refund-policy" /></SiteLayout>; }
+function ShippingPolicyRoute() { return <SiteLayout><PolicyPage policyKey="shippingPolicy" fallbackTitle="Shipping Policy" description="Read the current shipping policy, delivery information, and shipping conditions published in our store settings." canonicalPath="/policies/shipping-policy" /></SiteLayout>; }
 
 function Router() {
   const [location] = useLocation();
@@ -63,6 +66,10 @@ function Router() {
       <Route path="/register" component={() => <SiteLayout><Register /></SiteLayout>} />
       <Route path="/terms" component={() => <SiteLayout><Terms /></SiteLayout>} />
       <Route path="/privacy" component={() => <SiteLayout><Privacy /></SiteLayout>} />
+      <Route path="/refund-policy" component={RefundPolicyRoute} />
+      <Route path="/policies/refund-policy" component={RefundPolicyRoute} />
+      <Route path="/shipping-policy" component={ShippingPolicyRoute} />
+      <Route path="/policies/shipping-policy" component={ShippingPolicyRoute} />
       <Route path="/faq" component={() => <SiteLayout><FAQ /></SiteLayout>} />
       <Route path="/404" component={NotFoundRoute} />
       <Route component={NotFoundRoute} />
