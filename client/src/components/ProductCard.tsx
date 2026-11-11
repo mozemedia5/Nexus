@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { ArrowUpRight, Plus, Camera, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -9,9 +9,11 @@ import { getFirebaseAuth } from "@/lib/firebase";
 export default function ProductCard({
   product,
   compact = false,
+  autoRotateImages = false,
 }: {
   product: Product;
   compact?: boolean;
+  autoRotateImages?: boolean;
 }) {
   const { addItem, busy } = useCart();
   const [showAnalysis, setShowAnalysis] = useState(false);
@@ -59,7 +61,28 @@ export default function ProductCard({
     toast("Added to Cart", { description: product.name });
   };
   const mainImage = product.image ?? product.images[0];
-  const secondaryImage = product.images.length > 1 ? product.images[1] : null;
+  const galleryImages = [mainImage, ...product.images].filter(
+    (image, index, images) =>
+      Boolean(image?.url) &&
+      images.findIndex((candidate) => candidate?.url === image?.url) === index,
+  );
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+    if (
+      !autoRotateImages ||
+      galleryImages.length < 2 ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setActiveImageIndex((current) => (current + 1) % galleryImages.length);
+    }, 3_500);
+    return () => window.clearInterval(timer);
+  }, [autoRotateImages, galleryImages.length, product.id]);
 
   return (
     <article
@@ -72,19 +95,36 @@ export default function ProductCard({
           className="w-full h-full block relative"
           aria-label={`View ${product.name}`}
         >
-          <img
-            src={mainImage?.url ?? "/logo.png"}
-            alt={mainImage?.altText ?? product.name}
-            className={`w-full h-full object-contain object-center transition-all duration-500 group-hover:scale-105 ${secondaryImage ? "group-hover:opacity-0" : ""}`}
-            loading="lazy"
-          />
-          {secondaryImage && (
-            <img
-              src={secondaryImage.url}
-              alt={secondaryImage.altText ?? product.name}
-              className="absolute inset-0 w-full h-full object-contain object-center transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-105"
-              loading="lazy"
-            />
+          {autoRotateImages ? (
+            galleryImages.map((image, index) => (
+              <img
+                key={image?.url ?? index}
+                src={image?.url ?? "/logo.png"}
+                alt={index === activeImageIndex ? image?.altText ?? product.name : ""}
+                aria-hidden={index !== activeImageIndex}
+                className="absolute inset-0 h-full w-full object-contain object-center p-1 transition-opacity duration-700 ease-in-out"
+                style={{ opacity: index === activeImageIndex ? 1 : 0 }}
+                loading="lazy"
+                draggable={false}
+              />
+            ))
+          ) : (
+            <>
+              <img
+                src={mainImage?.url ?? "/logo.png"}
+                alt={mainImage?.altText ?? product.name}
+                className={`h-full w-full object-contain object-center transition-all duration-500 group-hover:scale-105 ${galleryImages.length > 1 ? "group-hover:opacity-0" : ""}`}
+                loading="lazy"
+              />
+              {galleryImages.length > 1 && galleryImages[1] && (
+                <img
+                  src={galleryImages[1].url}
+                  alt={galleryImages[1].altText ?? product.name}
+                  className="absolute inset-0 h-full w-full object-contain object-center transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-105"
+                  loading="lazy"
+                />
+              )}
+            </>
           )}
         </Link>
         {product.compareAtPrice && (

@@ -1,11 +1,9 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { ArrowUpRight, Cpu, Heart, PackageCheck, ShieldCheck, Zap, Megaphone, Tag, ChevronLeft, ChevronRight, Camera } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
 import SEO from "@/components/SEO";
 import { getCollections, getProducts, type Collection, type Product } from "@/lib/store";
-import { usePersonalization } from "@/hooks/usePersonalization";
-import { getActiveCampaigns } from "@/pages/Admin";
 
 const heroBackgrounds = [
   "/nexus-hero-workspace-web.jpg",
@@ -31,7 +29,10 @@ function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[]
   }, [images.length]);
 
   useEffect(() => {
-    if (images.length <= 1) return;
+    if (
+      images.length <= 1 ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) return;
     startTimer();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [images.length, startTimer]);
@@ -44,13 +45,16 @@ function AutoScrollCarousel({ images }: { images: { url: string; alt: string }[]
   if (images.length === 0) return null;
 
   return (
-    <div className="relative w-full h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden group">
+    <div className="relative w-full h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 group">
       {images.map((img, idx) => (
         <img
           key={img.url}
           src={img.url}
           alt={img.alt}
-          className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out"
+          className="absolute inset-0 w-full h-full object-contain p-5 sm:p-8 transition-all duration-700 ease-in-out"
+          aria-hidden={idx !== current}
+          loading="lazy"
+          draggable={false}
           style={{ opacity: idx === current ? 1 : 0, transform: idx === current ? "scale(1)" : "scale(1.05)" }}
         />
       ))}
@@ -110,8 +114,6 @@ export default function Home() {
   const newArrivalProducts = useMemo(() => {
     return newestProducts.slice(0, 4);
   }, [newestProducts]);
-
-  const activeCampaigns = useMemo(() => getActiveCampaigns(), []);
 
   const carouselImages = useMemo(() => {
     return products.filter((product) => product.image?.url).slice(0, 6).map((product) => ({
@@ -232,7 +234,7 @@ export default function Home() {
         ) : featuredOfficeProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {featuredOfficeProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} autoRotateImages />
             ))}
           </div>
         ) : (
@@ -258,7 +260,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {newArrivalProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} autoRotateImages />
             ))}
           </div>
         </section>
@@ -306,7 +308,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {products.slice(4, 7).map((product) => (
-            <ProductCard key={`office-${product.id}`} product={product} />
+            <ProductCard key={`office-${product.id}`} product={product} autoRotateImages />
           ))}
         </div>
       </section>
