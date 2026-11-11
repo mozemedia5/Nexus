@@ -68,7 +68,12 @@ type GeminiResponse = {
   error?: { message?: string };
 };
 
-const DEFAULT_MODEL = "gemini-3.8-flash";
+const DEFAULT_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+];
 const MAX_CONTEXT_CHARS = 180_000;
 const MAX_MESSAGES = 80;
 const MAX_MESSAGE_CHARS = 4_000;
@@ -138,6 +143,17 @@ Be concise, friendly, and specific. Use exact currency values supplied in contex
 
 function getGeminiApiKey() {
   return process.env.GEMINI_API_KEY?.trim() || "";
+}
+
+function getGeminiModels() {
+  const configured = process.env.GEMINI_MODEL?.trim() || "";
+  const configuredFallbacks = (process.env.GEMINI_FALLBACK_MODELS || "")
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean);
+  return Array.from(new Set([configured, ...configuredFallbacks, ...DEFAULT_MODELS]
+    .map((model) => model.replace(/^models\//, ""))
+    .filter(Boolean)));
 }
 
 export function isHannaConfigured() {
@@ -335,62 +351,58 @@ export async function generateCariReply(
     throw new Error("Cari needs a shopper message before it can respond.");
   }
 
-  const configuredModel = process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL;
-  let model = configuredModel.replace(/^models\//, "");
-
-  // Implement retry for transient errors like 503 (service unavailable / overloaded)
+  const models = getGeminiModels();
   let response: Response | null = null;
   let lastError = "";
   let lastStatus: number | null = null;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-      response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: `${CARI_SYSTEM_INSTRUCTION}\n\n${buildCariCatalogContext({ ...catalog, products: selectRelevantProducts(messages, catalog) })}` }],
+  const retryableStatuses = new Set([404, 429, 500, 502, 503, 504]);
+  for (const model of models) {
+    let modelSucceeded = false;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
           },
-          contents,
-          generationConfig: {
-            maxOutputTokens: MAX_OUTPUT_TOKENS,
-          },
-        }),
-        signal: AbortSignal.timeout(45_000),
-      });
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: `${CARI_SYSTEM_INSTRUCTION}\n\n${buildCariCatalogContext({ ...catalog, products: selectRelevantProducts(messages, catalog) })}` }],
+            },
+            contents,
+            generationConfig: {
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
+            },
+          }),
+          signal: AbortSignal.timeout(45_000),
+        });
 
-      if (response.ok) break;
-      lastStatus = response.status;
+        if (response.ok) {
+          modelSucceeded = true;
+          break;
+        }
+        lastStatus = response.status;
+        const payload = (await response.json().catch(() => ({}))) as GeminiResponse;
+        lastError = payload.error?.message ?? `Status ${response.status}`;
+        console.warn(`[Cari] Gemini model ${model} attempt ${attempt} failed (${response.status}): ${lastError}`);
 
-      const payload = (await response.json().catch(() => ({}))) as GeminiResponse;
-      lastError = payload.error?.message ?? `Status ${response.status}`;
-      console.warn(`[Cari] Gemini request attempt ${attempt} failed (${response.status}): ${lastError}`);
-
-      if (response.status === 404 && model !== DEFAULT_MODEL) {
-        console.warn(`[Cari] Configured model ${model} is unavailable; retrying with ${DEFAULT_MODEL}.`);
-        model = DEFAULT_MODEL;
-        continue;
-      }
-
-      // If transient status (503 / 429), wait 1s before retry
-      if (response.status === 503 || response.status === 429) {
+        if (!retryableStatuses.has(response.status)) break;
         if (attempt < 2) await new Promise((res) => setTimeout(res, 500));
-      } else {
-        break;
-      }
-    } catch (err: any) {
-      lastError = err.message || "Network timeout or fetch error";
-      console.warn(`[Cari] Gemini fetch attempt ${attempt} threw: ${lastError}`);
-      if (attempt < 2 && err?.name !== "TimeoutError" && err?.name !== "AbortError") {
-        await new Promise((res) => setTimeout(res, 500));
-      } else {
-        break;
+      } catch (err: any) {
+        lastError = err.message || "Network timeout or fetch error";
+        console.warn(`[Cari] Gemini model ${model} attempt ${attempt} threw: ${lastError}`);
+        if (attempt < 2 && err?.name !== "TimeoutError" && err?.name !== "AbortError") {
+          await new Promise((res) => setTimeout(res, 500));
+        } else {
+          break;
+        }
       }
     }
+    if (modelSucceeded) break;
+    if (lastStatus !== null && !retryableStatuses.has(lastStatus)) break;
+    console.warn(`[Cari] Moving to the next Gemini fallback model after ${model}.`);
   }
 
   if (!response || !response.ok) {
