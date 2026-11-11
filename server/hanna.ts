@@ -75,9 +75,10 @@ type GeminiResponse = {
 
 const DEFAULT_MODELS = [
   "gemini-3.8-flash",
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-3-flash-preview",
 ];
 const MAX_CONTEXT_CHARS = 180_000;
 const MAX_MESSAGES = 80;
@@ -92,7 +93,7 @@ export class CariProviderError extends Error {
     const message = upstreamStatus === 401 || upstreamStatus === 403
       ? "Cari's AI connection was rejected. Please contact the store administrator."
       : upstreamStatus === 404
-        ? "Cari's configured AI model is unavailable. Please contact the store administrator."
+        ? "Cari could not access the configured Gemini model or its fallbacks. Check that GEMINI_API_KEY is valid and that the selected models are enabled for the API project."
         : upstreamStatus === 429
           ? "Cari has reached a temporary request limit. Please try again shortly."
           : upstreamStatus === 400

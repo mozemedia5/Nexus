@@ -24,7 +24,7 @@ FIREBASE_SERVICE_ACCOUNT_JSON=
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.8-flash
 # Comma-separated fallback models used when the primary model is unavailable or busy.
-GEMINI_FALLBACK_MODELS=gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash
+GEMINI_FALLBACK_MODELS=gemini-3.6-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3-flash-preview
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
