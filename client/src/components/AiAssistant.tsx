@@ -8,9 +8,11 @@ import { getAdminAuthHeaders } from "@/lib/firebase";
 import { cleanupCloudinarySessionImages, createCariUploadSession, uploadToCloudinary } from "@/lib/cloudinary";
 import {
   getCollections,
+  getStorePolicies,
   shopifyConfigured,
   type Collection,
   type Product,
+  type StorePolicies,
   formatPrice,
   getAvailableVariant,
   getAllProducts,
@@ -105,7 +107,12 @@ const STORE_SUGGESTIONS = [
   "Can you help me choose a product?",
 ];
 
-function assistantCatalog(products: Product[], collections: Collection[], currentPath: string, shoppingList: ShoppingListItem[]) {
+function assistantCatalog(products: Product[], collections: Collection[], currentPath: string, shoppingList: ShoppingListItem[], storePolicies: StorePolicies | null) {
+  const policies = storePolicies ? Object.values(storePolicies).filter(Boolean).map((policy) => ({
+    title: policy!.title,
+    body: policy!.body.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 8000),
+    url: policy!.url,
+  })) : [];
   return {
     currentPath,
     products: products.map((product) => ({
@@ -129,6 +136,7 @@ function assistantCatalog(products: Product[], collections: Collection[], curren
       title: collection.title,
       description: collection.description,
     })),
+    policies,
     shoppingList: shoppingList.map(({ handle, name, price }) => ({ handle, name, price })),
   };
 }
@@ -457,14 +465,15 @@ export default function AiAssistant() {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [storePolicies, setStorePolicies] = useState<StorePolicies | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textInputRef = useRef<HTMLTextAreaElement>(null);
 
   const catalog = useMemo(
-    () => assistantCatalog(products, collections, location, shoppingList),
-    [products, collections, location, shoppingList],
+    () => assistantCatalog(products, collections, location, shoppingList, storePolicies),
+    [products, collections, location, shoppingList, storePolicies],
   );
 
   const listPurchases = useMemo(() => shoppingList.flatMap((item) => {
@@ -517,6 +526,9 @@ export default function AiAssistant() {
         setCatalogLoaded(true);
         setCatalogLoading(false);
       });
+    void getStorePolicies().then(setStorePolicies).catch(() => {
+      // Policies remain optional for product discovery if the store policy query is unavailable.
+    });
   }, [isOpen, catalogLoaded, catalogLoading]);
 
   const scrollToBottom = () => {

@@ -118,6 +118,7 @@ export type TrackedOrder = {
   fulfillmentStatus: string;
   trackingStatus?: string | null;
   deliveredAt?: string | null;
+  estimatedDeliveryAt?: string | null;
   statusUrl?: string | null;
   totalPrice: { amount: string; currencyCode: string };
   shippingAddress?: {
@@ -140,6 +141,7 @@ export type TrackedOrder = {
     company?: string | null;
     status?: string | null;
     deliveredAt?: string | null;
+    estimatedDeliveryAt?: string | null;
   }[];
 };
 

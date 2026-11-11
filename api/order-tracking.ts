@@ -119,6 +119,7 @@ export async function fetchShopifyOrderTracking(
           fulfillments {
             displayStatus
             deliveredAt
+            estimatedDeliveryAt
             trackingInfo {
               number
               url
@@ -190,6 +191,10 @@ export async function fetchShopifyOrderTracking(
   const statusPriority = ["DELIVERED", "OUT_FOR_DELIVERY", "IN_TRANSIT", "PICKED_UP", "READY_FOR_PICKUP", "CONFIRMED", "LABEL_PRINTED", "LABEL_PURCHASED", "SUBMITTED"];
   const trackingStatus = statusPriority.find((status) => fulfillmentStatuses.includes(status)) ?? null;
   const deliveredAt = (verifiedOrder.fulfillments ?? []).find((fulfillment: any) => fulfillment.deliveredAt)?.deliveredAt ?? null;
+  const estimatedDeliveryAt = (verifiedOrder.fulfillments ?? [])
+    .map((fulfillment: any) => fulfillment.estimatedDeliveryAt)
+    .filter((value: unknown): value is string => typeof value === "string" && Boolean(value))
+    .sort()[0] ?? null;
 
   return {
     id: verifiedOrder.id,
@@ -200,6 +205,7 @@ export async function fetchShopifyOrderTracking(
     fulfillmentStatus: verifiedOrder.displayFulfillmentStatus || "IN_PROGRESS",
     trackingStatus,
     deliveredAt,
+    estimatedDeliveryAt,
     statusUrl: verifiedOrder.statusPageUrl || null,
     totalPrice,
     shippingAddress: verifiedOrder.shippingAddress || null,
@@ -217,6 +223,7 @@ export async function fetchShopifyOrderTracking(
         company: tracking.company,
         status: fulfillment.displayStatus ?? null,
         deliveredAt: fulfillment.deliveredAt ?? null,
+        estimatedDeliveryAt: fulfillment.estimatedDeliveryAt ?? null,
       })),
     ),
   };

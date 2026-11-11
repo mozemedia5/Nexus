@@ -137,6 +137,7 @@ async function startServer() {
         currentPath: typeof catalog.currentPath === "string" ? catalog.currentPath.slice(0, 300) : "/",
         products: Array.isArray(catalog.products) ? catalog.products.slice(0, 1000) : [],
         collections: Array.isArray(catalog.collections) ? catalog.collections.slice(0, 250) : [],
+        policies: Array.isArray(catalog.policies) ? catalog.policies.slice(0, 8) : [],
         shoppingList: Array.isArray(catalog.shoppingList) ? catalog.shoppingList.slice(0, 100) : [],
       });
       res.json({ reply });

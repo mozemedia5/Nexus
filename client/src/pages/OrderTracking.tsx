@@ -13,6 +13,10 @@ export default function OrderTracking() {
   const isDelivered = Boolean(order?.deliveredAt) || trackingStatus === "DELIVERED";
   const isFulfilled = order?.fulfillmentStatus.toUpperCase() === "FULFILLED"
     || ["IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "PICKED_UP"].includes(trackingStatus);
+  const estimatedDeliveryDate = order?.estimatedDeliveryAt ? new Date(order.estimatedDeliveryAt) : null;
+  const estimatedDaysRemaining = estimatedDeliveryDate && !Number.isNaN(estimatedDeliveryDate.getTime())
+    ? Math.max(0, Math.ceil((estimatedDeliveryDate.getTime() - Date.now()) / 86_400_000))
+    : null;
 
   const handleSearch = async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -114,6 +118,17 @@ export default function OrderTracking() {
                   {order.fulfillmentStatus.replace("_", " ")}
                 </span>
               </div>
+            </div>
+
+            <div className="track-notice delivery-estimate-notice">
+              <Clock size={16} />
+              <span>
+                {estimatedDeliveryDate && !Number.isNaN(estimatedDeliveryDate.getTime()) ? (
+                  <><strong>Estimated delivery:</strong> {estimatedDaysRemaining === 0 ? "expected today" : `${estimatedDaysRemaining} day${estimatedDaysRemaining === 1 ? "" : "s"} remaining`} ({estimatedDeliveryDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}).</>
+                ) : (
+                  <><strong>Delivery estimate:</strong> The store has not supplied an estimated delivery date yet. This page will show it automatically when fulfilment data is updated.</>
+                )}
+              </span>
             </div>
 
             {/* Timeline Progress Tracker */}

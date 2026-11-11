@@ -45,10 +45,15 @@ export type ShoppingCollection = {
   title: string;
   description: string;
 };
-
+export type ShoppingPolicy = {
+  title: string;
+  body: string;
+  url: string;
+};
 export type ShoppingCatalogContext = {
   products?: ShoppingProduct[];
   collections?: ShoppingCollection[];
+  policies?: ShoppingPolicy[];
   shoppingList?: Array<{ handle: string; name: string; price?: string }>;
   currentPath?: string;
 };
@@ -138,6 +143,8 @@ When a shopper attaches a photo, describe only what is visually evident, then ma
 SHOPPING LIST ACTIONS
 When the shopper explicitly asks to add, remove, or change discussed items on their shopping list, include one fenced JSON block at the end of the response with both the recommendations array and a shoppingList object. The shoppingList object must use {"add":[{"handle":"exact live product handle or custom note","name":"item name","price":"exact supplied price or empty string","image":"exact supplied URL or empty string"}],"remove":[{"handle":"handle or custom note","name":"item name"}]}. Include only the requested changes. A custom note is not a store product and must not be presented as purchasable.
 
+POLICY AND PURCHASE GUIDANCE
+Use the live policy documents supplied in the store context when answering questions about shipping, delivery, returns, refunds, privacy, or terms. Link to the supplied policy URL when useful. When recommending a product, be naturally persuasive by explaining its concrete benefits, fit, value, and trade-offs for this shopper, then invite the shopper to view or add it. Never use false scarcity, guarantees, invented discounts, pressure, or claims not supported by the live context.
 STYLE
 Be concise, friendly, and specific. Use exact currency values supplied in context. Always refer to the store as Nexus. Keep continuity across turns: use preferences and constraints stated earlier, refer back to a prior product or comparison when relevant, and never fabricate a memory that is not present in the conversation.`;
 
@@ -200,10 +207,13 @@ function formatProduct(product: ShoppingProduct) {
     `- Description: ${compactText(product.description, 1_200) || "No description supplied."}`,
   ].join("\n");
 }
-
+function formatPolicy(policy: ShoppingPolicy) {
+  return `POLICY: ${compactText(policy.title, 160)}\n- Source: ${compactText(policy.url, 500)}\n- Published text: ${compactText(policy.body, 8_000) || "No policy text supplied."}`;
+}
 export function buildCariCatalogContext(catalog: ShoppingCatalogContext = {}) {
   const products = (catalog.products ?? []).slice(0, 120);
   const collections = (catalog.collections ?? []).slice(0, 40);
+  const policies = (catalog.policies ?? []).slice(0, 8);
   const collectionIndex = collections.length
     ? collections
         .map(
@@ -224,6 +234,9 @@ export function buildCariCatalogContext(catalog: ShoppingCatalogContext = {}) {
     "",
     "LIVE PRODUCTS",
     products.length ? products.map(formatProduct).join("\n\n") : "- No live products were returned.",
+    "",
+    "LIVE STORE POLICIES",
+    policies.length ? policies.map(formatPolicy).join("\n\n") : "- No live store policies were returned.",
     "",
     "CURRENT SHOPPING LIST",
     catalog.shoppingList?.length ? catalog.shoppingList.map((item) => `- ${compactText(item.name, 180)} | handle: ${compactText(item.handle, 180)} | price: ${compactText(item.price, 80) || "not set"}`).join("\n") : "- The current shopping list is empty.",
