@@ -13,7 +13,6 @@ import {
   assertUserErrors,
   buildShopifyCartInput,
   createCartForCountry,
-  filterAvailableProducts,
   filterPurchasableCartLines,
   formatPrice,
   getAvailableVariant,
@@ -195,11 +194,6 @@ describe("Shopify variant validation and product normalization", () => {
       unavailableSecond,
       availableSecond,
     ]);
-    expect(filterAvailableProducts(original, true)).toEqual([
-      availableFirst,
-      availableSecond,
-    ]);
-    expect(filterAvailableProducts(original, false)).toEqual(original);
   });
 
   it("formats real USD money and refuses to invent a currency for malformed values", () => {

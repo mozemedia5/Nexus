@@ -116,15 +116,6 @@ export function sortProductsAvailableFirst<T extends { availableForSale: boolean
     .map(({ product }) => product);
 }
 
-export function filterAvailableProducts<T extends { availableForSale: boolean }>(
-  products: readonly T[],
-  hideUnavailable: boolean,
-): T[] {
-  return hideUnavailable
-    ? products.filter(product => product.availableForSale)
-    : [...products];
-}
-
 export type Collection = {
   id: string;
   handle: string;
