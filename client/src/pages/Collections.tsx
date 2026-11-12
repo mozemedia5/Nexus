@@ -15,6 +15,7 @@ import {
   getAllProducts,
   getCollectionProducts,
   getCollections,
+  filterAvailableProducts,
   sortProductsAvailableFirst,
   type Collection,
   type Product,
@@ -30,6 +31,7 @@ export default function Collections() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hideOutOfStock, setHideOutOfStock] = useState(false);
   const [imageSearchActive, setImageSearchActive] = useState(false);
   const [imageSearchLoading, setImageSearchLoading] = useState(false);
   const [tempPublicId, setTempPublicId] = useState<string | null>(null);
@@ -134,8 +136,10 @@ export default function Collections() {
           );
         })
       : products;
-    return sortProductsAvailableFirst(matchingProducts);
-  }, [products, searchQuery]);
+    return sortProductsAvailableFirst(
+      filterAvailableProducts(matchingProducts, hideOutOfStock),
+    );
+  }, [products, searchQuery, hideOutOfStock]);
 
   useEffect(() => {
     setActive(initial);
@@ -295,6 +299,25 @@ export default function Collections() {
           </div>
         </div>
 
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <label className="inline-flex min-h-9 cursor-pointer select-none items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition-colors hover:border-amber-500/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+            <input
+              type="checkbox"
+              checked={hideOutOfStock}
+              onChange={event => setHideOutOfStock(event.target.checked)}
+              className="h-4 w-4 rounded accent-amber-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+            />
+            Hide out-of-stock products
+          </label>
+          {!loading && !error && (
+            <p className="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
+              Showing {filteredProducts.length} product
+              {filteredProducts.length === 1 ? "" : "s"}
+              {hideOutOfStock ? " in stock" : ""}
+            </p>
+          )}
+        </div>
+
         {error ? (
           <div className="empty-state">
             <h3>We couldn’t load the catalogue</h3>
@@ -312,8 +335,25 @@ export default function Collections() {
           </div>
         ) : (
           <div className="empty-state">
-            <h3>No products in this collection yet</h3>
-            <p>Try another product collection or return to all products.</p>
+            <h3>
+              {hideOutOfStock
+                ? "No in-stock products match these filters"
+                : "No products in this collection yet"}
+            </h3>
+            <p>
+              {hideOutOfStock
+                ? "Try a different search or collection, or show out-of-stock products."
+                : "Try another product collection or return to all products."}
+            </p>
+            {hideOutOfStock && (
+              <button
+                type="button"
+                onClick={() => setHideOutOfStock(false)}
+                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
+              >
+                Show all matching products
+              </button>
+            )}
           </div>
         )}
       </section>
