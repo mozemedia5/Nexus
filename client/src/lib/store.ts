@@ -101,6 +101,21 @@ export function getAvailableVariant(
   );
 }
 
+/** Move products without a purchasable variant after available products, stably. */
+export function sortProductsAvailableFirst<T extends { availableForSale: boolean }>(
+  products: readonly T[],
+): T[] {
+  return products
+    .map((product, index) => ({ product, index }))
+    .sort(
+      (left, right) =>
+        Number(right.product.availableForSale) -
+          Number(left.product.availableForSale) ||
+        left.index - right.index,
+    )
+    .map(({ product }) => product);
+}
+
 export type Collection = {
   id: string;
   handle: string;

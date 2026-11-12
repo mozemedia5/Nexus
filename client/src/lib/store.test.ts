@@ -19,6 +19,7 @@ import {
   isPurchasableVariant,
   normalizeProduct,
   removedCartQuantities,
+  sortProductsAvailableFirst,
   updatedCartQuantities,
   type ProductVariant,
   type ShopifyCartResponse,
@@ -151,6 +152,48 @@ describe("Shopify variant validation and product normalization", () => {
     expect(product.availableForSale).toBe(false);
     expect(product.price).toBeNull();
     expect(getAvailableVariant(product)).toBeNull();
+  });
+
+  it("moves unavailable products after available ones without changing their relative order", () => {
+    const availableFirst = {
+      ...productWith([variant(30)]),
+      id: "gid://shopify/Product/301",
+      name: "Available first",
+    };
+    const unavailableFirst = {
+      ...productWith([variant(31, { availableForSale: false })]),
+      id: "gid://shopify/Product/302",
+      name: "Unavailable first",
+    };
+    const availableSecond = {
+      ...productWith([variant(32)]),
+      id: "gid://shopify/Product/303",
+      name: "Available second",
+    };
+    const unavailableSecond = {
+      ...productWith([variant(33, { availableForSale: false })]),
+      id: "gid://shopify/Product/304",
+      name: "Unavailable second",
+    };
+    const original = [
+      unavailableFirst,
+      availableFirst,
+      unavailableSecond,
+      availableSecond,
+    ];
+
+    expect(sortProductsAvailableFirst(original)).toEqual([
+      availableFirst,
+      availableSecond,
+      unavailableFirst,
+      unavailableSecond,
+    ]);
+    expect(original).toEqual([
+      unavailableFirst,
+      availableFirst,
+      unavailableSecond,
+      availableSecond,
+    ]);
   });
 
   it("formats real USD money and refuses to invent a currency for malformed values", () => {

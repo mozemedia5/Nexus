@@ -3,7 +3,13 @@ import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
 import SEO from "@/components/SEO";
-import { getCollections, getProducts, type Collection, type Product } from "@/lib/store";
+import {
+  getCollections,
+  getProducts,
+  sortProductsAvailableFirst,
+  type Collection,
+  type Product,
+} from "@/lib/store";
 
 const heroBackgrounds = [
   "/nexus-hero-workspace-web.jpg",
@@ -100,8 +106,8 @@ export default function Home() {
       getCollections(250),
     ])
       .then(([items, newest, groups]) => {
-        setProducts(items);
-        setNewestProducts(newest);
+        setProducts(sortProductsAvailableFirst(items));
+        setNewestProducts(sortProductsAvailableFirst(newest));
         setCollections(groups);
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load catalogue."));

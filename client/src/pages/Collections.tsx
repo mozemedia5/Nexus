@@ -15,6 +15,7 @@ import {
   getAllProducts,
   getCollectionProducts,
   getCollections,
+  sortProductsAvailableFirst,
   type Collection,
   type Product,
 } from "@/lib/store";
@@ -123,14 +124,17 @@ export default function Collections() {
   };
 
   const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return products;
-    const q = searchQuery.toLowerCase();
-    return products.filter(
-      p =>
-        p.name.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q) ||
-        p.tags?.some(t => t.toLowerCase().includes(q))
-    );
+    const matchingProducts = searchQuery.trim()
+      ? products.filter(p => {
+          const q = searchQuery.toLowerCase();
+          return (
+            p.name.toLowerCase().includes(q) ||
+            p.description?.toLowerCase().includes(q) ||
+            p.tags?.some(t => t.toLowerCase().includes(q))
+          );
+        })
+      : products;
+    return sortProductsAvailableFirst(matchingProducts);
   }, [products, searchQuery]);
 
   useEffect(() => {
