@@ -1,0 +1,35 @@
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .home-product-card {
+    transition:
+      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 260ms ease,
+      border-color 260ms ease;
+  }
+
+  .home-product-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(155, 117, 68, 0.34);
+    box-shadow: 0 14px 28px rgba(48, 43, 35, 0.12);
+  }
+
+  .home-product-card__image {
+    transition:
+      opacity 700ms ease-in-out,
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .home-product-card:hover .home-product-card__image {
+    transform: scale(1.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-product-card,
+  .home-product-card__image {
+    transition: none !important;
+  }
+
+  .home-product-card:hover {
+    transform: none;
+  }
+}

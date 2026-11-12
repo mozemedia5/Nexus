@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { formatPrice, getAvailableVariant, type Product } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
 import { getFirebaseAuth } from "@/lib/firebase";
-
+import "./ProductCard.css";
 export default function ProductCard({
   product,
   compact = false,
@@ -86,7 +86,7 @@ export default function ProductCard({
 
   return (
     <article
-      className={`group relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${compact ? "p-2" : ""}`}
+      className={`group relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg ${autoRotateImages ? "home-product-card" : ""} ${compact ? "p-2" : ""}`}
     >
       <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center p-2">
         <Link
@@ -102,7 +102,7 @@ export default function ProductCard({
                 src={image?.url ?? "/logo.png"}
                 alt={index === activeImageIndex ? image?.altText ?? product.name : ""}
                 aria-hidden={index !== activeImageIndex}
-                className="absolute inset-0 h-full w-full object-contain object-center p-1 transition-opacity duration-700 ease-in-out"
+                className="home-product-card__image absolute inset-0 h-full w-full object-contain object-center p-1"
                 style={{ opacity: index === activeImageIndex ? 1 : 0 }}
                 loading="lazy"
                 draggable={false}
