@@ -237,8 +237,8 @@ export default function Collections() {
           />
 
           {/* Search & Image Search Tool */}
-          <div className="flex items-center gap-2">
-            <div className="relative">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="relative min-w-0 flex-1">
               <Search
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -248,7 +248,7 @@ export default function Collections() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search products..."
-                className="pl-8 pr-8 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full min-w-0 pl-8 pr-8 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               {searchQuery && (
                 <button
@@ -300,7 +300,7 @@ export default function Collections() {
         </div>
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <label className="inline-flex min-h-9 cursor-pointer select-none items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition-colors hover:border-amber-500/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <label className="inline-flex min-h-10 cursor-pointer select-none items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition-colors hover:border-amber-500/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
             <input
               type="checkbox"
               checked={hideOutOfStock}

@@ -1985,3 +1985,41 @@ html, body { background: var(--store-paper); }
   .ai-assistant-card { width: min(440px, calc(100vw - 20px)); height: min(690px, calc(100dvh - 96px)); max-height: calc(100dvh - 96px); margin: 0 10px 10px; border-radius: 18px; }
   .cari-recommendation-image img { object-fit: contain; }
 }
+
+/* Keep catalogue controls within the viewport on narrow phones. */
+@media (max-width: 479px) {
+  .catalogue-toolbar .category-pills {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    margin-right: 0;
+    padding-right: 0.25rem;
+  }
+
+  .catalogue-toolbar .relative {
+    min-width: 0;
+    flex: 1 1 0%;
+  }
+
+  .catalogue-toolbar .relative input[type="text"] {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 479px) {
+  .site-frame.storefront-shell .ai-assistant-trigger-btn {
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .site-frame.storefront-shell .ai-assistant-trigger-btn .ai-trigger-text {
+    display: none;
+  }
+}
