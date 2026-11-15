@@ -39,11 +39,19 @@ export default function SiteHeader() {
   });
   const [storeCollections, setStoreCollections] = useState<Collection[]>([]);
   const [adminDashboardAllowed, setAdminDashboardAllowed] = useState(false);
-  const { itemCount, openCart } = useCart();
+  const { itemCount, openCart, closeCart } = useCart();
   const { profile, loading } = useStoreAccount();
   const currentSearch = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
 
-  useEffect(() => setMenuOpen(false), [location]);
+  const handleNavigation = () => {
+    setMenuOpen(false);
+    closeCart();
+  };
+
+  useEffect(() => {
+    setMenuOpen(false);
+    closeCart();
+  }, [location, closeCart]);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -92,7 +100,7 @@ export default function SiteHeader() {
     <>
       <header className={`site-header shop-sidebar ${collapsed ? "is-collapsed" : ""} ${menuOpen ? "mobile-open" : ""}`}>
         <div className="shop-sidebar-top">
-          <Link href="/" className="brand-lockup" aria-label="Nexus home">
+          <Link href="/" className="brand-lockup" aria-label="Nexus home" onClick={handleNavigation}>
             <img src="/logo.png" alt="" className="brand-logo-img h-8 w-auto object-contain" />
             <div className="brand-text-stack shop-sidebar-brand-text">
               <span className="brand-name">Nexus</span>
@@ -123,7 +131,7 @@ export default function SiteHeader() {
                   ? targetSearch.get("collection") === currentSearch.get("collection")
                   : !currentSearch.has("collection"));
               return (
-                <Link key={href} href={href} className={`shop-sidebar-link ${isActive ? "is-active" : ""}`} title={collapsed ? label : undefined} aria-current={isActive ? "page" : undefined}>
+                <Link key={href} href={href} className={`shop-sidebar-link ${isActive ? "is-active" : ""}`} title={collapsed ? label : undefined} aria-current={isActive ? "page" : undefined} onClick={handleNavigation}>
                   <Icon size={18} strokeWidth={1.8} />
                   <span>{label}</span>
                 </Link>
@@ -140,14 +148,14 @@ export default function SiteHeader() {
                 <button type="button" className="shop-signout" onClick={handleSignOut} title="Sign out" aria-label="Sign out"><LogOut size={16} /></button>
               </div>
             ) : !loading ? (
-              <Link href="/login" className="shop-sidebar-link" title={collapsed ? "Sign in" : undefined}>
+              <Link href="/login" className="shop-sidebar-link" title={collapsed ? "Sign in" : undefined} onClick={handleNavigation}>
                 <UserRound size={18} strokeWidth={1.8} /><span>Sign in</span>
               </Link>
             ) : null}
-            <Link href="/track-order" className="shop-sidebar-link" title={collapsed ? "Track an order" : undefined}>
+            <Link href="/track-order" className="shop-sidebar-link" title={collapsed ? "Track an order" : undefined} onClick={handleNavigation}>
               <PackageCheck size={18} strokeWidth={1.8} /><span>Track an order</span>
             </Link>
-            {adminDashboardAllowed && <Link href="/admin/dashboard" className="shop-sidebar-link" title={collapsed ? "Admin dashboard" : undefined}>
+            {adminDashboardAllowed && <Link href="/admin/dashboard" className="shop-sidebar-link" title={collapsed ? "Admin dashboard" : undefined} onClick={handleNavigation}>
               <LayoutDashboard size={18} strokeWidth={1.8} /><span>Admin dashboard</span>
             </Link>}
             {!profile && <button type="button" className="shop-sidebar-link shop-newsletter-link" onClick={openNewsletter} title={collapsed ? "Newsletter" : undefined}>

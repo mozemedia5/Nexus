@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -505,6 +506,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const openCart = useCallback(() => setIsOpen(true), []);
+  const closeCart = useCallback(() => setIsOpen(false), []);
+  const toggleCart = useCallback(() => setIsOpen(value => !value), []);
+
   return (
     <CartContext.Provider
       value={{
@@ -520,9 +525,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         removeItem,
         checkout,
-        openCart: () => setIsOpen(true),
-        closeCart: () => setIsOpen(false),
-        toggleCart: () => setIsOpen(value => !value),
+        openCart,
+        closeCart,
+        toggleCart,
       }}
     >
       {children}
