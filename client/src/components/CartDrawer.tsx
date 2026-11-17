@@ -1,4 +1,5 @@
 import { Minus, Plus, X, Lock, ArrowUpRight, ShoppingCart } from "lucide-react";
+import { Link } from "wouter";
 import { formatPrice } from "@/lib/store";
 import { useCart } from "@/contexts/CartContext";
 
@@ -62,13 +63,13 @@ export default function CartDrawer() {
                   <p>Explore Smart Home and Workspace finds from Nexus.</p>
                 </>
               )}
-              <button
-                type="button"
+              <Link
+                href="/products"
                 className="button button-dark"
                 onClick={closeCart}
               >
-                Continue browsing ↗
-              </button>
+                Browse products ↗
+              </Link>
             </div>
           ) : (
             <div className="cart-lines">
@@ -85,9 +86,13 @@ export default function CartDrawer() {
                   <div className="flex-1 min-w-0 flex flex-col justify-between gap-1">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-1">
+                        <Link
+                          href={`/products/${line.product.handle}`}
+                          className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-1 hover:underline"
+                          onClick={closeCart}
+                        >
                           {line.product.name}
-                        </h3>
+                        </Link>
                         {line.product.variantTitle &&
                           line.product.variantTitle !== "Default Title" && (
                             <span className="text-[11px] text-slate-400 block">

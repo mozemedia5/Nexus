@@ -40,7 +40,7 @@ export default function SiteHeader() {
   const [storeCollections, setStoreCollections] = useState<Collection[]>([]);
   const [adminDashboardAllowed, setAdminDashboardAllowed] = useState(false);
   const { itemCount, openCart, closeCart } = useCart();
-  const { profile, loading } = useStoreAccount();
+  const { profile } = useStoreAccount();
   const currentSearch = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
 
   const handleNavigation = () => {
@@ -147,11 +147,11 @@ export default function SiteHeader() {
                 <span className="shop-account-copy"><strong>{profile.name}</strong><small>Signed in</small></span>
                 <button type="button" className="shop-signout" onClick={handleSignOut} title="Sign out" aria-label="Sign out"><LogOut size={16} /></button>
               </div>
-            ) : !loading ? (
+            ) : (
               <Link href="/login" className="shop-sidebar-link" title={collapsed ? "Sign in" : undefined} onClick={handleNavigation}>
                 <UserRound size={18} strokeWidth={1.8} /><span>Sign in</span>
               </Link>
-            ) : null}
+            )}
             <Link href="/track-order" className="shop-sidebar-link" title={collapsed ? "Track an order" : undefined} onClick={handleNavigation}>
               <PackageCheck size={18} strokeWidth={1.8} /><span>Track an order</span>
             </Link>

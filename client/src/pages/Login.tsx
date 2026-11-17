@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { getFirebaseAuth, getFirebaseStatus, verifyAdminSession } from "@/lib/firebase";
 import SEO from "@/components/SEO";
 import { saveStoreProfile } from "@/hooks/useStoreAccount";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -39,7 +40,6 @@ export default function Login() {
         toast.error("Firebase is not configured. Please add Firebase credentials in Settings.");
         return;
       }
-      const { signInWithEmailAndPassword } = await import("firebase/auth");
       const userCred = await signInWithEmailAndPassword(auth, email, password);
 
       const cleanUserEmail = userCred.user.email || email;
@@ -80,22 +80,19 @@ export default function Login() {
         toast.error("Firebase is not configured. Please add Firebase credentials in Settings.");
         return;
       }
-      const { signInWithPopup, GoogleAuthProvider } = await import("firebase/auth");
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       const result = await signInWithPopup(auth, provider);
 
-      // Store/update user profile in Firestore
-      try {
-        const { getFirestore, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
-        const db = getFirestore();
-        await setDoc(doc(db, "nexus_users", result.user.uid), {
+      // Profile synchronization is useful but must not block the sign-in redirect.
+      void import("firebase/firestore").then(({ getFirestore, doc, setDoc, serverTimestamp }) =>
+        setDoc(doc(getFirestore(), "nexus_users", result.user.uid), {
           uid: result.user.uid,
           fullName: result.user.displayName || "",
           email: result.user.email || "",
           lastLoginAt: serverTimestamp(),
-        }, { merge: true });
-      } catch {}
+        }, { merge: true })
+      ).catch(() => {});
 
       const cleanUserEmail = result.user.email || "";
       const cleanDisplayName = result.user.displayName || cleanUserEmail.split("@")[0] || "Nexus Member";
@@ -136,23 +133,20 @@ export default function Login() {
         toast.error("Firebase is not configured. Please add Firebase credentials in Settings.");
         return;
       }
-      const { signInWithPopup, OAuthProvider } = await import("firebase/auth");
       const provider = new OAuthProvider("apple.com");
       provider.addScope("email");
       provider.addScope("name");
       const result = await signInWithPopup(auth, provider);
 
-      // Store/update user profile in Firestore
-      try {
-        const { getFirestore, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
-        const db = getFirestore();
-        await setDoc(doc(db, "nexus_users", result.user.uid), {
+      // Profile synchronization is useful but must not block the sign-in redirect.
+      void import("firebase/firestore").then(({ getFirestore, doc, setDoc, serverTimestamp }) =>
+        setDoc(doc(getFirestore(), "nexus_users", result.user.uid), {
           uid: result.user.uid,
           fullName: result.user.displayName || "",
           email: result.user.email || "",
           lastLoginAt: serverTimestamp(),
-        }, { merge: true });
-      } catch {}
+        }, { merge: true })
+      ).catch(() => {});
 
       const cleanUserEmail = result.user.email || "";
       const cleanDisplayName = result.user.displayName || cleanUserEmail.split("@")[0] || "Nexus Member";
